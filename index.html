@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestão de Frota · DIGNIDADE GARRIDA TRANSPORTES LDA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --asfalto:#22272B; --asfalto-2:#2F363B; --via:#E9ECEE; --papel:#FFFFFF;
+  --sinal:#F2A900; --sinal-esc:#C98A00; --azul:#1D4E89;
+  --ganho:#2E7D4F; --perda:#B83227; --aviso:#9A6A00;
+  --linha:#CBD2D6; --linha-2:#E1E5E8; --texto:#1E2326; --suave:#5B656C;
+  --f:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --fc:'Barlow Condensed','Arial Narrow',var(--f);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--f);font-size:15px;line-height:1.45;color:var(--texto);background:var(--via)}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+h2{font-family:var(--fc);font-size:26px;font-weight:700;margin:0;line-height:1.1}
+h3{font-family:var(--fc);font-size:20px;font-weight:600;margin:0 0 12px}
+:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+
+.topo{background:var(--asfalto);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;position:relative;flex-wrap:wrap}
+.topo::after{content:'';position:absolute;left:0;right:0;bottom:-4px;height:4px;background:repeating-linear-gradient(90deg,var(--sinal) 0 32px,var(--asfalto-2) 32px 52px)}
+.marca strong{font-family:var(--fc);font-size:24px;font-weight:700;display:block;line-height:1}
+.marca span{font-size:13px;color:#C5CCD1}
+.topo-dir{display:flex;align-items:center;gap:12px;font-size:13px;color:#C5CCD1;flex-wrap:wrap}
+.sync{padding:3px 8px;border-radius:3px;background:var(--asfalto-2)}
+.sync.off{background:#6B2A22;color:#fff}
+.topo .btn{background:transparent;color:#fff;border-color:#57616A}
+
+.tabs{background:var(--asfalto-2);display:flex;gap:4px;padding:8px 20px 0;overflow-x:auto;margin-top:4px}
+.tabs button{background:none;border:none;color:#C5CCD1;padding:10px 14px 12px;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent}
+.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--sinal)}
+.tabs button:hover{color:#fff}
+
+.aviso{background:#FFF1C7;border-bottom:1px solid #E8CF84;padding:8px 20px;font-size:14px}
+main{max-width:1360px;margin:0 auto;padding:20px}
+.cab-sec{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.barra{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.painel{background:var(--papel);border:1px solid var(--linha);border-radius:6px;padding:16px;margin-bottom:16px}
+.painel-cab{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.painel-cab h3{margin:0}
+.nota{font-size:13px;color:var(--suave);margin:12px 0 0;max-width:90ch}
+.dois{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dois .painel{margin-bottom:0}
+.bloco-dois{margin-bottom:16px}
+
+.campo{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--suave);font-weight:500}
+.campo input,.campo select,.campo textarea{border:1px solid var(--linha);border-radius:4px;padding:8px 10px;background:#fff;min-height:40px;color:var(--texto);font-size:15px;width:100%}
+.campo textarea{min-height:64px;resize:vertical}
+.campo-check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--texto);min-height:40px}
+.campo-check input{width:18px;height:18px}
+.ajuda{font-size:12px;color:var(--suave);font-weight:400}
+
+.btn{border:1px solid var(--linha);background:#fff;border-radius:4px;padding:8px 14px;min-height:40px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--suave)}
+.btn-pri{background:var(--sinal);border-color:var(--sinal-esc);color:#1E2326}
+.btn-pri:hover{background:#FFB91A;border-color:var(--sinal-esc)}
+.btn-perigo{color:var(--perda);border-color:#E3B5AF}
+.btn-peq{min-height:32px;padding:4px 10px;font-size:13px}
+.btn-link{background:none;border:none;color:var(--azul);cursor:pointer;padding:6px 0;text-decoration:underline}
+
+.tabela-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-weight:600;color:var(--suave);text-align:left;border-bottom:2px solid var(--linha);padding:8px 10px;white-space:nowrap;background:#F6F7F8;vertical-align:bottom}
+td{border-bottom:1px solid var(--linha-2);padding:8px 10px;vertical-align:middle}
+.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n{text-align:right}
+tfoot td{font-weight:700;border-top:2px solid var(--linha);border-bottom:none}
+.pos{color:var(--ganho)} .neg{color:var(--perda)}
+.acoes{white-space:nowrap;text-align:right}
+.acoes .btn+.btn{margin-left:6px}
+td.vazio{color:var(--suave);padding:24px 10px;text-align:center}
+.tabela-res td:first-child,.tabela-res th:first-child{position:sticky;left:0;background:#fff;z-index:1;min-width:210px}
+.tabela-res th:first-child{background:#F6F7F8}
+.tabela-res tr.sub td,.tabela-res tr.sub td:first-child{font-weight:600;background:#F6F7F8}
+.tabela-res tr.custo td:first-child{padding-left:22px;color:var(--suave)}
+.tabela-res tr.grupo td{font-family:var(--fc);font-size:16px;font-weight:700;padding-top:14px;border-bottom:2px solid var(--sinal);background:#fff}
+.tabela-res tr.destaque td,.tabela-res tr.destaque td:first-child{background:#FFF6DB;font-weight:700;font-size:15px}
+.etiq{display:inline-block;font-size:12px;padding:1px 6px;border-radius:3px;background:var(--linha-2);color:var(--suave);white-space:nowrap}
+.etiq.ativo{background:#DCEFE3;color:var(--ganho)}
+.etiq.venc{background:#F6DAD6;color:var(--perda)}
+.etiq.prox{background:#FFF1C7;color:var(--aviso)}
+
+.placa{display:inline-flex;align-items:stretch;border:1.5px solid #222;border-radius:3px;overflow:hidden;font-family:var(--fc);font-weight:700;font-size:15px;line-height:1;background:#fff;vertical-align:middle;white-space:nowrap}
+.placa-eu{background:#003399;color:#fff;font-size:10px;padding:3px 3px 2px;display:flex;align-items:flex-end}
+.placa-num{padding:4px 7px 3px;letter-spacing:.06em;color:#111}
+.placa::after{content:'';width:6px;background:#FFCC00}
+.placa-geral{font-weight:600;color:var(--suave);white-space:nowrap}
+.motorista-sub{display:block;font-size:12px;color:var(--suave);font-weight:400;margin-top:3px;white-space:normal}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--linha);border-left:4px solid var(--azul);padding:10px 14px;border-radius:4px}
+.kpi span{font-size:13px;color:var(--suave)}
+.kpi strong{display:block;font-family:var(--fc);font-size:28px;font-weight:700;line-height:1.15}
+.kpi.res-pos{border-left-color:var(--ganho)} .kpi.res-neg{border-left-color:var(--perda)}
+
+.pontos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pontos li{padding:8px 12px;border-left:4px solid var(--linha);background:#F6F7F8;border-radius:0 4px 4px 0;font-size:14px}
+.pontos li.alerta{border-left-color:var(--perda);background:#FBEDEB}
+.pontos li.aviso{border-left-color:var(--sinal);background:#FFF8E5}
+.pontos li.ok{border-left-color:var(--ganho);background:#EAF5EE}
+
+/* Processamento mensal */
+.proc input[type=number]{width:78px;border:1px solid var(--linha);border-radius:4px;padding:5px 6px;text-align:right;background:#fff;min-height:32px}
+.proc input[type=number]::placeholder{color:#9AA3A9}
+.proc td{padding:6px 8px}
+
+/* Diálogos */
+dialog{border:none;border-radius:8px;padding:0;width:min(680px,95vw);max-height:94vh;color:var(--texto)}
+dialog.largo{width:min(980px,96vw)}
+dialog::backdrop{background:rgba(20,24,27,.55)}
+dialog form{display:flex;flex-direction:column;max-height:94vh}
+.dlg-cab{padding:14px 18px;border-bottom:1px solid var(--linha);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dlg-cab h3{margin:0}
+.dlg-corpo{padding:16px 18px;overflow:auto}
+.dlg-rod{padding:12px 18px;border-top:1px solid var(--linha);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;align-items:center}
+.dlg-rod .erro{margin-right:auto}
+.grelha{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grelha-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grelha .inteiro,.grelha-3 .inteiro{grid-column:1/-1}
+fieldset{border:1px solid var(--linha);border-radius:6px;padding:12px 14px 14px;margin:0 0 14px}
+legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
+.erro{color:var(--perda);font-size:14px;margin:0;min-height:1em}
+.linhas-edit{font-size:13px}
+.linhas-edit td{padding:4px 4px;border-bottom:1px solid var(--linha-2)}
+.linhas-edit input,.linhas-edit select{border:1px solid var(--linha);border-radius:4px;padding:5px 6px;min-height:34px;width:100%;background:#fff;font-size:14px}
+.linhas-edit input[type=checkbox]{width:18px;height:18px;min-height:0}
+.linhas-edit .c-num{width:110px}
+.previsao{background:#F6F7F8;border:1px solid var(--linha);border-radius:6px;padding:12px 14px}
+.previsao table{font-size:13px}
+.previsao td{padding:3px 6px;border:none}
+.previsao .tot td{border-top:1px solid var(--linha);font-weight:700}
+
+.ecra-login{min-height:100vh;display:grid;place-items:center;background:var(--asfalto);padding:20px}
+.cartao-login{background:#fff;border-radius:8px;padding:28px;width:min(380px,100%);display:flex;flex-direction:column;gap:14px;border-top:6px solid var(--sinal)}
+.marca-login{font-family:var(--fc);font-size:28px;font-weight:700;line-height:1}
+.marca-login span{display:block;font-family:var(--f);font-size:14px;font-weight:500;color:var(--suave);margin-top:4px}
+.cartao-login p{margin:0;color:var(--suave)}
+
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--asfalto);color:#fff;padding:10px 16px;border-radius:4px;font-size:14px;z-index:100;max-width:90vw;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#toast.erro{background:var(--perda)}
+
+.so-print{display:none}
+@media (max-width:860px){ .dois{grid-template-columns:1fr} .grelha-3{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:560px){
+  .grelha,.grelha-3{grid-template-columns:1fr}
+  main{padding:14px}
+  .topo{padding:10px 14px}
+  .tabs{padding:6px 10px 0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  body{background:#fff;font-size:11px}
+  .tabs,.topo-dir,.no-print,.aviso,dialog,#toast{display:none!important}
+  .topo{background:none;color:#000;padding:0 0 6px}
+  .topo::after{display:none}
+  .marca span{color:#333}
+  main{padding:0;max-width:none}
+  .painel{border:none;padding:0;margin-bottom:12px;break-inside:avoid}
+  .kpis{grid-template-columns:repeat(5,1fr)}
+  .kpi strong{font-size:18px}
+  .so-print{display:block;margin:4px 0 8px;font-weight:600}
+  table{font-size:9.5px}
+  th,td{padding:3px 5px}
+  th{background:none!important}
+  .tabela-wrap{overflow:visible}
+  .tabela-res td:first-child,.tabela-res th:first-child{position:static;min-width:0}
+  .dois{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="ecra-login" class="ecra-login" hidden>
+  <form id="f-login" class="cartao-login" novalidate>
+    <div class="marca-login">DIGNIDADE GARRIDA TRANSPORTES LDA<span>NIF 518242226</span></div>
+    <p>Gestão de frota e resultados</p>
+    <label class="campo">Email<input type="email" name="email" required autocomplete="username"></label>
+    <label class="campo">Palavra-passe<input type="password" name="pass" required autocomplete="current-password"></label>
+    <p class="erro" id="login-erro" role="alert"></p>
+    <button class="btn btn-pri" type="submit">Entrar</button>
+    <button class="btn-link" type="button" id="btn-recuperar">Recuperar palavra-passe</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="topo">
+    <div class="marca"><strong>DIGNIDADE GARRIDA TRANSPORTES LDA</strong><span>NIF 518242226 · Gestão de frota</span></div>
+    <div class="topo-dir">
+      <span id="estado-sync" class="sync"></span>
+      <span id="utilizador"></span>
+      <button class="btn btn-peq" id="btn-sair" type="button">Sair</button>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Separadores">
+    <button type="button" role="tab" data-tab="resultados" aria-selected="true">Resultados</button>
+    <button type="button" role="tab" data-tab="cargas" aria-selected="false">Cargas</button>
+    <button type="button" role="tab" data-tab="despesas" aria-selected="false">Despesas</button>
+    <button type="button" role="tab" data-tab="motoristas" aria-selected="false">Motoristas</button>
+    <button type="button" role="tab" data-tab="folha" aria-selected="false">Folha de cargas</button>
+    <button type="button" role="tab" data-tab="frota" aria-selected="false">Frota e dados</button>
+  </nav>
+  <div id="aviso-local" class="aviso" hidden>Modo de teste: os dados ficam guardados apenas neste navegador. Preencha a configuração do Firebase no ficheiro para guardar na nuvem.</div>
+
+  <main>
+    <!-- RESULTADOS -->
+    <section id="tab-resultados" class="tab" role="tabpanel">
+      <div class="cab-sec">
+        <h2>Resultado por camião</h2>
+        <div class="barra no-print">
+          <label class="campo">Ano<select id="r-ano"></select></label>
+          <label class="campo">Mês<select id="r-mes" data-meses=""></select></label>
+          <button class="btn btn-pri" type="button" id="r-pdf-mes">PDF do mês</button>
+          <button class="btn" type="button" id="r-xls-mes">Excel do mês</button>
+          <button class="btn" type="button" id="r-pdf-ano">PDF do ano</button>
+          <button class="btn" type="button" id="r-xls-ano">Excel do ano</button>
+        </div>
+      </div>
+      <p class="so-print" id="r-print-tit"></p>
+      <div class="kpis" id="r-kpis"></div>
+      <div class="painel">
+        <h3 id="r-tit-mes"></h3>
+        <div class="tabela-wrap"><table id="r-tabela" class="tabela-res"></table></div>
+        <p class="nota">As cargas contam no mês da data de saída. Os custos com pessoal vêm das fichas dos motoristas e do processamento mensal, repartidos pelos camiões conforme os dias de atribuição. Os custos fixos vêm das fichas dos camiões. Valores sem IVA.</p>
+      </div>
+      <div class="dois bloco-dois">
+        <div class="painel"><h3>Pontos de atenção</h3><ul class="pontos" id="r-pontos"></ul></div>
+        <div class="painel"><h3 id="r-tit-comp">Comparação com o mês anterior</h3><div class="tabela-wrap"><table id="r-comp"></table></div></div>
+      </div>
+      <div class="dois bloco-dois">
+        <div class="painel"><h3>Rentabilidade por destino</h3><div class="tabela-wrap"><table id="r-destinos"></table></div></div>
+        <div class="painel"><h3>Rentabilidade por cliente</h3><div class="tabela-wrap"><table id="r-clientes"></table></div></div>
+      </div>
+      <div class="painel">
+        <div class="painel-cab">
+          <h3 id="r-tit-ano"></h3>
+          <label class="campo no-print">Indicador<select id="r-ind">
+            <option value="res">Resultado</option><option value="prov">Proveitos</option><option value="custos">Custos totais</option>
+            <option value="pes">Custos com pessoal</option><option value="ckm">Custo por km</option><option value="km">Km percorridos</option>
+          </select></label>
+        </div>
+        <div class="tabela-wrap"><table id="r-anual"></table></div>
+      </div>
+    </section>
+
+    <!-- CARGAS -->
+    <section id="tab-cargas" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Cargas</h2>
+        <div class="barra no-print">
+          <label class="campo">Ano<select id="c-ano"></select></label>
+          <label class="campo">Mês<select id="c-mes" data-meses="todos"></select></label>
+          <label class="campo">Camião<select id="c-cam"></select></label>
+          <button class="btn" type="button" id="c-pdf">PDF da lista</button>
+          <button class="btn btn-pri" type="button" id="c-nova">Nova carga</button>
+        </div>
+      </div>
+      <div class="painel">
+        <div class="tabela-wrap">
+          <table id="c-tabela">
+            <thead><tr><th>Saída</th><th>Camião</th><th>Cliente</th><th>Destino</th><th>Mercadoria</th><th class="n">Km</th><th class="n">Valor</th><th>Regresso</th><th>Fatura</th><th class="no-print"></th></tr></thead>
+            <tbody></tbody><tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESPESAS -->
+    <section id="tab-despesas" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Despesas</h2>
+        <div class="barra no-print">
+          <label class="campo">Ano<select id="d-ano"></select></label>
+          <label class="campo">Mês<select id="d-mes" data-meses="todos"></select></label>
+          <label class="campo">Camião<select id="d-cam"></select></label>
+          <label class="campo">Tipo<select id="d-tipo"></select></label>
+          <button class="btn" type="button" id="d-pdf">PDF da lista</button>
+          <button class="btn btn-pri" type="button" id="d-nova">Nova despesa</button>
+        </div>
+      </div>
+      <div class="painel">
+        <div class="tabela-wrap">
+          <table id="d-tabela">
+            <thead><tr><th>Data</th><th>Camião</th><th>Tipo</th><th>Fornecedor</th><th>Documento</th><th class="n">Litros</th><th class="n">Valor</th><th>Imputação</th><th>Viagem</th><th class="no-print"></th></tr></thead>
+            <tbody></tbody><tfoot></tfoot>
+          </table>
+        </div>
+        <p class="nota">Registe aqui os custos variáveis (gasóleo, portagens, pneus, mecânico…). Salários, encargos, seguros e rendas não se lançam aqui: são calculados automaticamente a partir das fichas dos motoristas e dos camiões.</p>
+      </div>
+    </section>
+
+    <!-- MOTORISTAS -->
+    <section id="tab-motoristas" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Motoristas</h2>
+        <div class="barra no-print"><button class="btn btn-pri" type="button" id="mot-novo">Adicionar motorista</button></div>
+      </div>
+      <div class="painel">
+        <div class="painel-cab">
+          <h3 id="p-tit">Processamento do mês</h3>
+          <div class="barra no-print">
+            <label class="campo">Ano<select id="p-ano"></select></label>
+            <label class="campo">Mês<select id="p-mes" data-meses=""></select></label>
+            <button class="btn" type="button" id="p-pdf">PDF do processamento</button>
+          </div>
+        </div>
+        <div class="tabela-wrap">
+          <table id="p-tabela" class="proc">
+            <thead><tr><th>Motorista</th><th>Camião no mês</th><th class="n">Dias de trabalho</th><th class="n">Dias fora</th><th class="n">Prémios e extras (€)</th><th>Sem TSU</th><th class="n">Faltas a descontar (€)</th><th class="n">Remunerações</th><th class="n">Sub. alimentação</th><th class="n">Ajudas de custo</th><th class="n">Subs. férias e Natal</th><th class="n">Segurança Social</th><th class="n">Seguros e outros</th><th class="n">Custo total</th></tr></thead>
+            <tbody></tbody><tfoot></tfoot>
+          </table>
+        </div>
+        <p class="nota">Os campos em branco usam o valor automático (a cinzento): dias de trabalho pela ficha, dias fora contados das cargas do motorista (saída a regresso). Escreva um número só quando o mês for diferente, por exemplo com férias, baixa ou faltas. As alterações ficam guardadas ao sair do campo.</p>
+      </div>
+      <div class="painel">
+        <h3>Fichas dos motoristas</h3>
+        <div class="tabela-wrap">
+          <table id="mot-tabela">
+            <thead><tr><th>Nome</th><th>Camião atual</th><th>Contrato</th><th>Admissão</th><th class="n">Salário base</th><th class="n">Custo no mês atual</th><th>Estado</th><th class="no-print"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="painel"><h3>Documentos a renovar</h3><div class="tabela-wrap"><table id="mot-validades"></table></div></div>
+    </section>
+
+    <!-- FOLHA DE CARGAS -->
+    <section id="tab-folha" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Folha de registo de cargas</h2>
+        <div class="barra no-print">
+          <label class="campo">De<input type="date" id="f-de"></label>
+          <label class="campo">Até<input type="date" id="f-ate"></label>
+          <label class="campo">Camião<select id="f-cam"></select></label>
+          <label class="campo">País de destino<select id="f-pais"></select></label>
+          <button class="btn btn-pri" type="button" id="f-pdf">Exportar PDF</button>
+          <button class="btn" type="button" id="f-excel">Exportar Excel</button>
+        </div>
+      </div>
+      <p class="so-print" id="f-print-tit"></p>
+      <div class="painel">
+        <div class="tabela-wrap">
+          <table id="f-tabela">
+            <thead><tr><th>Saída</th><th>Regresso</th><th class="n">Dias</th><th>Camião</th><th>Motorista</th><th>Cliente</th><th>Origem</th><th>Destino</th><th>Mercadoria</th><th class="n">Peso (kg)</th><th class="n">Km</th><th class="n">Valor</th><th class="n">€/km</th><th class="n">Despesas da viagem</th><th class="n">Margem da viagem</th><th>Fatura</th><th>CMR</th><th>Observações</th></tr></thead>
+            <tbody></tbody><tfoot></tfoot>
+          </table>
+        </div>
+        <p class="nota">«Dias» conta do dia de saída ao dia de regresso, inclusive. «Despesas da viagem» soma apenas as despesas associadas a cada carga. Salários e custos fixos entram no resultado mensal do camião, não aqui.</p>
+      </div>
+    </section>
+
+    <!-- FROTA E DADOS -->
+    <section id="tab-frota" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Frota</h2>
+        <div class="barra no-print"><button class="btn btn-pri" type="button" id="cam-novo">Adicionar camião</button></div>
+      </div>
+      <div class="painel">
+        <div class="tabela-wrap">
+          <table id="cam-tabela">
+            <thead><tr><th>Matrícula</th><th>Marca e modelo</th><th>Motorista atual</th><th class="n">Custos fixos por mês</th><th>Estado</th><th class="n">Cargas</th><th class="no-print"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="painel"><h3>Documentos dos camiões a renovar</h3><div class="tabela-wrap"><table id="cam-validades"></table></div></div>
+      <div class="painel no-print">
+        <h3>Parâmetros gerais</h3>
+        <form id="f-param" novalidate>
+          <div class="grelha-3">
+            <label class="campo">Taxa Segurança Social da empresa (%)<input type="number" name="taxaTSU" step="0.01" min="0"></label>
+            <label class="campo">Taxa FCT / FGCT (%)<input type="number" name="taxaFCT" step="0.001" min="0"><span class="ajuda">Deixe 0 se não se aplicar.</span></label>
+            <label class="campo">Dias de trabalho por mês (padrão)<input type="number" name="diasUteis" step="1" min="0" max="31"></label>
+            <label class="campo">Limite isento do sub. alimentação em dinheiro (€/dia)<input type="number" name="limiteSubAlimDinheiro" step="0.01" min="0"><span class="ajuda">O excesso passa a pagar Segurança Social. Em branco: não calcula.</span></label>
+            <label class="campo">Limite isento do sub. alimentação em cartão (€/dia)<input type="number" name="limiteSubAlimCartao" step="0.01" min="0"></label>
+            <label class="campo">Alerta de desvio face à média da frota (%)<input type="number" name="alertaDesvio" step="1" min="0"></label>
+            <label class="campo">Avisar documentos a expirar com (dias)<input type="number" name="avisoValidadeDias" step="1" min="0"></label>
+          </div>
+          <div class="barra" style="margin-top:12px"><button class="btn btn-pri" type="submit">Guardar parâmetros</button><p class="erro" id="param-erro" role="alert"></p></div>
+        </form>
+      </div>
+      <div class="painel no-print">
+        <h3>Cópias de segurança</h3>
+        <p class="nota" style="margin:0 0 12px">Os dados ficam guardados no Firebase. Uma cópia mensal em ficheiro dá uma garantia adicional.</p>
+        <div class="barra">
+          <button class="btn" type="button" id="bk-json">Descarregar cópia (JSON)</button>
+          <button class="btn" type="button" id="bk-excel">Exportar tudo para Excel</button>
+          <button class="btn" type="button" id="bk-pdf">Fichas de camiões e motoristas em PDF</button>
+          <label class="btn" for="bk-import" style="display:inline-flex;align-items:center">Repor a partir de cópia</label>
+          <input type="file" id="bk-import" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Diálogo: carga -->
+<dialog id="dlg-carga">
+  <form id="f-carga" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-carga-tit">Nova carga</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo grelha">
+      <label class="campo">Camião *<select name="camiaoId" required></select></label>
+      <label class="campo">Motorista<select name="motoristaId"></select></label>
+      <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
+      <label class="campo">Data de regresso<input type="date" name="dataRegresso"></label>
+      <label class="campo inteiro">Cliente *<input name="cliente" list="dl-clientes" required autocomplete="off"></label>
+      <label class="campo">Origem<input name="origem" autocomplete="off"></label>
+      <label class="campo">País de destino *<input name="destinoPais" list="dl-paises" required autocomplete="off"></label>
+      <label class="campo">Cidade de destino<input name="destinoCidade" autocomplete="off"></label>
+      <label class="campo">Mercadoria<input name="mercadoria" autocomplete="off"></label>
+      <label class="campo">Peso (kg)<input type="number" name="pesoKg" min="0" step="1" inputmode="numeric"></label>
+      <label class="campo">Km totais (ida e volta)<input type="number" name="km" min="0" step="1" inputmode="numeric"></label>
+      <label class="campo">Valor do frete sem IVA (€) *<input type="number" name="valor" step="0.01" inputmode="decimal" required></label>
+      <label class="campo">Nº da fatura<input name="fatura" autocomplete="off"></label>
+      <label class="campo">Nº do CMR<input name="cmr" autocomplete="off"></label>
+      <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar carga</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo: despesa -->
+<dialog id="dlg-despesa">
+  <form id="f-despesa" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-despesa-tit">Nova despesa</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo grelha">
+      <label class="campo">Camião *<select name="camiaoId" required></select></label>
+      <label class="campo">Data do documento *<input type="date" name="data" required></label>
+      <label class="campo">Tipo *<select name="tipo" required></select></label>
+      <label class="campo">Valor sem IVA (€) *<input type="number" name="valor" step="0.01" inputmode="decimal" required></label>
+      <label class="campo" id="wrap-litros">Litros<input type="number" name="litros" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="campo-check inteiro"><input type="checkbox" name="diluir"> Diluir por 12 meses a partir desta data</label>
+      <label class="campo inteiro" id="wrap-cargaId">Viagem associada<select name="cargaId"></select><span class="ajuda">Opcional. Permite ver na Folha de cargas quanto custou cada viagem.</span></label>
+      <label class="campo">Fornecedor<input name="fornecedor" list="dl-fornecedores" autocomplete="off"></label>
+      <label class="campo">Nº do documento<input name="documento" autocomplete="off"></label>
+      <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="despesa-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar despesa</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo: camião -->
+<dialog id="dlg-camiao" class="largo">
+  <form id="f-camiao" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-camiao-tit">Adicionar camião</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo">
+      <fieldset><legend>Identificação</legend>
+        <div class="grelha-3">
+          <label class="campo">Matrícula *<input name="matricula" required autocomplete="off" placeholder="AA-00-BB"></label>
+          <label class="campo">Marca e modelo<input name="marcaModelo" autocomplete="off"></label>
+          <label class="campo">Ano<input type="number" name="ano" min="1980" max="2100" step="1" inputmode="numeric"></label>
+          <label class="campo">Entrada na frota<input type="date" name="dataInicio"><span class="ajuda">Os custos fixos contam a partir desta data.</span></label>
+          <label class="campo">Saída da frota<input type="date" name="dataFim"><span class="ajuda">Venda ou abate. Os custos fixos param aqui.</span></label>
+          <label class="campo-check"><input type="checkbox" name="ativo" checked> Camião ativo</label>
+          <p class="ajuda inteiro" id="cam-motorista-info"></p>
+        </div>
+      </fieldset>
+      <fieldset><legend>Custos anuais</legend>
+        <div class="grelha-3">
+          <label class="campo">Seguro (€/ano)<input type="number" name="seguroAnual" step="0.01" min="0"></label>
+          <label class="campo">Validade do seguro<input type="date" name="seguroValidade"></label>
+          <label class="campo">IUC (€/ano)<input type="number" name="iucAnual" step="0.01" min="0"></label>
+          <label class="campo">Inspeções (€/ano)<input type="number" name="inspecaoAnual" step="0.01" min="0"></label>
+          <label class="campo">Próxima inspeção<input type="date" name="proximaInspecao"></label>
+          <label class="campo">Tacógrafo e licenças (€/ano)<input type="number" name="tacografoAnual" step="0.01" min="0"></label>
+          <label class="campo">Próxima verificação do tacógrafo<input type="date" name="validadeTacografo"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Custos mensais</legend>
+        <div class="grelha-3">
+          <label class="campo">Renda de leasing / ALD (€/mês)<input type="number" name="leasingMensal" step="0.01" min="0"></label>
+          <label class="campo">Última renda<input type="date" name="leasingFim"><span class="ajuda">Depois deste mês a renda deixa de contar.</span></label>
+          <label class="campo">Amortização (€/mês)<input type="number" name="amortizacaoMensal" step="0.01" min="0"><span class="ajuda">Para camiões próprios.</span></label>
+          <label class="campo">Outros custos fixos (€/mês)<input type="number" name="outrosFixosMensais" step="0.01" min="0"></label>
+          <label class="campo inteiro">Descrição dos outros custos fixos<input name="outrosFixosDesc" autocomplete="off" placeholder="Localização GPS, parqueamento, via verde…"></label>
+        </div>
+      </fieldset>
+      <label class="campo">Observações<textarea name="obs"></textarea></label>
+      <div class="previsao" id="cam-preview" style="margin-top:14px"></div>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="camiao-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar camião</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo: motorista -->
+<dialog id="dlg-motorista" class="largo">
+  <form id="f-motorista" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-motorista-tit">Adicionar motorista</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo">
+      <fieldset><legend>Identificação</legend>
+        <div class="grelha-3">
+          <label class="campo inteiro">Nome completo *<input name="nome" required autocomplete="off"></label>
+          <label class="campo">NIF<input name="nif" inputmode="numeric" maxlength="9" autocomplete="off"></label>
+          <label class="campo">NISS<input name="niss" inputmode="numeric" maxlength="11" autocomplete="off"></label>
+          <label class="campo">Telefone<input name="telefone" type="tel" autocomplete="off"></label>
+          <label class="campo">Validade da carta de condução<input type="date" name="validadeCarta"></label>
+          <label class="campo">Validade do CAM<input type="date" name="validadeCAM"></label>
+          <label class="campo">Validade do cartão de condutor<input type="date" name="validadeCartaoTacografo"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Contrato</legend>
+        <div class="grelha-3">
+          <label class="campo">Tipo de contrato<select name="tipoContrato">
+            <option value="sem_termo">Sem termo</option><option value="termo_certo">A termo certo</option><option value="termo_incerto">A termo incerto</option><option value="outro">Outro</option>
+          </select></label>
+          <label class="campo">Data de admissão *<input type="date" name="dataAdmissao" required></label>
+          <label class="campo">Data de saída<input type="date" name="dataSaida"><span class="ajuda">Fim do contrato. Os custos param aqui.</span></label>
+          <label class="campo">Categoria profissional<input name="categoria" autocomplete="off" placeholder="Motorista de pesados internacional"></label>
+          <label class="campo inteiro">Convenção coletiva e notas do contrato<input name="cct" autocomplete="off"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Remuneração</legend>
+        <div class="grelha-3">
+          <label class="campo">Salário base (€/mês) *<input type="number" name="salarioBase" step="0.01" min="0" required></label>
+          <label class="campo">Subsídio de alimentação (€/dia)<input type="number" name="subAlimDia" step="0.01" min="0"></label>
+          <label class="campo">Forma de pagamento do subsídio<select name="subAlimModo"><option value="cartao">Cartão refeição</option><option value="dinheiro">Dinheiro / transferência</option><option value="nenhum">Não recebe</option></select></label>
+          <label class="campo">Dias de trabalho por mês<input type="number" name="diasUteis" step="1" min="0" max="31"><span class="ajuda">Em branco: usa o parâmetro geral.</span></label>
+          <label class="campo-check inteiro"><input type="checkbox" name="provisaoSubsidios" checked> Incluir todos os meses a parte dos subsídios de férias e de Natal (2/12)</label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Cláusulas do contrato</legend>
+        <div class="tabela-wrap">
+          <table class="linhas-edit" id="m-clausulas">
+            <thead><tr><th>Descrição</th><th>Valor (€)</th><th>Conta por</th><th>Natureza</th><th>Paga Seg. Social</th><th>Entra nos subsídios</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="barra" style="margin-top:10px">
+          <label class="campo">Acrescentar<select id="m-preset"></select></label>
+          <button class="btn btn-peq" type="button" id="m-add-clausula">Acrescentar cláusula</button>
+        </div>
+        <p class="ajuda" style="margin-top:8px">«Conta por» define como o valor se multiplica: por mês, por dia de trabalho, por dia fora (contado das cargas), por viagem ou por ano. «Entra nos subsídios» só se aplica a valores mensais fixos.</p>
+      </fieldset>
+      <fieldset><legend>Encargos da empresa</legend>
+        <div class="grelha-3">
+          <label class="campo">Taxa Seg. Social própria (%)<input type="number" name="taxaTSU" step="0.01" min="0"><span class="ajuda">Em branco: usa a taxa geral.</span></label>
+          <label class="campo">Seguro de acidentes de trabalho (€/ano)<input type="number" name="seguroATAnual" step="0.01" min="0"></label>
+          <label class="campo">Medicina do trabalho (€/ano)<input type="number" name="medicinaAnual" step="0.01" min="0"></label>
+          <label class="campo">Formação obrigatória (€/ano)<input type="number" name="formacaoAnual" step="0.01" min="0"></label>
+          <label class="campo">Outros encargos (€/mês)<input type="number" name="outrosEncargosMensais" step="0.01" min="0"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Camião atribuído</legend>
+        <div class="tabela-wrap">
+          <table class="linhas-edit" id="m-atribuicoes">
+            <thead><tr><th>A partir de</th><th>Camião</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="m-add-atrib">Acrescentar atribuição</button></div>
+        <p class="ajuda" style="margin-top:8px">Quando o motorista muda de camião, acrescente uma linha com a data da mudança em vez de alterar a anterior. Assim os meses passados continuam certos.</p>
+      </fieldset>
+      <label class="campo">Observações<textarea name="obs"></textarea></label>
+      <div class="previsao" style="margin-top:14px"><div class="barra" style="margin-bottom:8px"><strong style="margin-right:auto">Custo mensal estimado para a empresa</strong><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Simular com<input id="m-sim-desl" type="number" min="0" max="31" step="1" value="20" style="width:70px;min-height:32px">dias fora e 2 viagens</label></div><div id="m-preview"></div></div>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="motorista-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar motorista</button></div>
+  </form>
+</dialog>
+
+<datalist id="dl-paises"></datalist>
+<datalist id="dl-clientes"></datalist>
+<datalist id="dl-fornecedores"></datalist>
+<div id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+/* =========================================================
+   CONFIGURAÇÃO FIREBASE
+   Cole aqui os dados do projeto (Consola Firebase > Definições
+   do projeto > As suas apps > Configuração do SDK).
+   Enquanto apiKey estiver vazio, a app funciona em modo de teste
+   (dados só neste navegador).
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCUG3sRWkbD2bSQiCxRuMJgAiSYOYxJx3A",
+  authDomain: "dgt-frota.firebaseapp.com",
+  projectId: "dgt-frota",
+  storageBucket: "dgt-frota.firebasestorage.app",
+  messagingSenderId: "209891125671",
+  appId: "1:209891125671:web:4826115005c5bc4db26e82"
+};
+const MODO_LOCAL = !firebaseConfig.apiKey;
+const EMPRESA = 'DIGNIDADE GARRIDA TRANSPORTES LDA';
+const EMPRESA_NIF = '518242226';
+
+/* ---------- Categorias de custo ---------- */
+const GRUPOS = [
+  {id:'var', nome:'Custos variáveis', tot:'totVar'},
+  {id:'pes', nome:'Custos com pessoal', tot:'totPes'},
+  {id:'fix', nome:'Custos fixos do camião', tot:'totFix'}
+];
+const CATS = [
+  {id:'comb',      grupo:'var', nome:'Combustível'},
+  {id:'port',      grupo:'var', nome:'Portagens e estacionamento'},
+  {id:'manut',     grupo:'var', nome:'Manutenção e pneus'},
+  {id:'outrosVar', grupo:'var', nome:'Outros custos variáveis'},
+  {id:'rem',       grupo:'pes', nome:'Remunerações'},
+  {id:'subalim',   grupo:'pes', nome:'Subsídio de alimentação'},
+  {id:'ajudas',    grupo:'pes', nome:'Ajudas de custo'},
+  {id:'subsidios', grupo:'pes', nome:'Subsídios de férias e de Natal'},
+  {id:'ss',        grupo:'pes', nome:'Segurança Social'},
+  {id:'segpes',    grupo:'pes', nome:'Seguro AT, medicina e formação'},
+  {id:'outpes',    grupo:'pes', nome:'Outros encargos com pessoal'},
+  {id:'segcam',    grupo:'fix', nome:'Seguro, IUC, inspeção e tacógrafo'},
+  {id:'leasing',   grupo:'fix', nome:'Leasing e amortização'},
+  {id:'outfix',    grupo:'fix', nome:'Outros custos fixos'}
+];
+const CATS_PES = CATS.filter(c => c.grupo === 'pes').map(c => c.id);
+/* Tipos de despesa. "oculto" = já não se lança à mão (vem das fichas), mas registos antigos continuam a contar. */
+const TIPOS = [
+  {id:'gasoleo',        nome:'Gasóleo',                         cat:'comb', litros:true},
+  {id:'adblue',         nome:'AdBlue',                          cat:'comb', litros:true},
+  {id:'portagens',      nome:'Portagens',                       cat:'port'},
+  {id:'estacionamento', nome:'Estacionamento / parques',        cat:'port'},
+  {id:'pneus',          nome:'Pneus',                           cat:'manut'},
+  {id:'mecanico',       nome:'Mecânico / reparações',           cat:'manut'},
+  {id:'lavagem',        nome:'Lavagem',                         cat:'manut'},
+  {id:'multas',         nome:'Coimas',                          cat:'outrosVar'},
+  {id:'outros',         nome:'Outros custos variáveis',         cat:'outrosVar'},
+  {id:'extra_pessoal',  nome:'Pessoal: despesa pontual',        cat:'outpes'},
+  {id:'ajudas',         nome:'Ajudas de custo fora da ficha',   cat:'ajudas'},
+  {id:'fixo_nprev',     nome:'Custo fixo não previsto na ficha', cat:'outfix'},
+  {id:'salario',        nome:'Salário (registo antigo)',        cat:'rem', oculto:true},
+  {id:'tsu',            nome:'TSU (registo antigo)',            cat:'ss', oculto:true},
+  {id:'seguro_trab',    nome:'Seguro AT (registo antigo)',      cat:'segpes', anual:true, oculto:true},
+  {id:'seguro',         nome:'Seguro do veículo (registo antigo)', cat:'segcam', anual:true, oculto:true},
+  {id:'iuc',            nome:'IUC (registo antigo)',            cat:'segcam', anual:true, oculto:true},
+  {id:'inspecao',       nome:'Inspeção (registo antigo)',       cat:'segcam', anual:true, oculto:true},
+  {id:'tacografo',      nome:'Tacógrafo (registo antigo)',      cat:'segcam', anual:true, oculto:true},
+  {id:'leasing',        nome:'Leasing (registo antigo)',        cat:'leasing', oculto:true}
+];
+const PRESETS = [
+  {descricao:'Diuturnidades',                          base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:true},
+  {descricao:'Complemento salarial (CCT)',             base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:true},
+  {descricao:'Prémio de assiduidade',                  base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
+  {descricao:'Subsídio de risco',                      base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:true},
+  {descricao:'Trabalho noturno',                       base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
+  {descricao:'Ajudas de custo internacionais (por dia fora)', base:'dia_deslocacao', grupo:'ajudas', incideTSU:false, incideSubsidios:false},
+  {descricao:'Ajudas de custo nacionais (por dia)',    base:'dia_trabalho',   grupo:'ajudas', incideTSU:false, incideSubsidios:false},
+  {descricao:'Prémio por viagem',                      base:'viagem',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
+  {descricao:'Outra cláusula',                         base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:false}
+];
+const BASES = [['mensal','Mês'],['dia_trabalho','Dia de trabalho'],['dia_deslocacao','Dia fora'],['viagem','Viagem'],['anual','Ano']];
+const CONTRATOS = {sem_termo:'Sem termo', termo_certo:'Termo certo', termo_incerto:'Termo incerto', outro:'Outro'};
+const PAISES = ['Alemanha','Áustria','Bélgica','Bulgária','Chéquia','Croácia','Dinamarca','Eslováquia','Eslovénia','Espanha','Estónia','Finlândia','França','Grécia','Hungria','Irlanda','Itália','Letónia','Lituânia','Luxemburgo','Noruega','Países Baixos','Polónia','Portugal','Reino Unido','Roménia','Suécia','Suíça'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_C = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const COLS = ['camioes','motoristas','cargas','despesas','mensal','config'];
+const GERAL = '_geral';
+const CHAVE_LOCAL = 'dgt-frota-dados-v1';
+const PARAM_DEF = {taxaTSU:23.75, taxaFCT:0, diasUteis:22, limiteSubAlimDinheiro:null, limiteSubAlimCartao:null, alertaDesvio:15, avisoValidadeDias:60};
+
+/* ---------- Estado ---------- */
+const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[]};
+const pendentes = Object.fromEntries(COLS.map(c => [c, false]));
+let fbDb = null, fbAuth = null, utilizadorAtual = null, unsubs = [];
+
+/* ---------- Utilitários ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtEurI = new Intl.NumberFormat('pt-PT', {style:'currency', currency:'EUR', useGrouping:'always'});
+const fmtInt = new Intl.NumberFormat('pt-PT', {maximumFractionDigits:0, useGrouping:'always'});
+const fmtDec = new Intl.NumberFormat('pt-PT', {minimumFractionDigits:1, maximumFractionDigits:1});
+const fmtPct = new Intl.NumberFormat('pt-PT', {style:'percent', minimumFractionDigits:1, maximumFractionDigits:1});
+const fmtEur = v => fmtEurI.format(v || 0);
+const fmtC = c => fmtEurI.format((c || 0) / 100);
+const fmtData = s => s ? s.split('-').reverse().join('/') : '';
+const cent = v => Math.round((parseFloat(v) || 0) * 100);
+const r2 = v => Math.round(v * 100) / 100;
+const num0 = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const numOuNull = v => (v === '' || v == null) ? null : Number(v);
+const pad2 = n => String(n).padStart(2, '0');
+function fmtVal(v, t){ if (v == null || !isFinite(v)) return '—'; switch (t){ case 'eur': return fmtEur(v); case 'pct': return fmtPct.format(v); case 'dec': return fmtDec.format(v); default: return fmtInt.format(v); } }
+function hoje(){ const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function novoId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
+function email(){ return MODO_LOCAL ? 'local' : (utilizadorAtual && utilizadorAtual.email) || ''; }
+function tipoPorId(id){ return TIPOS.find(t => t.id === id) || TIPOS.find(t => t.id === 'outros'); }
+function catNome(id){ const c = CATS.find(x => x.id === id); return c ? c.nome : id; }
+function camiaoPorId(id){ return store.camioes.find(c => c.id === id); }
+function motoristaPorId(id){ return store.motoristas.find(m => m.id === id); }
+function camioesOrdenados(){ return [...store.camioes].sort((a, b) => (a.matricula || '').localeCompare(b.matricula || '')); }
+function motoristasOrdenados(){ return [...store.motoristas].sort((a, b) => (a.nome || '').localeCompare(b.nome || '')); }
+function nomeCamiao(id){ if (id === GERAL) return 'Estrutura (geral)'; const c = camiaoPorId(id); return c ? c.matricula : '(camião removido)'; }
+function placaHtml(id){
+  if (id === GERAL) return '<span class="placa-geral">Estrutura</span>';
+  const c = camiaoPorId(id);
+  if (!c) return '<span class="placa-geral">(removido)</span>';
+  return `<span class="placa"><span class="placa-eu">P</span><span class="placa-num">${esc(c.matricula)}</span></span>`;
+}
+function destinoTxt(g){ return [g.destinoCidade, g.destinoPais].filter(Boolean).join(', '); }
+function nomeMotoristaCarga(g){ const m = g.motoristaId && motoristaPorId(g.motoristaId); return m ? m.nome : (g.motorista || ''); }
+function params(){ const p = store.config.find(c => c.id === 'parametros') || {}; const o = {...PARAM_DEF}; Object.keys(PARAM_DEF).forEach(k => { if (p[k] != null && p[k] !== '') o[k] = +p[k]; }); return o; }
+
+/* ---------- Datas ---------- */
+const utc = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+const isoUTC = t => { const d = new Date(t); return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`; };
+function addDias(s, n){ return isoUTC(utc(s) + n * 86400000); }
+function diasEntre(a, b){ if (!a || !b) return null; return Math.round((utc(b) - utc(a)) / 86400000); }
+function addMes(ym, n){ const [y, m] = ym.split('-').map(Number); const t = y * 12 + (m - 1) + n; return `${Math.floor(t / 12)}-${pad2(t % 12 + 1)}`; }
+function diasNoMes(ym){ const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+function listaDias(a, b, max = 400){ const out = []; let t = utc(a); const tb = utc(b); for (let i = 0; t <= tb && i < max; i++, t += 86400000) out.push(isoUTC(t)); return out; }
+const cacheDiasMes = new Map();
+function diasDoMes(ym){ if (!cacheDiasMes.has(ym)) cacheDiasMes.set(ym, listaDias(ym + '-01', `${ym}-${pad2(diasNoMes(ym))}`)); return cacheDiasMes.get(ym); }
+function nomeMesAno(ym){ return `${MESES[+ym.slice(5, 7) - 1]} de ${ym.slice(0, 4)}`; }
+
+/* ---------- Relações motorista / camião ---------- */
+const empregadoEm = (m, d) => (!m.dataAdmissao || d >= m.dataAdmissao) && (!m.dataSaida || d <= m.dataSaida);
+const camiaoAtivoEm = (c, d) => (!c.dataInicio || d >= c.dataInicio) && (!c.dataFim || d <= c.dataFim);
+function camiaoDoMotoristaEm(m, d){
+  let res = null, desde = '';
+  (m.atribuicoes || []).forEach(a => { if (a && a.camiaoId && a.desde && a.desde <= d && a.desde >= desde){ desde = a.desde; res = a.camiaoId; } });
+  return res;
+}
+function motoristaDoCamiaoEm(cid, d){ return motoristasOrdenados().find(m => empregadoEm(m, d) && camiaoDoMotoristaEm(m, d) === cid) || null; }
+function motoristaAtualTxt(c){ const m = motoristaDoCamiaoEm(c.id, hoje()); return m ? m.nome : (c.motorista || ''); }
+// Dias (dentro do mês) em que houve viagens que cumprem o filtro; cada dia conta uma vez.
+function diasViagem(filtro, ym){
+  const ini = ym + '-01', fim = `${ym}-${pad2(diasNoMes(ym))}`, s = new Set();
+  store.cargas.forEach(g => {
+    if (!g.dataSaida || !filtro(g)) return;
+    const f = (g.dataRegresso && g.dataRegresso >= g.dataSaida) ? g.dataRegresso : g.dataSaida;
+    if (f < ini || g.dataSaida > fim) return;
+    listaDias(g.dataSaida > ini ? g.dataSaida : ini, f < fim ? f : fim, 40).forEach(d => s.add(d));
+  });
+  return s.size;
+}
+
+/* ---------- Camada de dados ---------- */
+function carregarLocal(){
+  try { const d = JSON.parse(localStorage.getItem(CHAVE_LOCAL) || '{}'); COLS.forEach(c => { store[c] = Array.isArray(d[c]) ? d[c] : []; }); }
+  catch (e) { COLS.forEach(c => { store[c] = []; }); }
+}
+function guardarLocal(){
+  try { localStorage.setItem(CHAVE_LOCAL, JSON.stringify(store)); }
+  catch (e) { toast('Não foi possível guardar no navegador.', 'erro'); }
+}
+function semId(o){ const { id, ...resto } = o; return resto; }
+const DB = {
+  add(col, obj){
+    const data = {...obj, criadoEm:new Date().toISOString(), criadoPor:email()};
+    if (MODO_LOCAL){ store[col].push({id:novoId(), ...data}); guardarLocal(); renderTudo(); return Promise.resolve(); }
+    return fbDb.collection(col).add(data);
+  },
+  update(col, id, obj){
+    const data = {...obj, atualizadoEm:new Date().toISOString(), atualizadoPor:email()};
+    if (MODO_LOCAL){
+      const i = store[col].findIndex(x => x.id === id);
+      if (i >= 0) store[col][i] = {...store[col][i], ...data};
+      guardarLocal(); renderTudo(); return Promise.resolve();
+    }
+    return fbDb.collection(col).doc(id).update(data);
+  },
+  // Cria ou junta campos num documento com id conhecido (processamento mensal, parâmetros)
+  set(col, id, obj){
+    const data = {...obj, atualizadoEm:new Date().toISOString(), atualizadoPor:email()};
+    if (MODO_LOCAL){
+      const i = store[col].findIndex(x => x.id === id);
+      if (i >= 0) store[col][i] = {...store[col][i], ...data}; else store[col].push({id, ...data});
+      guardarLocal(); renderTudo(); return Promise.resolve();
+    }
+    return fbDb.collection(col).doc(id).set(data, {merge:true});
+  },
+  remove(col, id){
+    if (MODO_LOCAL){ store[col] = store[col].filter(x => x.id !== id); guardarLocal(); renderTudo(); return Promise.resolve(); }
+    return fbDb.collection(col).doc(id).delete();
+  },
+  async repor(dados){
+    if (MODO_LOCAL){
+      COLS.forEach(col => (dados[col] || []).forEach(o => {
+        if (!o || !o.id) return;
+        const i = store[col].findIndex(x => x.id === o.id);
+        if (i >= 0) store[col][i] = o; else store[col].push(o);
+      }));
+      guardarLocal(); renderTudo(); return;
+    }
+    const ops = [];
+    COLS.forEach(col => (dados[col] || []).forEach(o => { if (o && o.id) ops.push([col, o.id, semId(o)]); }));
+    for (let i = 0; i < ops.length; i += 400){
+      const b = fbDb.batch();
+      ops.slice(i, i + 400).forEach(([col, id, d]) => b.set(fbDb.collection(col).doc(id), d));
+      await b.commit();
+    }
+  }
+};
+function gravar(promessa, msgOk){
+  if (msgOk) toast(msgOk);
+  Promise.resolve(promessa).catch(e => toast('Não foi possível guardar: ' + (e.code === 'permission-denied' ? 'sem permissão para esta conta.' : e.message), 'erro'));
+}
+
+/* ---------- Cálculo ---------- */
+function alocar(d){
+  const c = cent(d.valor), ym = (d.data || '').slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(ym)) return [];
+  if (!d.diluir) return [{ym, c}];
+  const base = Math.trunc(c / 12); let resto = c - base * 12; const out = [];
+  for (let i = 0; i < 12; i++){
+    let v = base;
+    if (resto > 0){ v++; resto--; } else if (resto < 0){ v--; resto++; }
+    out.push({ym:addMes(ym, i), c:v});
+  }
+  return out;
+}
+
+// Custo de um motorista num mês, por componente (cêntimos) e dias por camião.
+function custoMotorista(m, ym, opts = {}){
+  const P = params(), dias = diasDoMes(ym);
+  const diasEmp = dias.filter(d => empregadoEm(m, d));
+  if (!diasEmp.length) return null;
+  const frac = diasEmp.length / dias.length;
+  const proc = opts.semProc ? {} : (store.mensal.find(x => x.id === `${ym}_${m.id}`) || {});
+  const diasUteis = (m.diasUteis != null && m.diasUteis !== '') ? num0(m.diasUteis) : P.diasUteis;
+  const diasTrab = (proc.diasTrabalho != null && proc.diasTrabalho !== '') ? num0(proc.diasTrabalho) : Math.round(diasUteis * frac);
+  const autoDesl = opts.diasDesl != null ? opts.diasDesl : diasViagem(g => g.motoristaId === m.id, ym);
+  const diasDesl = (proc.diasDeslocacao != null && proc.diasDeslocacao !== '') ? num0(proc.diasDeslocacao) : autoDesl;
+  const nViag = opts.nViag != null ? opts.nViag : store.cargas.filter(g => g.motoristaId === m.id && (g.dataSaida || '').slice(0, 7) === ym).length;
+
+  const base = num0(m.salarioBase) * frac;
+  let rem = base, ajudas = 0, incid = base, baseSub = base;
+  (m.clausulas || []).forEach(cl => {
+    const v = num0(cl.valor); let q;
+    switch (cl.base){
+      case 'dia_trabalho': q = v * diasTrab; break;
+      case 'dia_deslocacao': q = v * diasDesl; break;
+      case 'viagem': q = v * nViag; break;
+      case 'anual': q = v / 12 * frac; break;
+      default: q = v * frac;
+    }
+    if (cl.grupo === 'ajudas') ajudas += q; else rem += q;
+    if (cl.incideTSU) incid += q;
+    if (cl.incideSubsidios && (!cl.base || cl.base === 'mensal')) baseSub += q;
+  });
+  const extras = num0(proc.extras), faltas = num0(proc.faltas);
+  rem += extras - faltas;
+  incid += (proc.extrasSemTSU ? 0 : extras) - faltas;
+  const saDia = m.subAlimModo === 'nenhum' ? 0 : num0(m.subAlimDia);
+  const subalim = saDia * diasTrab;
+  const lim = m.subAlimModo === 'cartao' ? num0(P.limiteSubAlimCartao) : num0(P.limiteSubAlimDinheiro);
+  const excessoSubAlim = (lim > 0 && saDia > lim) ? (saDia - lim) * diasTrab : 0;
+  incid += excessoSubAlim;
+  const subsidios = m.semProvisaoSubsidios ? 0 : baseSub * 2 / 12;
+  const taxa = (m.taxaTSU != null && m.taxaTSU !== '') ? num0(m.taxaTSU) : P.taxaTSU;
+  const baseSS = Math.max(0, incid + subsidios);
+  const tsu = baseSS * taxa / 100, fct = baseSS * num0(P.taxaFCT) / 100;
+  const segpes = (num0(m.seguroATAnual) + num0(m.medicinaAnual) + num0(m.formacaoAnual)) / 12 * frac;
+  const outpes = num0(m.outrosEncargosMensais) * frac;
+  const compE = {rem, subalim, ajudas, subsidios, ss:tsu + fct, segpes, outpes};
+  const comp = {}; let total = 0;
+  CATS_PES.forEach(k => { comp[k] = Math.round((compE[k] || 0) * 100); total += comp[k]; });
+  const porCam = {};
+  diasEmp.forEach(d => { const c = camiaoDoMotoristaEm(m, d) || GERAL; porCam[c] = (porCam[c] || 0) + 1; });
+  return {m, ym, frac, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
+}
+
+function custosFixosCamiao(c, ym){
+  const dias = diasDoMes(ym), n = dias.filter(d => camiaoAtivoEm(c, d)).length;
+  if (!n) return null;
+  const f = n / dias.length;
+  const segcam = (num0(c.seguroAnual) + num0(c.iucAnual) + num0(c.inspecaoAnual) + num0(c.tacografoAnual)) / 12 * f;
+  const leasingAtivo = !c.leasingFim || ym <= c.leasingFim.slice(0, 7);
+  const leasing = ((leasingAtivo ? num0(c.leasingMensal) : 0) + num0(c.amortizacaoMensal)) * f;
+  const outfix = num0(c.outrosFixosMensais) * f;
+  return {dias:n, segcam:Math.round(segcam * 100), leasing:Math.round(leasing * 100), outfix:Math.round(outfix * 100)};
+}
+
+function blocoVazio(){
+  const b = {prov:0, nCargas:0, km:0, litros:0, diasViagem:0, diasDisp:0, custos:{}, motoristas:new Set(), totVar:0, totPes:0, totFix:0, totCustos:0, res:0};
+  CATS.forEach(k => { b.custos[k.id] = 0; });
+  return b;
+}
+function fecharBloco(b){
+  GRUPOS.forEach(gr => { b[gr.tot] = CATS.filter(c => c.grupo === gr.id).reduce((s, c) => s + b.custos[c.id], 0); });
+  b.totCustos = b.totVar + b.totPes + b.totFix; b.res = b.prov - b.totCustos; return b;
+}
+function somarBlocos(lista){
+  const t = blocoVazio();
+  lista.forEach(b => {
+    ['prov','nCargas','km','litros','diasViagem','diasDisp'].forEach(k => { t[k] += b[k]; });
+    CATS.forEach(k => { t.custos[k.id] += b.custos[k.id]; });
+    b.motoristas.forEach(n => t.motoristas.add(n));
+  });
+  return fecharBloco(t);
+}
+const cacheMes = new Map(), cachePessoal = new Map();
+function invalidar(){ cacheMes.clear(); cachePessoal.clear(); }
+function pessoalMes(ym){
+  if (!cachePessoal.has(ym)) cachePessoal.set(ym, motoristasOrdenados().map(m => custoMotorista(m, ym)).filter(Boolean));
+  return cachePessoal.get(ym);
+}
+function calcularMes(ym){
+  if (cacheMes.has(ym)) return cacheMes.get(ym);
+  const r = {}; const g = id => r[id] || (r[id] = blocoVazio());
+  store.camioes.forEach(c => {
+    const fx = custosFixosCamiao(c, ym); if (!fx) return;
+    const b = g(c.id); b.diasDisp = fx.dias; b.custos.segcam += fx.segcam; b.custos.leasing += fx.leasing; b.custos.outfix += fx.outfix;
+  });
+  store.cargas.forEach(x => {
+    if ((x.dataSaida || '').slice(0, 7) !== ym) return;
+    const b = g(x.camiaoId || GERAL); b.prov += cent(x.valor); b.nCargas++; b.km += (+x.km || 0);
+    const n = nomeMotoristaCarga(x); if (n) b.motoristas.add(n);
+  });
+  store.despesas.forEach(d => {
+    const t = tipoPorId(d.tipo);
+    alocar(d).forEach(a => {
+      if (a.ym !== ym) return;
+      const b = g(d.camiaoId || GERAL); b.custos[t.cat] += a.c;
+      if (t.id === 'gasoleo' && !d.diluir) b.litros += (+d.litros || 0);
+    });
+  });
+  pessoalMes(ym).forEach(cm => {
+    const ids = Object.keys(cm.porCam);
+    CATS_PES.forEach(k => {
+      let resto = cm.comp[k];
+      ids.forEach((id, i) => {
+        const parte = i === ids.length - 1 ? resto : Math.round(cm.comp[k] * cm.porCam[id] / cm.diasEmp);
+        resto -= parte; g(id).custos[k] += parte;
+      });
+    });
+    ids.forEach(id => g(id).motoristas.add(cm.m.nome));
+  });
+  Object.keys(r).forEach(id => { if (id !== GERAL) r[id].diasViagem = diasViagem(x => x.camiaoId === id, ym); });
+  Object.values(r).forEach(fecharBloco);
+  cacheMes.set(ym, r);
+  return r;
+}
+function calcularAno(ano){
+  const meses = Array.from({length:12}, (_, i) => calcularMes(`${ano}-${pad2(i + 1)}`));
+  const r = {};
+  meses.forEach(mr => Object.entries(mr).forEach(([id, b]) => { (r[id] = r[id] || []).push(b); }));
+  const out = {}; Object.entries(r).forEach(([id, l]) => { out[id] = somarBlocos(l); });
+  return {porId:out, meses};
+}
+function colunasDe(r){
+  const ids = camioesOrdenados().filter(c => r[c.id]).map(c => c.id);
+  Object.keys(r).forEach(id => { if (id !== GERAL && !ids.includes(id)) ids.push(id); });
+  if (r[GERAL] && (r[GERAL].prov || r[GERAL].totCustos)) ids.push(GERAL);
+  return ids;
+}
+// Linhas do mapa de resultados (usadas no ecrã e nas folhas de cálculo)
+function linhasResultado(){
+  const L = [
+    {rot:'Nº de cargas',              v:b => b.nCargas, t:'int', soma:true},
+    {rot:'Km percorridos',            v:b => b.km, t:'int', soma:true},
+    {rot:'Dias em viagem',            v:b => b.diasViagem, t:'int', soma:true},
+    {rot:'Ocupação (dias em viagem)', v:b => b.diasDisp ? b.diasViagem / b.diasDisp : null, t:'pct'},
+    {rot:'Proveitos (fretes)',        v:b => b.prov / 100, t:'eur', cls:'sub', soma:true}
+  ];
+  GRUPOS.forEach(gr => {
+    L.push({rot:gr.nome, grupo:true});
+    CATS.filter(c => c.grupo === gr.id).forEach(c => L.push({rot:c.nome, v:b => b.custos[c.id] / 100, t:'eur', cls:'custo', soma:true, cat:true}));
+    L.push({rot:'Total ' + gr.nome.charAt(0).toLowerCase() + gr.nome.slice(1), v:b => b[gr.tot] / 100, t:'eur', cls:'sub', soma:true});
+    if (gr.id === 'var') L.push({rot:'Margem de contribuição', v:b => (b.prov - b.totVar) / 100, t:'eur', cls:'sub', soma:true, sinal:true});
+  });
+  L.push(
+    {rot:'Total de custos',             v:b => b.totCustos / 100, t:'eur', cls:'sub', soma:true},
+    {rot:'Resultado',                   v:b => b.res / 100, t:'eur', cls:'destaque', soma:true, sinal:true},
+    {rot:'Margem',                      v:b => b.prov ? b.res / b.prov : null, t:'pct', sinal:true},
+    {rot:'Proveito por km',             v:b => b.km ? b.prov / 100 / b.km : null, t:'eur'},
+    {rot:'Custo por km',                v:b => b.km ? b.totCustos / 100 / b.km : null, t:'eur'},
+    {rot:'Custo variável por km',       v:b => b.km ? b.totVar / 100 / b.km : null, t:'eur'},
+    {rot:'Proveito por dia em viagem',  v:b => b.diasViagem ? b.prov / 100 / b.diasViagem : null, t:'eur'},
+    {rot:'Consumo (L/100 km)',          v:b => (b.km && b.litros) ? b.litros / b.km * 100 : null, t:'dec'}
+  );
+  return L;
+}
+const clsSinal = v => v > 0.004 ? 'pos' : (v < -0.004 ? 'neg' : '');
+
+/* ---------- Análise ---------- */
+function pontosAtencao(ym){
+  const P = params(), r = calcularMes(ym), ids = colunasDe(r).filter(id => id !== GERAL), d = P.alertaDesvio / 100, out = [];
+  const comKm = ids.filter(id => r[id].km > 0), comLit = comKm.filter(id => r[id].litros > 0);
+  const kmT = comKm.reduce((s, id) => s + r[id].km, 0), cT = comKm.reduce((s, id) => s + r[id].totCustos, 0);
+  const mCkm = kmT ? cT / 100 / kmT : null;
+  const kmL = comLit.reduce((s, id) => s + r[id].km, 0), lT = comLit.reduce((s, id) => s + r[id].litros, 0);
+  const mCons = kmL ? lT / kmL * 100 : null;
+  ids.forEach(id => {
+    const b = r[id], nm = nomeCamiao(id);
+    if (b.nCargas === 0 && b.totCustos > 0) out.push({n:'alerta', t:`${nm} não fez cargas e teve ${fmtC(b.totCustos)} de custos.`});
+    else if (b.res < 0) out.push({n:'alerta', t:`${nm} teve prejuízo de ${fmtC(-b.res)} (proveitos ${fmtC(b.prov)}, custos ${fmtC(b.totCustos)}).`});
+    if (mCkm && b.km > 0 && comKm.length > 1){ const ck = b.totCustos / 100 / b.km; if (ck > mCkm * (1 + d)) out.push({n:'aviso', t:`${nm}: custo por km de ${fmtEur(ck)}, ${fmtPct.format(ck / mCkm - 1)} acima da média da frota (${fmtEur(mCkm)}).`}); }
+    if (mCons && b.litros > 0 && comLit.length > 1){ const c = b.litros / b.km * 100; if (c > mCons * (1 + d)) out.push({n:'aviso', t:`${nm}: consumo de ${fmtDec.format(c)} L/100 km, acima da média da frota (${fmtDec.format(mCons)} L/100 km).`}); }
+    if (b.diasDisp > 0 && b.diasViagem / b.diasDisp < 0.5) out.push({n:'aviso', t:`${nm} esteve em viagem ${b.diasViagem} de ${b.diasDisp} dias (${fmtPct.format(b.diasViagem / b.diasDisp)}).`});
+  });
+  if (r[GERAL] && r[GERAL].totPes > 0) out.push({n:'aviso', t:`${fmtC(r[GERAL].totPes)} de custos com pessoal não têm camião atribuído e ficaram em Estrutura. Verifique a atribuição na ficha do motorista.`});
+  const cm = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym);
+  const semKm = cm.filter(g => !g.km).length, semReg = cm.filter(g => !g.dataRegresso).length, semMot = cm.filter(g => !g.motoristaId).length;
+  if (semKm) out.push({n:'info', t:`${semKm} carga(s) sem km registados: não entram nos indicadores por km.`});
+  if (semReg) out.push({n:'info', t:`${semReg} carga(s) sem data de regresso: os dias fora e as ajudas de custo por dia podem estar abaixo do real.`});
+  if (semMot && store.motoristas.length) out.push({n:'info', t:`${semMot} carga(s) sem motorista indicado: não contam para os dias fora de ninguém.`});
+  const tM = somarBlocos(Object.values(r)), tA = somarBlocos(Object.values(calcularMes(addMes(ym, -1))));
+  if (tA.prov || tA.totCustos){ const dlt = tM.res - tA.res; out.push({n:'info', t:`O resultado da frota ${dlt >= 0 ? 'subiu' : 'desceu'} ${fmtC(Math.abs(dlt))} face a ${nomeMesAno(addMes(ym, -1))}.`}); }
+  if (tM.totCustos > 0) out.push({n:'info', t:`Peso de cada grupo nos custos: variáveis ${fmtPct.format(tM.totVar / tM.totCustos)}, pessoal ${fmtPct.format(tM.totPes / tM.totCustos)}, fixos ${fmtPct.format(tM.totFix / tM.totCustos)}.`});
+  if (!out.some(x => x.n === 'alerta' || x.n === 'aviso')) out.unshift({n:'ok', t:'Sem alertas neste mês.'});
+  return out;
+}
+function agregarCargas(filtro, chave){
+  const m = new Map();
+  store.cargas.filter(filtro).forEach(g => {
+    const k = chave(g) || '(sem indicação)';
+    const a = m.get(k) || {k, n:0, prov:0, km:0, dias:0, nd:0};
+    a.n++; a.prov += cent(g.valor); a.km += (+g.km || 0);
+    const dd = diasEntre(g.dataSaida, g.dataRegresso); if (dd != null && dd >= 0){ a.dias += dd + 1; a.nd++; }
+    m.set(k, a);
+  });
+  return [...m.values()].sort((x, y) => y.prov - x.prov);
+}
+function validades(tipo){
+  const P = params(), h = hoje(), lim = addDias(h, P.avisoValidadeDias), out = [];
+  if (tipo === 'motoristas'){
+    store.motoristas.filter(m => !m.dataSaida || m.dataSaida >= h).forEach(m =>
+      [['validadeCarta','Carta de condução'],['validadeCAM','CAM'],['validadeCartaoTacografo','Cartão de condutor']].forEach(([k, n]) => { if (m[k] && m[k] <= lim) out.push({quem:esc(m.nome), doc:n, data:m[k]}); }));
+  } else {
+    store.camioes.filter(c => !c.dataFim || c.dataFim >= h).forEach(c =>
+      [['seguroValidade','Seguro'],['proximaInspecao','Inspeção periódica'],['validadeTacografo','Verificação do tacógrafo']].forEach(([k, n]) => { if (c[k] && c[k] <= lim) out.push({quem:placaHtml(c.id), doc:n, data:c[k]}); }));
+  }
+  return out.sort((a, b) => a.data.localeCompare(b.data));
+}
+
+/* ---------- Filtros ---------- */
+function anosDisponiveis(){
+  const a = new Set([new Date().getFullYear()]);
+  store.cargas.forEach(g => { if (g.dataSaida) a.add(+g.dataSaida.slice(0, 4)); });
+  store.despesas.forEach(d => { if (d.data){ const y = +d.data.slice(0, 4); a.add(y); if (d.diluir && d.data.slice(5, 7) !== '01') a.add(y + 1); } });
+  store.mensal.forEach(x => { if (x.ym) a.add(+x.ym.slice(0, 4)); });
+  return [...a].filter(Boolean).sort((x, y) => y - x);
+}
+function preencherAnos(sel){
+  const atual = sel.value || String(new Date().getFullYear());
+  sel.innerHTML = anosDisponiveis().map(a => `<option>${a}</option>`).join('');
+  sel.value = [...sel.options].some(o => o.value === atual) ? atual : sel.options[0].value;
+}
+function preencherSelCamiao(sel, {todos=false, geral=false, soAtivos=false, vazio=null, manter} = {}){
+  const v = manter !== undefined ? manter : sel.value;
+  let h = todos ? '<option value="">Todos os camiões</option>' : '';
+  if (vazio) h += `<option value="">${esc(vazio)}</option>`;
+  camioesOrdenados().filter(c => !soAtivos || c.ativo !== false || c.id === v).forEach(c => {
+    const mt = motoristaAtualTxt(c);
+    h += `<option value="${esc(c.id)}">${esc(c.matricula)}${mt ? ' (' + esc(mt) + ')' : ''}${c.ativo === false ? ' [inativo]' : ''}</option>`;
+  });
+  if (geral) h += `<option value="${GERAL}">Estrutura (não imputado a camião)</option>`;
+  sel.innerHTML = h;
+  if ([...sel.options].some(o => o.value === v)) sel.value = v;
+}
+function preencherSelMotorista(sel, manter){
+  const h = hoje();
+  sel.innerHTML = '<option value="">Sem motorista indicado</option>' + motoristasOrdenados()
+    .filter(m => !m.dataSaida || m.dataSaida >= addDias(h, -400) || m.id === manter)
+    .map(m => `<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('');
+  sel.value = [...sel.options].some(o => o.value === manter) ? manter : '';
+}
+function preencherFiltros(){
+  ['#r-ano','#c-ano','#d-ano','#p-ano'].forEach(s => preencherAnos($(s)));
+  preencherSelCamiao($('#c-cam'), {todos:true});
+  preencherSelCamiao($('#d-cam'), {todos:true, geral:true});
+  preencherSelCamiao($('#f-cam'), {todos:true});
+  const fp = $('#f-pais'), vp = fp.value;
+  const paises = [...new Set(store.cargas.map(g => g.destinoPais).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  fp.innerHTML = '<option value="">Todos</option>' + paises.map(p => `<option>${esc(p)}</option>`).join('');
+  if ([...fp.options].some(o => o.value === vp)) fp.value = vp;
+  $('#dl-clientes').innerHTML = [...new Set(store.cargas.map(g => g.cliente).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
+  $('#dl-fornecedores').innerHTML = [...new Set(store.despesas.map(d => d.fornecedor).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
+}
+function noPeriodo(data, ano, mes){
+  if (!data) return false;
+  if (ano && data.slice(0, 4) !== ano) return false;
+  if (mes && data.slice(5, 7) !== mes) return false;
+  return true;
+}
+
+/* ---------- Render: Resultados ---------- */
+function cabCamiao(id, b){
+  const nomes = b ? [...b.motoristas].join(', ') : '';
+  return `${placaHtml(id)}${nomes ? `<span class="motorista-sub">${esc(nomes)}</span>` : ''}`;
+}
+function tabelaAgregado(lista, rotulo){
+  if (!lista.length) return '<tbody><tr><td class="vazio">Sem cargas neste mês.</td></tr></tbody>';
+  return `<thead><tr><th>${rotulo}</th><th class="n">Cargas</th><th class="n">Proveitos</th><th class="n">Km</th><th class="n">€/km</th><th class="n">Dias médios</th></tr></thead><tbody>` +
+    lista.map(a => `<tr><td>${esc(a.k)}</td><td class="n">${a.n}</td><td class="n">${fmtC(a.prov)}</td><td class="n">${a.km ? fmtInt.format(a.km) : ''}</td><td class="n">${a.km ? fmtEur(a.prov / 100 / a.km) : '—'}</td><td class="n">${a.nd ? fmtDec.format(a.dias / a.nd) : '—'}</td></tr>`).join('') + '</tbody>';
+}
+function renderResultados(){
+  const ano = $('#r-ano').value, mes = $('#r-mes').value, ym = `${ano}-${mes}`;
+  const r = calcularMes(ym), ids = colunasDe(r), blocos = ids.map(id => r[id]), tot = somarBlocos(blocos);
+  const nm = nomeMesAno(ym);
+  $('#r-print-tit').textContent = `Relatório de ${nm}`;
+  $('#r-tit-mes').textContent = `Detalhe de ${nm}`;
+  const margem = tot.prov ? tot.res / tot.prov : null, ocup = tot.diasDisp ? tot.diasViagem / tot.diasDisp : null;
+  $('#r-kpis').innerHTML = `
+    <div class="kpi"><span>Proveitos da frota</span><strong>${fmtC(tot.prov)}</strong></div>
+    <div class="kpi"><span>Custos da frota</span><strong>${fmtC(tot.totCustos)}</strong></div>
+    <div class="kpi ${tot.res >= 0 ? 'res-pos' : 'res-neg'}"><span>Resultado</span><strong class="${clsSinal(tot.res)}">${fmtC(tot.res)}</strong></div>
+    <div class="kpi"><span>Margem</span><strong class="${clsSinal(tot.res)}">${fmtVal(margem, 'pct')}</strong></div>
+    <div class="kpi"><span>Ocupação da frota</span><strong>${fmtVal(ocup, 'pct')}</strong></div>`;
+
+  const tab = $('#r-tabela');
+  if (!ids.length){
+    tab.innerHTML = '<tbody><tr><td class="vazio">Adicione os camiões no separador «Frota e dados» para ver os resultados.</td></tr></tbody>';
+  } else {
+    const todos = [...blocos, tot];
+    const corpo = linhasResultado().map(L => {
+      if (L.grupo) return `<tr class="grupo"><td colspan="${todos.length + 1}">${esc(L.rot)}</td></tr>`;
+      if (L.cat && todos.every(b => !L.v(b))) return '';
+      const cel = todos.map(b => { const v = L.v(b); return `<td class="n ${L.sinal && v != null ? clsSinal(v) : ''}">${fmtVal(v, L.t)}</td>`; }).join('');
+      return `<tr class="${L.cls || ''}"><td>${esc(L.rot)}</td>${cel}</tr>`;
+    }).join('');
+    tab.innerHTML = `<thead><tr><th>${esc(nm)}</th>${ids.map(id => `<th class="n">${cabCamiao(id, r[id])}</th>`).join('')}<th class="n">Total frota</th></tr></thead><tbody>${corpo}</tbody>`;
+  }
+
+  $('#r-pontos').innerHTML = pontosAtencao(ym).map(p => `<li class="${p.n}">${esc(p.t)}</li>`).join('');
+
+  const ymA = addMes(ym, -1), rA = calcularMes(ymA);
+  $('#r-tit-comp').textContent = `Comparação com ${nomeMesAno(ymA)}`;
+  const idsC = [...new Set([...colunasDe(rA), ...ids])];
+  $('#r-comp').innerHTML = !idsC.length ? '<tbody><tr><td class="vazio">Sem dados.</td></tr></tbody>' :
+    `<thead><tr><th>Camião</th><th class="n">${MESES_C[+ymA.slice(5) - 1]}</th><th class="n">${MESES_C[+mes - 1]}</th><th class="n">Variação</th></tr></thead><tbody>` +
+    idsC.map(id => { const a = rA[id] ? rA[id].res : 0, b = r[id] ? r[id].res : 0; return `<tr><td>${placaHtml(id)}</td><td class="n ${clsSinal(a)}">${fmtC(a)}</td><td class="n ${clsSinal(b)}">${fmtC(b)}</td><td class="n ${clsSinal(b - a)}">${b - a > 0 ? '+' : ''}${fmtC(b - a)}</td></tr>`; }).join('') +
+    `</tbody><tfoot><tr><td>Frota</td><td class="n">${fmtC(somarBlocos(Object.values(rA)).res)}</td><td class="n">${fmtC(tot.res)}</td><td class="n ${clsSinal(tot.res - somarBlocos(Object.values(rA)).res)}">${fmtC(tot.res - somarBlocos(Object.values(rA)).res)}</td></tr></tfoot>`;
+
+  const doMes = g => (g.dataSaida || '').slice(0, 7) === ym;
+  $('#r-destinos').innerHTML = tabelaAgregado(agregarCargas(doMes, g => g.destinoPais), 'País');
+  $('#r-clientes').innerHTML = tabelaAgregado(agregarCargas(doMes, g => g.cliente), 'Cliente');
+  renderAnual();
+}
+function renderAnual(){
+  const ano = $('#r-ano').value, ind = $('#r-ind').value;
+  const nomesInd = {res:'Resultado', prov:'Proveitos', custos:'Custos totais', pes:'Custos com pessoal', ckm:'Custo por km', km:'Km percorridos'};
+  $('#r-tit-ano').textContent = `${nomesInd[ind]} por camião em ${ano}`;
+  const {porId, meses} = calcularAno(ano);
+  const ids = colunasDe(porId);
+  const ta = $('#r-anual');
+  if (!ids.length){ ta.innerHTML = '<tbody><tr><td class="vazio">Sem dados para este ano.</td></tr></tbody>'; return; }
+  const val = b => {
+    if (!b) return null;
+    switch (ind){ case 'prov': return b.prov / 100; case 'custos': return b.totCustos / 100; case 'pes': return b.totPes / 100; case 'km': return b.km; case 'ckm': return b.km ? b.totCustos / 100 / b.km : null; default: return b.res / 100; }
+  };
+  const t = ind === 'km' ? 'int' : 'eur', sinal = ind === 'res';
+  const cel = v => `<td class="n ${sinal && v != null ? clsSinal(v) : ''}">${v == null || v === 0 ? '—' : fmtVal(v, t)}</td>`;
+  const linhas = ids.map(id => `<tr><td>${placaHtml(id)}</td>${meses.map(m => cel(val(m[id]))).join('')}<td class="n"><strong>${fmtVal(val(porId[id]), t)}</strong></td></tr>`).join('');
+  const totMes = meses.map(m => somarBlocos(Object.values(m))), totAno = somarBlocos(Object.values(porId));
+  ta.innerHTML = `<thead><tr><th>Camião</th>${MESES_C.map(m => `<th class="n">${m}</th>`).join('')}<th class="n">Ano</th></tr></thead><tbody>${linhas}</tbody><tfoot><tr><td>Total frota</td>${totMes.map(b => cel(val(b))).join('')}<td class="n">${fmtVal(val(totAno), t)}</td></tr></tfoot>`;
+}
+
+/* ---------- Render: Cargas ---------- */
+function renderCargas(){
+  const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value;
+  const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam))
+    .sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || ''));
+  const tb = $('#c-tabela tbody');
+  if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há cargas neste período. Registe uma com «Nova carga».</td></tr>'; $('#c-tabela tfoot').innerHTML = ''; return; }
+  tb.innerHTML = lista.map(g => { const mt = nomeMotoristaCarga(g); return `<tr>
+    <td>${fmtData(g.dataSaida)}</td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td><td>${esc(g.cliente)}</td><td>${esc(destinoTxt(g))}</td>
+    <td>${esc(g.mercadoria)}</td><td class="n">${g.km ? fmtInt.format(g.km) : ''}</td><td class="n">${fmtEur(g.valor)}</td>
+    <td>${fmtData(g.dataRegresso)}</td><td>${esc(g.fatura)}</td>
+    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`; }).join('');
+  const km = lista.reduce((s, g) => s + (+g.km || 0), 0), val = lista.reduce((s, g) => s + cent(g.valor), 0);
+  $('#c-tabela tfoot').innerHTML = `<tr><td colspan="5">${lista.length} carga${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtInt.format(km)}</td><td class="n">${fmtC(val)}</td><td colspan="3"></td></tr>`;
+}
+
+/* ---------- Render: Despesas ---------- */
+function renderDespesas(){
+  const ano = $('#d-ano').value, mes = $('#d-mes').value, cam = $('#d-cam').value, tipo = $('#d-tipo').value;
+  const lista = store.despesas.filter(d => noPeriodo(d.data, ano, mes) && (!cam || (d.camiaoId || GERAL) === cam) && (!tipo || d.tipo === tipo))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  const tb = $('#d-tabela tbody');
+  if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há despesas neste período. Registe uma com «Nova despesa».</td></tr>'; $('#d-tabela tfoot').innerHTML = ''; return; }
+  tb.innerHTML = lista.map(d => {
+    const carga = d.cargaId ? store.cargas.find(g => g.id === d.cargaId) : null;
+    return `<tr>
+    <td>${fmtData(d.data)}</td><td>${placaHtml(d.camiaoId || GERAL)}</td><td>${esc(tipoPorId(d.tipo).nome)}</td><td>${esc(d.fornecedor)}</td><td>${esc(d.documento)}</td>
+    <td class="n">${d.litros ? fmtDec.format(d.litros) : ''}</td><td class="n">${fmtEur(d.valor)}</td>
+    <td>${d.diluir ? '<span class="etiq">12 meses</span>' : '<span class="etiq">No mês</span>'}</td>
+    <td>${carga ? esc(fmtData(carga.dataSaida) + ' ' + destinoTxt(carga)) : ''}</td>
+    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="editar-despesa" data-id="${esc(d.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-despesa" data-id="${esc(d.id)}">Apagar</button></td></tr>`;
+  }).join('');
+  const val = lista.reduce((s, d) => s + cent(d.valor), 0), lit = lista.reduce((s, d) => s + (+d.litros || 0), 0);
+  $('#d-tabela tfoot').innerHTML = `<tr><td colspan="5">${lista.length} despesa${lista.length === 1 ? '' : 's'}</td><td class="n">${lit ? fmtDec.format(lit) : ''}</td><td class="n">${fmtC(val)}</td><td colspan="3"></td></tr>`;
+}
+
+/* ---------- Render: Motoristas ---------- */
+function tabelaValidades(lista){
+  if (!lista.length) return '<tbody><tr><td class="vazio">Nenhum documento a expirar nos próximos dias.</td></tr></tbody>';
+  const h = hoje();
+  return '<thead><tr><th></th><th>Documento</th><th>Validade</th><th>Situação</th></tr></thead><tbody>' + lista.map(v => {
+    const dd = diasEntre(h, v.data);
+    return `<tr><td>${v.quem}</td><td>${esc(v.doc)}</td><td>${fmtData(v.data)}</td><td>${dd < 0 ? `<span class="etiq venc">Expirado há ${-dd} dias</span>` : `<span class="etiq prox">Expira em ${dd} dias</span>`}</td></tr>`;
+  }).join('') + '</tbody>';
+}
+function renderPessoal(){
+  const ym = `${$('#p-ano').value}-${$('#p-mes').value}`;
+  $('#p-tit').textContent = `Processamento de ${nomeMesAno(ym)}`;
+  const foco = document.activeElement && document.activeElement.dataset ? {mot:document.activeElement.dataset.mot, k:document.activeElement.dataset.k} : null;
+  const lista = pessoalMes(ym), tb = $('#p-tabela tbody');
+  if (!lista.length){
+    tb.innerHTML = `<tr><td colspan="14" class="vazio">${store.motoristas.length ? 'Nenhum motorista com contrato ativo neste mês.' : 'Ainda não há motoristas. Comece por «Adicionar motorista».'}</td></tr>`;
+    $('#p-tabela tfoot').innerHTML = ''; return;
+  }
+  const proc = id => store.mensal.find(x => x.id === `${ym}_${id}`) || {};
+  const inp = (id, k, v, ph, step) => `<input type="number" step="${step}" min="0" data-mot="${esc(id)}" data-k="${k}" value="${v == null || v === '' ? '' : esc(v)}" placeholder="${esc(ph)}" aria-label="${k}">`;
+  tb.innerHTML = lista.map(cm => {
+    const m = cm.m, p = proc(m.id), c = cm.comp;
+    const cams = Object.keys(cm.porCam).map(id => placaHtml(id)).join(' ');
+    return `<tr><td><strong>${esc(m.nome)}</strong>${cm.frac < 1 ? `<span class="motorista-sub">${cm.diasEmp} dias de contrato no mês</span>` : ''}</td><td>${cams}</td>
+      <td class="n">${inp(m.id, 'diasTrabalho', p.diasTrabalho, Math.round(cm.diasUteis * cm.frac), 1)}</td>
+      <td class="n">${inp(m.id, 'diasDeslocacao', p.diasDeslocacao, cm.autoDesl, 1)}</td>
+      <td class="n">${inp(m.id, 'extras', p.extras, '0', 0.01)}</td>
+      <td><input type="checkbox" data-mot="${esc(m.id)}" data-k="extrasSemTSU" ${p.extrasSemTSU ? 'checked' : ''} aria-label="Extras sem TSU"></td>
+      <td class="n">${inp(m.id, 'faltas', p.faltas, '0', 0.01)}</td>
+      <td class="n">${fmtC(c.rem)}</td><td class="n">${fmtC(c.subalim)}</td><td class="n">${fmtC(c.ajudas)}</td><td class="n">${fmtC(c.subsidios)}</td>
+      <td class="n">${fmtC(c.ss)}</td><td class="n">${fmtC(c.segpes + c.outpes)}</td><td class="n"><strong>${fmtC(cm.total)}</strong></td></tr>`;
+  }).join('');
+  const s = k => lista.reduce((a, cm) => a + cm.comp[k], 0);
+  $('#p-tabela tfoot').innerHTML = `<tr><td colspan="7">${lista.length} motorista${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtC(s('rem'))}</td><td class="n">${fmtC(s('subalim'))}</td><td class="n">${fmtC(s('ajudas'))}</td><td class="n">${fmtC(s('subsidios'))}</td><td class="n">${fmtC(s('ss'))}</td><td class="n">${fmtC(s('segpes') + s('outpes'))}</td><td class="n">${fmtC(lista.reduce((a, cm) => a + cm.total, 0))}</td></tr>`;
+  if (foco && foco.mot){ const el = $(`#p-tabela [data-mot="${CSS.escape(foco.mot)}"][data-k="${foco.k}"]`); if (el) el.focus(); }
+}
+function renderMotoristas(){
+  renderPessoal();
+  const h = hoje(), ymH = h.slice(0, 7), tb = $('#mot-tabela tbody'), lista = motoristasOrdenados();
+  if (!lista.length) tb.innerHTML = '<tr><td colspan="8" class="vazio">Ainda não há motoristas. Comece por «Adicionar motorista».</td></tr>';
+  else tb.innerHTML = lista.map(m => {
+    const cid = camiaoDoMotoristaEm(m, h), cm = custoMotorista(m, ymH), ativo = !m.dataSaida || m.dataSaida >= h;
+    return `<tr><td><strong>${esc(m.nome)}</strong>${m.categoria ? `<span class="motorista-sub">${esc(m.categoria)}</span>` : ''}</td>
+      <td>${cid ? placaHtml(cid) : '<span class="etiq">Sem camião</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${fmtData(m.dataAdmissao)}</td>
+      <td class="n">${fmtEur(m.salarioBase)}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
+      <td>${ativo ? '<span class="etiq ativo">Ativo</span>' : `<span class="etiq">Saiu em ${fmtData(m.dataSaida)}</span>`}</td>
+      <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-motorista" data-id="${esc(m.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-motorista" data-id="${esc(m.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-motorista" data-id="${esc(m.id)}">Apagar</button></td></tr>`;
+  }).join('');
+  $('#mot-validades').innerHTML = tabelaValidades(validades('motoristas'));
+}
+
+/* ---------- Render: Folha de cargas ---------- */
+function dadosFolha(){
+  const de = $('#f-de').value, ate = $('#f-ate').value, cam = $('#f-cam').value, pais = $('#f-pais').value;
+  const diretas = {};
+  store.despesas.forEach(d => { if (d.cargaId) diretas[d.cargaId] = (diretas[d.cargaId] || 0) + cent(d.valor); });
+  return store.cargas.filter(g => g.dataSaida && (!de || g.dataSaida >= de) && (!ate || g.dataSaida <= ate) && (!cam || g.camiaoId === cam) && (!pais || g.destinoPais === pais))
+    .sort((a, b) => (a.dataSaida || '').localeCompare(b.dataSaida || '') || nomeCamiao(a.camiaoId).localeCompare(nomeCamiao(b.camiaoId)))
+    .map(g => {
+      const v = cent(g.valor), dir = diretas[g.id] || 0, km = +g.km || 0, dd = diasEntre(g.dataSaida, g.dataRegresso);
+      return {g, v, dir, km, dias: dd != null && dd >= 0 ? dd + 1 : null, eurKm: km ? v / 100 / km : null, margem: v - dir};
+    });
+}
+function renderFolha(){
+  const de = $('#f-de').value, ate = $('#f-ate').value;
+  $('#f-print-tit').textContent = `Período: ${de ? fmtData(de) : 'início'} a ${ate ? fmtData(ate) : 'hoje'}${$('#f-cam').value ? ' · Camião ' + nomeCamiao($('#f-cam').value) : ''}${$('#f-pais').value ? ' · Destino ' + $('#f-pais').value : ''}`;
+  const linhas = dadosFolha(), tb = $('#f-tabela tbody');
+  if (!linhas.length){ tb.innerHTML = '<tr><td colspan="18" class="vazio">Não há cargas com estes filtros.</td></tr>'; $('#f-tabela tfoot').innerHTML = ''; return; }
+  tb.innerHTML = linhas.map(({g, v, dir, km, dias, eurKm, margem}) => `<tr>
+    <td>${fmtData(g.dataSaida)}</td><td>${fmtData(g.dataRegresso)}</td><td class="n">${dias == null ? '' : dias}</td>
+    <td>${placaHtml(g.camiaoId)}</td><td>${esc(nomeMotoristaCarga(g))}</td><td>${esc(g.cliente)}</td><td>${esc(g.origem)}</td><td>${esc(destinoTxt(g))}</td>
+    <td>${esc(g.mercadoria)}</td><td class="n">${g.pesoKg ? fmtInt.format(g.pesoKg) : ''}</td><td class="n">${km ? fmtInt.format(km) : ''}</td>
+    <td class="n">${fmtC(v)}</td><td class="n">${eurKm == null ? '' : fmtEur(eurKm)}</td>
+    <td class="n">${dir ? fmtC(dir) : ''}</td><td class="n ${dir ? clsSinal(margem) : ''}">${dir ? fmtC(margem) : ''}</td>
+    <td>${esc(g.fatura)}</td><td>${esc(g.cmr)}</td><td>${esc(g.obs)}</td></tr>`).join('');
+  const tv = linhas.reduce((s, l) => s + l.v, 0), tk = linhas.reduce((s, l) => s + l.km, 0), td = linhas.reduce((s, l) => s + l.dir, 0);
+  const tm = linhas.reduce((s, l) => s + (l.dir ? l.margem : 0), 0), tp = linhas.reduce((s, l) => s + (+l.g.pesoKg || 0), 0);
+  $('#f-tabela tfoot').innerHTML = `<tr><td colspan="9">${linhas.length} carga${linhas.length === 1 ? '' : 's'}</td><td class="n">${tp ? fmtInt.format(tp) : ''}</td><td class="n">${fmtInt.format(tk)}</td><td class="n">${fmtC(tv)}</td><td class="n">${tk ? fmtEur(tv / 100 / tk) : ''}</td><td class="n">${td ? fmtC(td) : ''}</td><td class="n ${td ? clsSinal(tm) : ''}">${td ? fmtC(tm) : ''}</td><td colspan="3"></td></tr>`;
+}
+
+/* ---------- Render: Frota ---------- */
+function fixosMensaisTeoricos(c){
+  const leasing = (!c.leasingFim || hoje().slice(0, 7) <= c.leasingFim.slice(0, 7)) ? num0(c.leasingMensal) : 0;
+  return (num0(c.seguroAnual) + num0(c.iucAnual) + num0(c.inspecaoAnual) + num0(c.tacografoAnual)) / 12 + leasing + num0(c.amortizacaoMensal) + num0(c.outrosFixosMensais);
+}
+function renderFrota(){
+  const tb = $('#cam-tabela tbody'), lista = camioesOrdenados();
+  if (!lista.length) tb.innerHTML = '<tr><td colspan="7" class="vazio">Ainda não há camiões. Comece por «Adicionar camião».</td></tr>';
+  else tb.innerHTML = lista.map(c => {
+    const n = store.cargas.filter(g => g.camiaoId === c.id).length;
+    return `<tr><td>${placaHtml(c.id)}</td><td>${esc(c.marcaModelo)}${c.ano ? ` (${c.ano})` : ''}</td><td>${esc(motoristaAtualTxt(c)) || '—'}</td>
+      <td class="n">${fmtEur(fixosMensaisTeoricos(c))}</td>
+      <td>${c.ativo === false ? `<span class="etiq">Inativo${c.dataFim ? ' desde ' + fmtData(c.dataFim) : ''}</span>` : '<span class="etiq ativo">Ativo</span>'}</td><td class="n">${n}</td>
+      <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-camiao" data-id="${esc(c.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-camiao" data-id="${esc(c.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-camiao" data-id="${esc(c.id)}">Apagar</button></td></tr>`;
+  }).join('');
+  $('#cam-validades').innerHTML = tabelaValidades(validades('camioes'));
+  const f = $('#f-param');
+  if (!f.contains(document.activeElement)){ const p = params(); Object.keys(PARAM_DEF).forEach(k => { if (f.elements[k]) f.elements[k].value = p[k] == null ? '' : p[k]; }); }
+}
+
+let agendado = false;
+function renderTudo(){
+  invalidar();
+  if (agendado) return; agendado = true;
+  requestAnimationFrame(() => {
+    agendado = false;
+    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderFolha(); renderFrota();
+  });
+}
+
+/* ---------- Formulários ---------- */
+function preencherForm(f, o){
+  [...f.elements].forEach(el => {
+    if (!el.name) return;
+    if (el.type === 'checkbox') el.checked = !!o[el.name];
+    else el.value = o[el.name] ?? '';
+  });
+}
+function abrirDialogo(id){ const d = $(id); if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', ''); }
+function fecharDialogo(d){ if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); }
+const txt = el => el.value.trim();
+
+// ---- Carga
+function sugerirMotoristaCarga(){
+  const f = $('#f-carga'), m = motoristaDoCamiaoEm(f.elements.camiaoId.value, f.elements.dataSaida.value || hoje());
+  if (m) f.elements.motoristaId.value = m.id;
+}
+function abrirCarga(id){
+  if (!store.camioes.length){ toast('Adicione primeiro um camião no separador «Frota e dados».', 'erro'); abrirTab('frota'); return; }
+  const f = $('#f-carga'); f.reset(); $('#carga-erro').textContent = '';
+  const g = id ? store.cargas.find(x => x.id === id) : null;
+  f.dataset.id = g ? g.id : '';
+  $('#dlg-carga-tit').textContent = g ? 'Editar carga' : 'Nova carga';
+  preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, manter: g ? g.camiaoId : ($('#c-cam').value || '')});
+  preencherSelMotorista(f.elements.motoristaId, g ? (g.motoristaId || '') : '');
+  if (g){ preencherForm(f, {...g, motoristaId:g.motoristaId || ''}); }
+  else { f.elements.dataSaida.value = hoje(); f.elements.origem.value = 'Portugal'; sugerirMotoristaCarga(); }
+  abrirDialogo('#dlg-carga');
+}
+$('#f-carga').elements.camiaoId.addEventListener('change', sugerirMotoristaCarga);
+$('#f-carga').elements.dataSaida.addEventListener('change', sugerirMotoristaCarga);
+$('#f-carga').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, e = f.elements, erro = $('#carga-erro');
+  const mot = motoristaPorId(e.motoristaId.value), anterior = f.dataset.id ? (store.cargas.find(x => x.id === f.dataset.id) || {}) : {};
+  const d = {
+    camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : (anterior.motoristaId ? '' : (anterior.motorista || '')),
+    dataSaida:e.dataSaida.value, dataRegresso:e.dataRegresso.value,
+    cliente:txt(e.cliente), origem:txt(e.origem), destinoPais:txt(e.destinoPais), destinoCidade:txt(e.destinoCidade),
+    mercadoria:txt(e.mercadoria), pesoKg:numOuNull(e.pesoKg.value), km:numOuNull(e.km.value),
+    valor:r2(parseFloat(e.valor.value)), fatura:txt(e.fatura), cmr:txt(e.cmr), obs:txt(e.obs)
+  };
+  if (!d.camiaoId) return erro.textContent = 'Escolha o camião.';
+  if (!d.dataSaida) return erro.textContent = 'Indique a data de saída.';
+  if (!d.cliente) return erro.textContent = 'Indique o cliente.';
+  if (!d.destinoPais) return erro.textContent = 'Indique o país de destino.';
+  if (!isFinite(d.valor)) return erro.textContent = 'Indique o valor do frete.';
+  if (d.dataRegresso && d.dataRegresso < d.dataSaida) return erro.textContent = 'A data de regresso é anterior à data de saída.';
+  if (d.dataRegresso && diasEntre(d.dataSaida, d.dataRegresso) > 60) return erro.textContent = 'A viagem tem mais de 60 dias. Confirme as datas.';
+  if ((d.km != null && (!isFinite(d.km) || d.km < 0)) || (d.pesoKg != null && (!isFinite(d.pesoKg) || d.pesoKg < 0))) return erro.textContent = 'Km e peso têm de ser números positivos.';
+  const id = f.dataset.id;
+  gravar(id ? DB.update('cargas', id, d) : DB.add('cargas', d), 'Carga guardada.');
+  fecharDialogo($('#dlg-carga'));
+});
+
+// ---- Despesa
+function preencherTiposSelect(sel, comTodos, incluirId){
+  let h = comTodos ? '<option value="">Todos</option>' : '';
+  CATS.forEach(cat => {
+    const ts = TIPOS.filter(t => t.cat === cat.id && (!t.oculto || comTodos || t.id === incluirId));
+    if (ts.length) h += `<optgroup label="${esc(cat.nome)}">` + ts.map(t => `<option value="${t.id}">${esc(t.nome)}</option>`).join('') + '</optgroup>';
+  });
+  sel.innerHTML = h;
+}
+function atualizarCamposDespesa(){
+  const f = $('#f-despesa'), t = tipoPorId(f.elements.tipo.value);
+  $('#wrap-litros').hidden = !t.litros;
+  const cam = f.elements.camiaoId.value, sel = f.elements.cargaId, atual = sel.value || f.dataset.cargaId || '';
+  $('#wrap-cargaId').hidden = !cam || cam === GERAL;
+  const cargas = store.cargas.filter(g => g.camiaoId === cam).sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || '')).slice(0, 80);
+  sel.innerHTML = '<option value="">Nenhuma</option>' + cargas.map(g => `<option value="${esc(g.id)}">${fmtData(g.dataSaida)} · ${esc(destinoTxt(g))} · ${esc(g.cliente)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
+}
+function abrirDespesa(id){
+  const f = $('#f-despesa'); f.reset(); $('#despesa-erro').textContent = '';
+  const d = id ? store.despesas.find(x => x.id === id) : null;
+  f.dataset.id = d ? d.id : ''; f.dataset.cargaId = d ? (d.cargaId || '') : '';
+  $('#dlg-despesa-tit').textContent = d ? 'Editar despesa' : 'Nova despesa';
+  preencherTiposSelect(f.elements.tipo, false, d ? d.tipo : null);
+  preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, geral:true, manter: d ? (d.camiaoId || GERAL) : ($('#d-cam').value || '')});
+  if (d) preencherForm(f, {...d, camiaoId:d.camiaoId || GERAL, cargaId:''});
+  else { f.elements.data.value = hoje(); f.elements.tipo.value = 'gasoleo'; f.elements.diluir.checked = false; }
+  atualizarCamposDespesa();
+  abrirDialogo('#dlg-despesa');
+}
+$('#f-despesa').elements.tipo.addEventListener('change', () => {
+  const f = $('#f-despesa'); f.elements.diluir.checked = !!tipoPorId(f.elements.tipo.value).anual; atualizarCamposDespesa();
+});
+$('#f-despesa').elements.camiaoId.addEventListener('change', () => { $('#f-despesa').dataset.cargaId = ''; atualizarCamposDespesa(); });
+$('#f-despesa').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, e = f.elements, erro = $('#despesa-erro'), t = tipoPorId(e.tipo.value);
+  const d = {
+    camiaoId:e.camiaoId.value, data:e.data.value, tipo:t.id, valor:r2(parseFloat(e.valor.value)),
+    litros: t.litros ? numOuNull(e.litros.value) : null, diluir:e.diluir.checked,
+    cargaId: (e.camiaoId.value !== GERAL && e.cargaId.value) ? e.cargaId.value : null,
+    fornecedor:txt(e.fornecedor), documento:txt(e.documento), obs:txt(e.obs)
+  };
+  if (!d.camiaoId) return erro.textContent = 'Escolha o camião ou «Estrutura».';
+  if (!d.data) return erro.textContent = 'Indique a data do documento.';
+  if (!isFinite(d.valor) || d.valor === 0) return erro.textContent = 'Indique o valor da despesa.';
+  if (d.litros != null && (!isFinite(d.litros) || d.litros < 0)) return erro.textContent = 'Os litros têm de ser um número positivo.';
+  const id = f.dataset.id;
+  gravar(id ? DB.update('despesas', id, d) : DB.add('despesas', d), 'Despesa guardada.');
+  fecharDialogo($('#dlg-despesa'));
+});
+
+// ---- Camião
+const CAMPOS_NUM_CAMIAO = ['ano','seguroAnual','iucAnual','inspecaoAnual','tacografoAnual','leasingMensal','amortizacaoMensal','outrosFixosMensais'];
+const CAMPOS_TXT_CAMIAO = ['marcaModelo','dataInicio','dataFim','seguroValidade','proximaInspecao','validadeTacografo','leasingFim','outrosFixosDesc','obs'];
+function lerCamiao(f){
+  const e = f.elements, d = {matricula:formatarMatricula(e.matricula.value), ativo:e.ativo.checked};
+  CAMPOS_NUM_CAMIAO.forEach(k => { d[k] = numOuNull(e[k].value); });
+  CAMPOS_TXT_CAMIAO.forEach(k => { d[k] = txt(e[k]); });
+  return d;
+}
+function formatarMatricula(v){
+  const s = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return s.length === 6 ? `${s.slice(0,2)}-${s.slice(2,4)}-${s.slice(4,6)}` : String(v || '').toUpperCase().trim();
+}
+function atualizarPreviewCamiao(){
+  const c = lerCamiao($('#f-camiao'));
+  const anual = num0(c.seguroAnual) + num0(c.iucAnual) + num0(c.inspecaoAnual) + num0(c.tacografoAnual);
+  const mens = num0(c.leasingMensal) + num0(c.amortizacaoMensal) + num0(c.outrosFixosMensais);
+  $('#cam-preview').innerHTML = `<table><tr><td>Custos anuais repartidos (${fmtEur(anual)} ÷ 12)</td><td class="n">${fmtEur(anual / 12)}</td></tr>
+    <tr><td>Leasing, amortização e outros</td><td class="n">${fmtEur(mens)}</td></tr>
+    <tr class="tot"><td>Custos fixos por mês, antes de qualquer viagem</td><td class="n">${fmtEur(anual / 12 + mens)}</td></tr>
+    <tr><td>Custos fixos por ano</td><td class="n">${fmtEur(anual + mens * 12)}</td></tr></table>`;
+}
+function abrirCamiao(id){
+  const f = $('#f-camiao'); f.reset(); $('#camiao-erro').textContent = '';
+  const c = id ? camiaoPorId(id) : null;
+  f.dataset.id = c ? c.id : '';
+  $('#dlg-camiao-tit').textContent = c ? `Ficha do camião ${c.matricula}` : 'Adicionar camião';
+  if (c) preencherForm(f, {...c, ativo: c.ativo !== false}); else { f.elements.ativo.checked = true; f.elements.dataInicio.value = hoje(); }
+  const mt = c ? motoristaAtualTxt(c) : '';
+  $('#cam-motorista-info').textContent = c ? (mt ? `Motorista atual: ${mt}. A atribuição faz-se na ficha do motorista.` : 'Sem motorista atribuído. A atribuição faz-se na ficha do motorista.') : 'Depois de criar o camião, atribua-o a um motorista na ficha do motorista.';
+  atualizarPreviewCamiao();
+  abrirDialogo('#dlg-camiao');
+}
+$('#f-camiao').addEventListener('input', atualizarPreviewCamiao);
+$('#f-camiao').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, erro = $('#camiao-erro'), id = f.dataset.id, d = lerCamiao(f);
+  if (!d.matricula) return erro.textContent = 'Indique a matrícula.';
+  if (store.camioes.some(c => c.id !== id && c.matricula === d.matricula)) return erro.textContent = 'Já existe um camião com esta matrícula.';
+  if (!d.ativo && !d.dataFim) return erro.textContent = 'Indique a data de saída da frota para desativar o camião.';
+  if (d.dataInicio && d.dataFim && d.dataFim < d.dataInicio) return erro.textContent = 'A saída da frota é anterior à entrada.';
+  if (CAMPOS_NUM_CAMIAO.some(k => d[k] != null && (!isFinite(d[k]) || d[k] < 0))) return erro.textContent = 'Os valores têm de ser números positivos.';
+  gravar(id ? DB.update('camioes', id, d) : DB.add('camioes', d), 'Camião guardado.');
+  fecharDialogo($('#dlg-camiao'));
+});
+
+// ---- Motorista
+const CAMPOS_NUM_MOT = ['salarioBase','subAlimDia','diasUteis','taxaTSU','seguroATAnual','medicinaAnual','formacaoAnual','outrosEncargosMensais'];
+const CAMPOS_TXT_MOT = ['nome','nif','niss','telefone','validadeCarta','validadeCAM','validadeCartaoTacografo','tipoContrato','dataAdmissao','dataSaida','categoria','cct','subAlimModo','obs'];
+function validarNIF(n){
+  if (!/^\d{9}$/.test(n)) return false;
+  let s = 0; for (let i = 0; i < 8; i++) s += +n[i] * (9 - i);
+  const r = s % 11, dc = r < 2 ? 0 : 11 - r;
+  return dc === +n[8];
+}
+function linhaClausula(cl){
+  const opt = (arr, v) => arr.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join('');
+  return `<tr>
+    <td><input data-k="descricao" value="${esc(cl.descricao)}" aria-label="Descrição"></td>
+    <td class="c-num"><input data-k="valor" type="number" step="0.01" value="${cl.valor == null ? '' : esc(cl.valor)}" aria-label="Valor"></td>
+    <td><select data-k="base" aria-label="Conta por">${opt(BASES, cl.base || 'mensal')}</select></td>
+    <td><select data-k="grupo" aria-label="Natureza">${opt([['rem','Remuneração'],['ajudas','Ajudas de custo']], cl.grupo || 'rem')}</select></td>
+    <td style="text-align:center"><input type="checkbox" data-k="incideTSU" ${cl.incideTSU ? 'checked' : ''} aria-label="Paga Segurança Social"></td>
+    <td style="text-align:center"><input type="checkbox" data-k="incideSubsidios" ${cl.incideSubsidios ? 'checked' : ''} aria-label="Entra nos subsídios"></td>
+    <td><button class="btn btn-peq btn-perigo" type="button" data-rem-linha>Retirar</button></td></tr>`;
+}
+function linhaAtribuicao(a){
+  const cams = camioesOrdenados().map(c => `<option value="${esc(c.id)}"${c.id === a.camiaoId ? ' selected' : ''}>${esc(c.matricula)}</option>`).join('');
+  return `<tr><td style="width:180px"><input type="date" data-k="desde" value="${esc(a.desde || '')}" aria-label="A partir de"></td>
+    <td><select data-k="camiaoId" aria-label="Camião"><option value="">Escolha…</option>${cams}<option value="${GERAL}"${a.camiaoId === GERAL ? ' selected' : ''}>Sem camião (estrutura)</option></select></td>
+    <td><button class="btn btn-peq btn-perigo" type="button" data-rem-linha>Retirar</button></td></tr>`;
+}
+function lerLinhas(sel){
+  return $$(sel + ' tbody tr').map(tr => {
+    const o = {};
+    $$('[data-k]', tr).forEach(el => { o[el.dataset.k] = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? numOuNull(el.value) : el.value.trim()); });
+    return o;
+  });
+}
+function lerMotorista(f){
+  const e = f.elements, d = {};
+  CAMPOS_TXT_MOT.forEach(k => { d[k] = txt(e[k]); });
+  CAMPOS_NUM_MOT.forEach(k => { d[k] = numOuNull(e[k].value); });
+  d.semProvisaoSubsidios = !e.provisaoSubsidios.checked;
+  d.clausulas = lerLinhas('#m-clausulas').map(c => ({descricao:c.descricao || '', valor:c.valor, base:c.base || 'mensal', grupo:c.grupo || 'rem', incideTSU:!!c.incideTSU, incideSubsidios:!!c.incideSubsidios}));
+  d.atribuicoes = lerLinhas('#m-atribuicoes').map(a => ({desde:a.desde || '', camiaoId:a.camiaoId || ''})).sort((a, b) => a.desde.localeCompare(b.desde));
+  return d;
+}
+function atualizarPreviewMotorista(){
+  const f = $('#f-motorista'), m = {...lerMotorista(f), id:'_previsao', dataAdmissao:'', dataSaida:''};
+  const desl = Math.min(31, num0($('#m-sim-desl').value));
+  const cm = custoMotorista(m, hoje().slice(0, 7), {semProc:true, diasDesl:desl, nViag:2});
+  if (!cm){ $('#m-preview').innerHTML = ''; return; }
+  const c = cm.comp;
+  $('#m-preview').innerHTML = `<table>
+      <tr><td>Remunerações (salário e cláusulas)</td><td class="n">${fmtC(c.rem)}</td></tr>
+      <tr><td>Subsídio de alimentação (${cm.diasTrab} dias)</td><td class="n">${fmtC(c.subalim)}</td></tr>
+      <tr><td>Ajudas de custo</td><td class="n">${fmtC(c.ajudas)}</td></tr>
+      <tr><td>Subsídios de férias e de Natal (parte mensal)</td><td class="n">${fmtC(c.subsidios)}</td></tr>
+      <tr><td>Segurança Social da empresa (${fmtDec.format(cm.taxa)} %${cm.excessoSubAlim ? ', inclui excesso do sub. alimentação' : ''})</td><td class="n">${fmtC(c.ss)}</td></tr>
+      <tr><td>Seguro AT, medicina, formação e outros</td><td class="n">${fmtC(c.segpes + c.outpes)}</td></tr>
+      <tr class="tot"><td>Custo mensal</td><td class="n">${fmtC(cm.total)}</td></tr>
+      <tr><td>Custo anual (12 meses)</td><td class="n">${fmtC(cm.total * 12)}</td></tr>
+    </table>`;
+}
+function abrirMotorista(id){
+  const f = $('#f-motorista'); f.reset(); $('#motorista-erro').textContent = '';
+  const m = id ? motoristaPorId(id) : null;
+  f.dataset.id = m ? m.id : '';
+  $('#dlg-motorista-tit').textContent = m ? `Ficha de ${m.nome}` : 'Adicionar motorista';
+  if (m){ preencherForm(f, m); f.elements.provisaoSubsidios.checked = !m.semProvisaoSubsidios; }
+  else { f.elements.provisaoSubsidios.checked = true; f.elements.tipoContrato.value = 'sem_termo'; f.elements.subAlimModo.value = 'cartao'; }
+  $('#m-clausulas tbody').innerHTML = (m && m.clausulas || []).map(linhaClausula).join('');
+  $('#m-atribuicoes tbody').innerHTML = (m && m.atribuicoes && m.atribuicoes.length ? m.atribuicoes : [{desde:m ? (m.dataAdmissao || '') : '', camiaoId:''}]).map(linhaAtribuicao).join('');
+  atualizarPreviewMotorista();
+  abrirDialogo('#dlg-motorista');
+}
+$('#m-preset').innerHTML = PRESETS.map((p, i) => `<option value="${i}">${esc(p.descricao)}</option>`).join('');
+$('#m-add-clausula').addEventListener('click', () => {
+  const p = PRESETS[+$('#m-preset').value] || PRESETS[PRESETS.length - 1];
+  $('#m-clausulas tbody').insertAdjacentHTML('beforeend', linhaClausula({...p, valor:null}));
+  const ult = $('#m-clausulas tbody tr:last-child [data-k="valor"]'); if (ult) ult.focus();
+  atualizarPreviewMotorista();
+});
+$('#m-add-atrib').addEventListener('click', () => {
+  $('#m-atribuicoes tbody').insertAdjacentHTML('beforeend', linhaAtribuicao({desde:hoje(), camiaoId:''}));
+});
+$('#f-motorista').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-rem-linha]'); if (!b) return;
+  b.closest('tr').remove(); atualizarPreviewMotorista();
+});
+$('#f-motorista').addEventListener('input', atualizarPreviewMotorista);
+$('#f-motorista').addEventListener('change', atualizarPreviewMotorista);
+$('#f-motorista').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, erro = $('#motorista-erro'), id = f.dataset.id, d = lerMotorista(f);
+  if (!d.nome) return erro.textContent = 'Indique o nome.';
+  if (!d.dataAdmissao) return erro.textContent = 'Indique a data de admissão.';
+  if (d.salarioBase == null || !isFinite(d.salarioBase) || d.salarioBase < 0) return erro.textContent = 'Indique o salário base.';
+  if (d.dataSaida && d.dataSaida < d.dataAdmissao) return erro.textContent = 'A data de saída é anterior à admissão.';
+  if (d.nif && !validarNIF(d.nif)) return erro.textContent = 'O NIF não é válido.';
+  if (d.nif && store.motoristas.some(m => m.id !== id && m.nif === d.nif)) return erro.textContent = 'Já existe um motorista com este NIF.';
+  if (CAMPOS_NUM_MOT.some(k => d[k] != null && (!isFinite(d[k]) || d[k] < 0))) return erro.textContent = 'Os valores têm de ser números positivos.';
+  const clErr = d.clausulas.findIndex(c => !c.descricao || c.valor == null || !isFinite(c.valor));
+  if (clErr >= 0) return erro.textContent = `Complete a descrição e o valor da cláusula ${clErr + 1}.`;
+  d.atribuicoes = d.atribuicoes.filter(a => a.desde || a.camiaoId).map(a => ({...a, desde:a.desde || (a.camiaoId && d.atribuicoes.length === 1 ? d.dataAdmissao : '')}));
+  if (d.atribuicoes.some(a => !a.desde || !a.camiaoId)) return erro.textContent = 'Cada atribuição precisa de data e camião.';
+  if (new Set(d.atribuicoes.map(a => a.desde)).size !== d.atribuicoes.length) return erro.textContent = 'Há duas atribuições com a mesma data.';
+  gravar(id ? DB.update('motoristas', id, d) : DB.add('motoristas', d), 'Ficha do motorista guardada.');
+  fecharDialogo($('#dlg-motorista'));
+});
+
+// ---- Processamento mensal (grava ao sair do campo)
+$('#p-tabela').addEventListener('change', ev => {
+  const el = ev.target; if (!el.dataset || !el.dataset.mot) return;
+  const ym = `${$('#p-ano').value}-${$('#p-mes').value}`, k = el.dataset.k;
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else { v = numOuNull(el.value); if (v != null && (!isFinite(v) || v < 0)){ toast('Escreva um número positivo ou deixe em branco.', 'erro'); return; } }
+  if (k === 'diasTrabalho' || k === 'diasDeslocacao'){ if (v != null && v > 31){ toast('O mês não tem mais de 31 dias.', 'erro'); return; } }
+  gravar(DB.set('mensal', `${ym}_${el.dataset.mot}`, {ym, motoristaId:el.dataset.mot, [k]:v}));
+});
+
+// ---- Parâmetros
+$('#f-param').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const e = ev.target.elements, d = {};
+  for (const k of Object.keys(PARAM_DEF)){
+    const v = numOuNull(e[k].value);
+    if (v != null && (!isFinite(v) || v < 0)){ $('#param-erro').textContent = 'Os valores têm de ser números positivos.'; return; }
+    d[k] = v;
+  }
+  $('#param-erro').textContent = '';
+  gravar(DB.set('config', 'parametros', d), 'Parâmetros guardados.');
+  ev.target.querySelector('button[type=submit]').blur();
+});
+
+$$('dialog [data-fechar]').forEach(b => b.addEventListener('click', () => fecharDialogo(b.closest('dialog'))));
+
+// Ações nas tabelas
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-acao]'); if (!b) return;
+  const id = b.dataset.id;
+  switch (b.dataset.acao){
+    case 'editar-carga': abrirCarga(id); break;
+    case 'editar-despesa': abrirDespesa(id); break;
+    case 'editar-camiao': abrirCamiao(id); break;
+    case 'editar-motorista': abrirMotorista(id); break;
+    case 'pdf-motorista': pdfFichaMotorista(id); break;
+    case 'pdf-camiao': pdfFichaCamiao(id); break;
+    case 'apagar-carga': {
+      const ligadas = store.despesas.filter(d => d.cargaId === id);
+      if (!confirm('Apagar esta carga? Esta ação não pode ser desfeita.' + (ligadas.length ? `\n\n${ligadas.length} despesa(s) associada(s) ficam sem viagem, mas continuam a contar no camião.` : ''))) return;
+      ligadas.forEach(d => gravar(DB.update('despesas', d.id, {cargaId:null})));
+      gravar(DB.remove('cargas', id), 'Carga apagada.'); break;
+    }
+    case 'apagar-despesa':
+      if (!confirm('Apagar esta despesa? Esta ação não pode ser desfeita.')) return;
+      gravar(DB.remove('despesas', id), 'Despesa apagada.'); break;
+    case 'apagar-camiao': {
+      const usado = store.cargas.some(g => g.camiaoId === id) || store.despesas.some(d => d.camiaoId === id) || store.motoristas.some(m => (m.atribuicoes || []).some(a => a.camiaoId === id));
+      if (usado){ toast('Este camião tem cargas, despesas ou motoristas atribuídos. Indique a data de saída da frota em vez de o apagar.', 'erro'); return; }
+      if (!confirm('Apagar este camião?')) return;
+      gravar(DB.remove('camioes', id), 'Camião apagado.'); break;
+    }
+    case 'apagar-motorista': {
+      const usado = store.cargas.some(g => g.motoristaId === id) || store.mensal.some(x => x.motoristaId === id);
+      if (usado){ toast('Este motorista tem cargas ou meses processados. Indique a data de saída na ficha em vez de o apagar.', 'erro'); return; }
+      if (!confirm('Apagar a ficha deste motorista?')) return;
+      gravar(DB.remove('motoristas', id), 'Ficha apagada.'); break;
+    }
+  }
+});
+
+/* ---------- Folhas de cálculo (Excel com formatação) ---------- */
+const XFMT = {eur:'#,##0.00 "€";[Red]-#,##0.00 "€"', int:'#,##0', pct:'0.0%;[Red]-0.0%', dec:'0.0'};
+const BORDA = {top:{style:'thin',color:{rgb:'CBD2D6'}}, bottom:{style:'thin',color:{rgb:'CBD2D6'}}, left:{style:'thin',color:{rgb:'CBD2D6'}}, right:{style:'thin',color:{rgb:'CBD2D6'}}};
+const XS = {
+  titulo:{font:{bold:true, sz:15, color:{rgb:'22272B'}}},
+  titulo2:{font:{bold:true, sz:12, color:{rgb:'1D4E89'}}},
+  nota:{font:{italic:true, sz:9, color:{rgb:'5B656C'}}},
+  cab:{font:{bold:true, color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'22272B'}}, alignment:{vertical:'center', wrapText:true}, border:BORDA},
+  grupo:{font:{bold:true, color:{rgb:'22272B'}}, fill:{fgColor:{rgb:'F2A900'}}, border:BORDA},
+  sub:{font:{bold:true}, fill:{fgColor:{rgb:'EEF1F3'}}, border:BORDA},
+  destaque:{font:{bold:true, sz:12}, fill:{fgColor:{rgb:'FFF6DB'}}, border:BORDA},
+  tot:{font:{bold:true}, fill:{fgColor:{rgb:'FFF6DB'}}, border:{...BORDA, top:{style:'medium', color:{rgb:'22272B'}}}},
+  alerta:{font:{color:{rgb:'B83227'}, bold:true}, border:BORDA},
+  aviso:{font:{color:{rgb:'9A6A00'}}, border:BORDA},
+  normal:{border:BORDA}
+};
+const X = (v, t, e, f) => ({v, t, e, f});
+function criarFolha(linhas, larguras, merges){
+  const ws = {}; let maxC = 0;
+  linhas.forEach((ln, r) => (ln || []).forEach((c, ci) => {
+    if (c === undefined || c === null) return;
+    const o = (typeof c === 'object') ? c : {v:c};
+    const cell = {};
+    if (typeof o.v === 'number' && isFinite(o.v)){ cell.t = 'n'; cell.v = o.v; }
+    else if (o.v == null || o.v === '' || (typeof o.v === 'number')){ cell.t = 's'; cell.v = ''; }
+    else { cell.t = 's'; cell.v = String(o.v); }
+    if (o.f){ cell.f = o.f; if (cell.t === 's'){ cell.t = 'n'; cell.v = 0; } }
+    const s = JSON.parse(JSON.stringify(XS[o.e] || XS.normal));
+    if (o.t && XFMT[o.t]){ cell.z = XFMT[o.t]; s.numFmt = XFMT[o.t]; }
+    if (cell.t === 'n') s.alignment = {...(s.alignment || {}), horizontal:'right'};
+    cell.s = s;
+    ws[XLSX.utils.encode_cell({r, c:ci})] = cell; maxC = Math.max(maxC, ci);
+  }));
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:Math.max(linhas.length - 1, 0), c:maxC}});
+  ws['!cols'] = (larguras || []).map(w => ({wch:w}));
+  if (merges) ws['!merges'] = merges;
+  return ws;
+}
+function cabecalhoFolha(titulo){
+  return [[X(`${EMPRESA}   NIF ${EMPRESA_NIF}`, null, 'titulo')], [X(titulo, null, 'titulo2')], [X(`Gerado em ${fmtData(hoje())}. Valores sem IVA.`, null, 'nota')], []];
+}
+const col = i => XLSX.utils.encode_col(i);
+// Mapa indicador × camião (mês ou ano), com totais em fórmula
+function folhaMapa(titulo, r){
+  const ids = colunasDe(r), blocos = ids.map(id => r[id]), tot = somarBlocos(blocos);
+  const L = cabecalhoFolha(titulo);
+  L.push([X('Indicador', null, 'cab'), ...ids.map(id => X(nomeCamiao(id) + (r[id].motoristas.size ? '\n' + [...r[id].motoristas].join(', ') : ''), null, 'cab')), X('Total frota', null, 'cab')]);
+  linhasResultado().forEach(Ln => {
+    if (Ln.grupo){ L.push([X(Ln.rot, null, 'grupo'), ...ids.map(() => X('', null, 'grupo')), X('', null, 'grupo')]); return; }
+    const e = Ln.cls === 'sub' ? 'sub' : Ln.cls === 'destaque' ? 'destaque' : 'normal', row = L.length + 1;
+    const cels = blocos.map(b => { const v = Ln.v(b); return X(v == null || !isFinite(v) ? '' : (Ln.t === 'pct' || Ln.t === 'dec' ? v : r2(v)), Ln.t, e); });
+    const vt = Ln.v(tot);
+    const totCel = (Ln.soma && ids.length) ? X(r2(vt), Ln.t, e, `SUM(B${row}:${col(ids.length)}${row})`) : X(vt == null || !isFinite(vt) ? '' : vt, Ln.t, e);
+    L.push([X(Ln.rot, null, e), ...cels, totCel]);
+  });
+  const ws = criarFolha(L, [34, ...ids.map(() => 16), 16]);
+  ws['!rows'] = []; ws['!rows'][4] = {hpt:32};
+  return ws;
+}
+function folhaCamioes(titulo, r){
+  const ids = colunasDe(r);
+  const cab = ['Camião','Motoristas','Cargas','Km','Dias em viagem','Ocupação','Proveitos','Custos variáveis','Custos com pessoal','Custos fixos','Total de custos','Resultado','Margem','Proveito por km','Custo por km','Consumo (L/100 km)'];
+  const L = cabecalhoFolha(titulo); L.push(cab.map(c => X(c, null, 'cab')));
+  const ini = L.length + 1;
+  ids.forEach(id => { const b = r[id]; L.push([X(nomeCamiao(id)), X([...b.motoristas].join(', ')), X(b.nCargas, 'int'), X(b.km, 'int'), X(b.diasViagem, 'int'),
+    X(b.diasDisp ? b.diasViagem / b.diasDisp : '', 'pct'), X(b.prov / 100, 'eur'), X(b.totVar / 100, 'eur'), X(b.totPes / 100, 'eur'), X(b.totFix / 100, 'eur'),
+    X(b.totCustos / 100, 'eur'), X(b.res / 100, 'eur', 'sub'), X(b.prov ? b.res / b.prov : '', 'pct'), X(b.km ? b.prov / 100 / b.km : '', 'eur'), X(b.km ? b.totCustos / 100 / b.km : '', 'eur'), X(b.km && b.litros ? b.litros / b.km * 100 : '', 'dec')]); });
+  const fim = L.length, t = somarBlocos(ids.map(id => r[id]));
+  if (ids.length){
+    const S = (c, v, tp) => X(v, tp, 'tot', `SUM(${c}${ini}:${c}${fim})`);
+    L.push([X('Total frota', null, 'tot'), X('', null, 'tot'), S('C', t.nCargas, 'int'), S('D', t.km, 'int'), S('E', t.diasViagem, 'int'), X(t.diasDisp ? t.diasViagem / t.diasDisp : '', 'pct', 'tot'),
+      S('G', t.prov / 100, 'eur'), S('H', t.totVar / 100, 'eur'), S('I', t.totPes / 100, 'eur'), S('J', t.totFix / 100, 'eur'), S('K', t.totCustos / 100, 'eur'), S('L', t.res / 100, 'eur'),
+      X(t.prov ? t.res / t.prov : '', 'pct', 'tot', `IF(G${fim + 1}=0,"",L${fim + 1}/G${fim + 1})`), X(t.km ? t.prov / 100 / t.km : '', 'eur', 'tot', `IF(D${fim + 1}=0,"",G${fim + 1}/D${fim + 1})`),
+      X(t.km ? t.totCustos / 100 / t.km : '', 'eur', 'tot', `IF(D${fim + 1}=0,"",K${fim + 1}/D${fim + 1})`), X(t.km && t.litros ? t.litros / t.km * 100 : '', 'dec', 'tot')]);
+  }
+  return criarFolha(L, [14, 26, 8, 10, 10, 10, 14, 14, 14, 14, 14, 14, 9, 11, 11, 11]);
+}
+function folhaAgregados(titulo, filtro){
+  const L = cabecalhoFolha(titulo);
+  [['País de destino', g => g.destinoPais], ['Cliente', g => g.cliente]].forEach(([nome, ch]) => {
+    L.push([X(nome, null, 'cab'), X('Cargas', null, 'cab'), X('Proveitos', null, 'cab'), X('Km', null, 'cab'), X('€/km', null, 'cab'), X('Proveito médio por carga', null, 'cab'), X('Dias médios por viagem', null, 'cab')]);
+    agregarCargas(filtro, ch).forEach(a => L.push([X(a.k), X(a.n, 'int'), X(a.prov / 100, 'eur'), X(a.km, 'int'), X(a.km ? a.prov / 100 / a.km : '', 'eur'), X(a.prov / 100 / a.n, 'eur'), X(a.nd ? a.dias / a.nd : '', 'dec')]));
+    L.push([]);
+  });
+  return criarFolha(L, [30, 9, 14, 10, 10, 16, 14]);
+}
+function folhaPessoal(titulo, lista){
+  const cab = ['Motorista','Camião','Dias de contrato','Dias de trabalho','Dias fora','Viagens','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguro AT, medicina, formação','Outros encargos','Custo total'];
+  const L = cabecalhoFolha(titulo); L.push(cab.map(c => X(c, null, 'cab')));
+  const ini = L.length + 1;
+  lista.forEach(cm => { const c = cm.comp; L.push([X(cm.m.nome), X(Object.keys(cm.porCam).map(nomeCamiao).join(', ')), X(cm.diasEmp, 'int'), X(cm.diasTrab, 'int'), X(cm.diasDesl, 'int'), X(cm.nViag, 'int'),
+    X(c.rem / 100, 'eur'), X(c.subalim / 100, 'eur'), X(c.ajudas / 100, 'eur'), X(c.subsidios / 100, 'eur'), X(c.ss / 100, 'eur'), X(c.segpes / 100, 'eur'), X(c.outpes / 100, 'eur'), X(cm.total / 100, 'eur', 'sub')]); });
+  const fim = L.length;
+  if (lista.length){
+    const s = k => lista.reduce((a, cm) => a + cm.comp[k], 0) / 100;
+    L.push([X('Total', null, 'tot'), X('', null, 'tot'), X('', null, 'tot'), X('', null, 'tot'), X('', null, 'tot'), X('', null, 'tot'),
+      ...['rem','subalim','ajudas','subsidios','ss','segpes','outpes'].map((k, i) => X(s(k), 'eur', 'tot', `SUM(${col(6 + i)}${ini}:${col(6 + i)}${fim})`)),
+      X(lista.reduce((a, cm) => a + cm.total, 0) / 100, 'eur', 'tot', `SUM(N${ini}:N${fim})`)]);
+  }
+  return criarFolha(L, [26, 18, 9, 9, 9, 8, 14, 13, 13, 14, 14, 16, 13, 14]);
+}
+function folhaPontos(titulo, pontos){
+  const L = cabecalhoFolha(titulo);
+  L.push([X('Nível', null, 'cab'), X('Descrição', null, 'cab')]);
+  const niv = {alerta:'Alerta', aviso:'Atenção', info:'Informação', ok:'Sem alertas'};
+  pontos.forEach(p => L.push([X(niv[p.n], null, p.n === 'alerta' ? 'alerta' : p.n === 'aviso' ? 'aviso' : 'normal'), X(p.t)]));
+  return criarFolha(L, [14, 120]);
+}
+function xlsxDisponivel(){ if (typeof XLSX === 'undefined' || !XLSX.utils){ toast('A biblioteca de Excel não carregou. Verifique a ligação à internet.', 'erro'); return false; } return true; }
+function exportarMes(){
+  if (!xlsxDisponivel()) return;
+  const ano = $('#r-ano').value, mes = $('#r-mes').value, ym = `${ano}-${mes}`, nm = nomeMesAno(ym), r = calcularMes(ym);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, folhaMapa(`Relatório mensal de frota: ${nm}`, r), 'Resumo');
+  XLSX.utils.book_append_sheet(wb, folhaCamioes(`Indicadores por camião: ${nm}`, r), 'Por camião');
+  XLSX.utils.book_append_sheet(wb, folhaPontos(`Pontos de atenção: ${nm}`, pontosAtencao(ym)), 'Pontos de atenção');
+  XLSX.utils.book_append_sheet(wb, folhaPessoal(`Custos com pessoal: ${nm}`, pessoalMes(ym)), 'Pessoal');
+  // Custos fixos
+  const Lf = cabecalhoFolha(`Custos fixos dos camiões: ${nm}`);
+  Lf.push(['Camião','Dias na frota','Seguro, IUC, inspeção e tacógrafo','Leasing e amortização','Outros custos fixos','Total'].map(c => X(c, null, 'cab')));
+  camioesOrdenados().forEach(c => { const fx = custosFixosCamiao(c, ym); if (fx) Lf.push([X(c.matricula), X(fx.dias, 'int'), X(fx.segcam / 100, 'eur'), X(fx.leasing / 100, 'eur'), X(fx.outfix / 100, 'eur'), X((fx.segcam + fx.leasing + fx.outfix) / 100, 'eur', 'sub')]); });
+  XLSX.utils.book_append_sheet(wb, criarFolha(Lf, [14, 11, 20, 18, 16, 14]), 'Custos fixos');
+  // Cargas do mês
+  const diretas = {}; store.despesas.forEach(d => { if (d.cargaId) diretas[d.cargaId] = (diretas[d.cargaId] || 0) + cent(d.valor); });
+  const Lc = cabecalhoFolha(`Cargas com saída em ${nm}`);
+  Lc.push(['Saída','Regresso','Dias','Camião','Motorista','Cliente','Destino','Mercadoria','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura'].map(c => X(c, null, 'cab')));
+  store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida)).forEach(g => {
+    const v = cent(g.valor) / 100, dir = (diretas[g.id] || 0) / 100, dd = diasEntre(g.dataSaida, g.dataRegresso);
+    Lc.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dd != null && dd >= 0 ? dd + 1 : '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(destinoTxt(g)), X(g.mercadoria), X(+g.km || '', 'int'), X(v, 'eur'), X(g.km ? v / g.km : '', 'eur'), X(dir || '', 'eur'), X(dir ? v - dir : '', 'eur'), X(g.fatura)]);
+  });
+  XLSX.utils.book_append_sheet(wb, criarFolha(Lc, [11, 11, 6, 12, 20, 24, 22, 16, 9, 12, 9, 13, 13, 12]), 'Cargas');
+  // Despesas lançadas no mês
+  const Ld = cabecalhoFolha(`Despesas lançadas em ${nm} (pela data do documento)`);
+  Ld.push(['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação'].map(c => X(c, null, 'cab')));
+  store.despesas.filter(d => (d.data || '').slice(0, 7) === ym).sort((a, b) => a.data.localeCompare(b.data)).forEach(d => {
+    const t = tipoPorId(d.tipo);
+    Ld.push([X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(d.fornecedor), X(d.documento), X(+d.litros || '', 'dec'), X(+d.valor || 0, 'eur'), X(d.diluir ? 'Repartida por 12 meses' : 'No mês')]);
+  });
+  XLSX.utils.book_append_sheet(wb, criarFolha(Ld, [11, 16, 28, 26, 20, 14, 9, 12, 20]), 'Despesas');
+  XLSX.utils.book_append_sheet(wb, folhaAgregados(`Rentabilidade por destino e cliente: ${nm}`, g => (g.dataSaida || '').slice(0, 7) === ym), 'Destinos e clientes');
+  XLSX.writeFile(wb, `frota-relatorio-${ym}.xlsx`);
+}
+function exportarAno(){
+  if (!xlsxDisponivel()) return;
+  const ano = $('#r-ano').value, {porId, meses} = calcularAno(ano), ids = colunasDe(porId);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, folhaMapa(`Relatório anual de frota: ${ano}`, porId), 'Resumo anual');
+  XLSX.utils.book_append_sheet(wb, folhaCamioes(`Indicadores por camião: ${ano}`, porId), 'Por camião');
+  const porMes = (titulo, fn, tp) => {
+    const L = cabecalhoFolha(titulo);
+    L.push([X('Camião', null, 'cab'), ...MESES_C.map(m => X(m, null, 'cab')), X('Ano', null, 'cab')]);
+    const ini = L.length + 1;
+    ids.forEach(id => { const row = L.length + 1; L.push([X(nomeCamiao(id)), ...meses.map(m => X(m[id] ? fn(m[id]) : 0, tp)), X(fn(porId[id]), tp, 'sub', `SUM(B${row}:M${row})`)]); });
+    const fim = L.length;
+    L.push([X('Total frota', null, 'tot'), ...meses.map((m, i) => X(fn(somarBlocos(Object.values(m))), tp, 'tot', `SUM(${col(i + 1)}${ini}:${col(i + 1)}${fim})`)), X(fn(somarBlocos(Object.values(porId))), tp, 'tot', `SUM(N${ini}:N${fim})`)]);
+    return criarFolha(L, [16, ...MESES_C.map(() => 12), 14]);
+  };
+  XLSX.utils.book_append_sheet(wb, porMes(`Resultado por camião e mês: ${ano}`, b => b.res / 100, 'eur'), 'Resultado por mês');
+  XLSX.utils.book_append_sheet(wb, porMes(`Proveitos por camião e mês: ${ano}`, b => b.prov / 100, 'eur'), 'Proveitos por mês');
+  XLSX.utils.book_append_sheet(wb, porMes(`Custos por camião e mês: ${ano}`, b => b.totCustos / 100, 'eur'), 'Custos por mês');
+  XLSX.utils.book_append_sheet(wb, porMes(`Custos com pessoal por camião e mês: ${ano}`, b => b.totPes / 100, 'eur'), 'Pessoal por mês');
+  XLSX.utils.book_append_sheet(wb, porMes(`Km por camião e mês: ${ano}`, b => b.km, 'int'), 'Km por mês');
+  // Custo de cada motorista por mês
+  const Lm = cabecalhoFolha(`Custo total de cada motorista por mês: ${ano}`);
+  Lm.push([X('Motorista', null, 'cab'), ...MESES_C.map(m => X(m, null, 'cab')), X('Ano', null, 'cab')]);
+  const ini = Lm.length + 1, totM = Array(12).fill(0);
+  motoristasOrdenados().forEach(m => {
+    const v = MESES_C.map((_, i) => { const cm = custoMotorista(m, `${ano}-${pad2(i + 1)}`); return cm ? cm.total / 100 : 0; });
+    if (v.some(Boolean)){ v.forEach((x, i) => { totM[i] += x; }); const row = Lm.length + 1; Lm.push([X(m.nome), ...v.map(x => X(x, 'eur')), X(r2(v.reduce((s, x) => s + x, 0)), 'eur', 'sub', `SUM(B${row}:M${row})`)]); }
+  });
+  const fim = Lm.length;
+  if (fim >= ini) Lm.push([X('Total', null, 'tot'), ...totM.map((x, i) => X(r2(x), 'eur', 'tot', `SUM(${col(i + 1)}${ini}:${col(i + 1)}${fim})`)), X(r2(totM.reduce((s, x) => s + x, 0)), 'eur', 'tot', `SUM(N${ini}:N${fim})`)]);
+  XLSX.utils.book_append_sheet(wb, criarFolha(Lm, [26, ...MESES_C.map(() => 12), 14]), 'Motoristas por mês');
+  XLSX.utils.book_append_sheet(wb, folhaAgregados(`Rentabilidade por destino e cliente: ${ano}`, g => (g.dataSaida || '').slice(0, 4) === ano), 'Destinos e clientes');
+  XLSX.writeFile(wb, `frota-relatorio-anual-${ano}.xlsx`);
+}
+function exportarFolha(){
+  if (!xlsxDisponivel()) return;
+  const linhas = dadosFolha();
+  const L = cabecalhoFolha(`Folha de registo de cargas: ${$('#f-print-tit').textContent}`);
+  L.push(['Data saída','Data regresso','Dias','Camião','Motorista','Cliente','Origem','País destino','Cidade destino','Mercadoria','Peso (kg)','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura','CMR','Observações'].map(c => X(c, null, 'cab')));
+  const ini = L.length + 1;
+  linhas.forEach(({g, v, dir, km, dias, eurKm, margem}) => L.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dias ?? '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria),
+    X(g.pesoKg ?? '', 'int'), X(km || '', 'int'), X(v / 100, 'eur'), X(eurKm ?? '', 'eur'), X(dir ? dir / 100 : '', 'eur'), X(dir ? margem / 100 : '', 'eur'), X(g.fatura), X(g.cmr), X(g.obs)]));
+  const fim = L.length;
+  const sm = fn => r2(linhas.reduce((s, l) => s + fn(l), 0));
+  if (linhas.length) L.push([X('Total', null, 'tot'), ...Array(9).fill(X('', null, 'tot')), X(sm(l => +l.g.pesoKg || 0), 'int', 'tot', `SUM(K${ini}:K${fim})`), X(sm(l => l.km), 'int', 'tot', `SUM(L${ini}:L${fim})`), X(sm(l => l.v / 100), 'eur', 'tot', `SUM(M${ini}:M${fim})`), X('', null, 'tot'), X(sm(l => l.dir / 100), 'eur', 'tot', `SUM(O${ini}:O${fim})`), X(sm(l => l.dir ? l.margem / 100 : 0), 'eur', 'tot', `SUM(P${ini}:P${fim})`)]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, criarFolha(L, [11, 11, 6, 12, 20, 24, 12, 14, 14, 16, 10, 9, 12, 9, 13, 13, 12, 10, 30]), 'Folha de cargas');
+  XLSX.writeFile(wb, `folha-cargas-${$('#f-de').value || 'inicio'}-a-${$('#f-ate').value || hoje()}.xlsx`);
+}
+function exportarTudo(){
+  if (!xlsxDisponivel()) return;
+  const wb = XLSX.utils.book_new(), cabs = a => a.map(c => X(c, null, 'cab'));
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Matrícula','Marca e modelo','Ano','Entrada','Saída','Ativo','Seguro/ano','Validade seguro','IUC/ano','Inspeções/ano','Próxima inspeção','Tacógrafo/ano','Leasing/mês','Última renda','Amortização/mês','Outros fixos/mês','Observações']),
+    ...camioesOrdenados().map(c => [X(c.matricula), X(c.marcaModelo), X(c.ano ?? ''), X(fmtData(c.dataInicio)), X(fmtData(c.dataFim)), X(c.ativo === false ? 'Não' : 'Sim'), X(+c.seguroAnual || '', 'eur'), X(fmtData(c.seguroValidade)), X(+c.iucAnual || '', 'eur'), X(+c.inspecaoAnual || '', 'eur'), X(fmtData(c.proximaInspecao)), X(+c.tacografoAnual || '', 'eur'), X(+c.leasingMensal || '', 'eur'), X(fmtData(c.leasingFim)), X(+c.amortizacaoMensal || '', 'eur'), X(+c.outrosFixosMensais || '', 'eur'), X(c.obs)])], [12, 18, 6, 11, 11, 6, 11, 11, 10, 10, 11, 10, 11, 11, 11, 11, 30]), 'Camiões');
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Nome','NIF','NISS','Contrato','Admissão','Saída','Categoria','Salário base','Sub. alim./dia','Modo','Cláusulas','Seguro AT/ano','Medicina/ano','Formação/ano','Outros/mês','Atribuições','Carta','CAM','Cartão condutor']),
+    ...motoristasOrdenados().map(m => [X(m.nome), X(m.nif), X(m.niss), X(CONTRATOS[m.tipoContrato] || ''), X(fmtData(m.dataAdmissao)), X(fmtData(m.dataSaida)), X(m.categoria), X(+m.salarioBase || 0, 'eur'), X(+m.subAlimDia || '', 'eur'), X(m.subAlimModo),
+      X((m.clausulas || []).map(c => `${c.descricao}: ${fmtEur(c.valor)} / ${(BASES.find(b => b[0] === c.base) || ['', ''])[1]}`).join('; ')), X(+m.seguroATAnual || '', 'eur'), X(+m.medicinaAnual || '', 'eur'), X(+m.formacaoAnual || '', 'eur'), X(+m.outrosEncargosMensais || '', 'eur'),
+      X((m.atribuicoes || []).map(a => `${fmtData(a.desde)} ${nomeCamiao(a.camiaoId)}`).join('; ')), X(fmtData(m.validadeCarta)), X(fmtData(m.validadeCAM)), X(fmtData(m.validadeCartaoTacografo))])], [24, 11, 12, 12, 11, 11, 20, 11, 10, 9, 50, 11, 11, 11, 10, 30, 11, 11, 11]), 'Motoristas');
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data saída','Data regresso','Camião','Motorista','Cliente','Origem','País destino','Cidade destino','Mercadoria','Peso (kg)','Km','Valor','Fatura','CMR','Observações']),
+    ...[...store.cargas].sort((a, b) => (a.dataSaida || '').localeCompare(b.dataSaida || '')).map(g => [X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria), X(g.pesoKg ?? '', 'int'), X(g.km ?? '', 'int'), X(+g.valor || 0, 'eur'), X(g.fatura), X(g.cmr), X(g.obs)])], [11, 11, 12, 20, 24, 12, 14, 14, 16, 10, 9, 12, 12, 10, 30]), 'Cargas');
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data','Camião','Tipo','Categoria','Valor','Litros','Repartida 12 meses','Fornecedor','Documento','Viagem','Observações']),
+    ...[...store.despesas].sort((a, b) => (a.data || '').localeCompare(b.data || '')).map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
+      return [X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(+d.valor || 0, 'eur'), X(d.litros ?? '', 'dec'), X(d.diluir ? 'Sim' : 'Não'), X(d.fornecedor), X(d.documento), X(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : ''), X(d.obs)]; })], [11, 16, 28, 26, 12, 9, 10, 20, 14, 24, 30]), 'Despesas');
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Mês','Motorista','Dias de trabalho','Dias fora','Prémios e extras','Extras sem TSU','Faltas']),
+    ...[...store.mensal].sort((a, b) => (a.id || '').localeCompare(b.id || '')).map(x => [X(x.ym), X((motoristaPorId(x.motoristaId) || {}).nome || ''), X(x.diasTrabalho ?? '', 'int'), X(x.diasDeslocacao ?? '', 'int'), X(x.extras ?? '', 'eur'), X(x.extrasSemTSU ? 'Sim' : ''), X(x.faltas ?? '', 'eur')])], [9, 24, 12, 10, 14, 12, 10]), 'Processamento mensal');
+  XLSX.writeFile(wb, `frota-dados-completos-${hoje()}.xlsx`);
+}
+function exportarJSON(){
+  const dados = {app:'dgt-frota', versao:2, exportadoEm:new Date().toISOString()};
+  COLS.forEach(c => { dados[c] = store[c]; });
+  descarregar(new Blob([JSON.stringify(dados, null, 2)], {type:'application/json'}), `copia-frota-${hoje()}.json`);
+}
+function descarregar(blob, nome){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+$('#bk-import').addEventListener('change', async ev => {
+  const file = ev.target.files[0]; ev.target.value = ''; if (!file) return;
+  try {
+    const dados = JSON.parse(await file.text());
+    if (dados.app !== 'dgt-frota') throw new Error('o ficheiro não é uma cópia desta aplicação');
+    const n = c => (dados[c] || []).length;
+    if (!confirm(`Repor ${n('camioes')} camiões, ${n('motoristas')} motoristas, ${n('cargas')} cargas, ${n('despesas')} despesas e ${n('mensal')} registos mensais?\n\nOs registos com o mesmo identificador são substituídos pela versão da cópia. Os restantes registos atuais mantêm-se.`)) return;
+    await DB.repor(dados);
+    toast('Cópia reposta.');
+  } catch (e) { toast('Não foi possível repor: ' + e.message, 'erro'); }
+});
+
+/* ---------- PDF (jsPDF + AutoTable) ----------
+   Regras de paginação: cada secção fica inteira numa página sempre que cabe numa página;
+   tabelas longas repetem o cabeçalho e nunca partem uma linha ao meio. */
+const PC = {asf:[34,39,43], sinal:[242,169,0], azul:[29,78,137], ganho:[46,125,79], perda:[184,50,39], linha:[203,210,214], suave:[91,101,108], sub:[238,241,243], dest:[255,246,219], texto:[30,35,38]};
+const pt = s => String(s ?? '').replace(/[\u00A0\u202F\u2007\u2009]/g, ' ').replace(/[\u2010-\u2012\u2212]/g, '-');
+function pdfDisponivel(){
+  const ok = !!(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && typeof window.jspdf.jsPDF.API.autoTable === 'function');
+  if (!ok) toast('A biblioteca de PDF não carregou. Verifique a ligação à internet e recarregue a página.', 'erro');
+  return ok;
+}
+function novoPDF(titulo, periodo, orient = 'landscape'){
+  const doc = new window.jspdf.jsPDF({orientation:orient, unit:'mm', format:'a4', compress:true});
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  doc.setProperties({title:pt(`${titulo} - ${periodo}`), author:pt(`${EMPRESA} (NIF ${EMPRESA_NIF})`), creator:pt(EMPRESA)});
+  return {doc, W, H, m:12, top:30, bottom:H - 15, y:30, titulo, periodo};
+}
+function pdfNovaPagina(R){ R.doc.addPage(); R.y = R.top; }
+function pdfFinalizar(R, nome){
+  const {doc, W, H, m} = R, n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++){
+    doc.setPage(i);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...PC.asf); doc.text(pt(EMPRESA), m, 13);
+    const wNome = doc.getTextWidth(pt(EMPRESA));
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...PC.suave); doc.text(`NIF ${EMPRESA_NIF}`, m + wNome + 4, 13);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...PC.suave); doc.text(pt(R.titulo), m, 18.5);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...PC.asf); doc.text(pt(R.periodo), W - m, 13, {align:'right'});
+    doc.setFillColor(...PC.sinal);
+    for (let x = m; x < W - m; x += 11) doc.rect(x, 21.8, Math.min(7, W - m - x), 1.1, 'F');
+    doc.setDrawColor(...PC.linha); doc.setLineWidth(0.2); doc.line(m, H - 10.5, W - m, H - 10.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...PC.suave);
+    doc.text(pt(`Gerado em ${fmtData(hoje())}. Valores sem IVA.`), m, H - 6.5);
+    doc.text(`Página ${i} de ${n}`, W - m, H - 6.5, {align:'right'});
+  }
+  doc.save(nome);
+}
+const alturaLinha = (fs, padV = 1.1) => fs * 0.3528 * 1.15 + 2 * padV + 0.4;
+// Título de secção. "altura" é a altura prevista do conteúdo que se segue.
+function pdfSecao(R, titulo, altura){
+  const disp = R.bottom - R.top - 8;
+  const naoCabeAqui = R.y + 8 + altura > R.bottom;
+  if (naoCabeAqui && (altura <= disp || R.y + 8 + 35 > R.bottom)) pdfNovaPagina(R);
+  const {doc} = R;
+  doc.setFillColor(...PC.sinal); doc.rect(R.m, R.y - 3.5, 1.4, 4.6, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...PC.asf); doc.text(pt(titulo), R.m + 3.5, R.y);
+  R.y += 3.5;
+}
+function pdfNota(R, texto){
+  const {doc} = R; doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(...PC.suave);
+  const l = doc.splitTextToSize(pt(texto), R.W - 2 * R.m);
+  if (R.y + l.length * 3.4 > R.bottom) pdfNovaPagina(R);
+  doc.text(l, R.m, R.y); R.y += l.length * 3.4 + 4;
+}
+function pdfTabela(R, {head, body, foot, cols, fs = 7.5, largura, esquerda, semAvanco, padV = 1.1}){
+  const {doc} = R, colStyles = {};
+  (cols || []).forEach((c, i) => { colStyles[i] = {halign:c.n ? 'right' : 'left'}; if (c.w) colStyles[i].cellWidth = c.w; });
+  doc.autoTable({
+    startY:R.y,
+    head: head ? [head.map((h, i) => ({content:pt(h), styles:{halign:(cols && cols[i] && cols[i].n) ? 'right' : 'left'}}))] : undefined,
+    body, foot: foot ? [foot] : undefined,
+    margin:{left:esquerda ?? R.m, right:R.m, top:R.top, bottom:R.H - R.bottom},
+    tableWidth: largura ?? 'auto', theme:'grid',
+    styles:{font:'helvetica', fontSize:fs, cellPadding:{top:padV, bottom:padV, left:1.4, right:1.4}, lineColor:PC.linha, lineWidth:0.15, textColor:PC.texto, overflow:'linebreak', valign:'middle'},
+    headStyles:{fillColor:PC.asf, textColor:255, fontStyle:'bold', fontSize:fs},
+    footStyles:{fillColor:PC.dest, textColor:PC.texto, fontStyle:'bold', fontSize:fs},
+    columnStyles:colStyles, rowPageBreak:'avoid', showHead:'everyPage', showFoot:'lastPage'
+  });
+  const fy = doc.lastAutoTable.finalY + 7;
+  if (!semAvanco) R.y = fy;
+  return fy;
+}
+const pS = (txt, est) => ({content:pt(txt), styles:{...(est || {})}});
+function pN(v, t, est){
+  const s = {halign:'right', ...(est || {})};
+  if ((t === 'eur' || t === 'pct') && v != null && v < -0.004) s.textColor = PC.perda;
+  return {content:pt(fmtVal(v, t)), styles:s};
+}
+const EST_SUB = {fillColor:PC.sub, fontStyle:'bold'}, EST_DEST = {fillColor:PC.dest, fontStyle:'bold'};
+function pdfKpis(R, lista){
+  const {doc, m, W} = R, n = lista.length, gap = 4, w = (W - 2 * m - gap * (n - 1)) / n, h = 15;
+  if (R.y + h + 6 > R.bottom) pdfNovaPagina(R);
+  const y0 = R.y - 2;
+  lista.forEach((k, i) => {
+    const x = m + i * (w + gap);
+    doc.setDrawColor(...PC.linha); doc.setLineWidth(0.2); doc.setFillColor(255, 255, 255); doc.rect(x, y0, w, h, 'FD');
+    doc.setFillColor(...(k.cor || PC.azul)); doc.rect(x, y0, 1.4, h, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...PC.suave); doc.text(pt(k.rot), x + 4, y0 + 5);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(...(k.corTxt || PC.asf)); doc.text(pt(k.val), x + 4, y0 + 11.8);
+  });
+  R.y = y0 + h + 9;
+}
+function kpisDe(b){
+  const cor = b.res >= 0 ? PC.ganho : PC.perda;
+  return [
+    {rot:'Proveitos', val:fmtC(b.prov)}, {rot:'Custos', val:fmtC(b.totCustos)},
+    {rot:'Resultado', val:fmtC(b.res), cor, corTxt:cor}, {rot:'Margem', val:fmtVal(b.prov ? b.res / b.prov : null, 'pct'), cor, corTxt:cor},
+    {rot:'Km', val:fmtInt.format(b.km)}, {rot:'Ocupação da frota', val:fmtVal(b.diasDisp ? b.diasViagem / b.diasDisp : null, 'pct')}
+  ];
+}
+// Fecho do documento: resumo e assinaturas ficam sempre juntos na mesma página
+function pdfFecho(R, pares){
+  const linhas = Math.ceil(pares.length / 2);
+  pdfSecao(R, 'Validação', linhas * alturaLinha(8.5) + 7 + 24);
+  const rows = [];
+  for (let i = 0; i < pares.length; i += 2){ const a = pares[i], b = pares[i + 1] || ['', '']; rows.push([pS(a[0], {fillColor:PC.sub, fontStyle:'bold'}), pS(a[1], {halign:'right', fontStyle:'bold'}), pS(b[0], {fillColor:PC.sub, fontStyle:'bold'}), pS(b[1], {halign:'right', fontStyle:'bold'})]); }
+  pdfTabela(R, {body:rows, cols:[{w:48}, {w:42}, {w:48}, {w:42}], fs:8.5, largura:180});
+  pdfAssinaturas(R);
+}
+const fechoDe = b => [['Proveitos', fmtC(b.prov)], ['Custos', fmtC(b.totCustos)], ['Resultado', fmtC(b.res)], ['Margem', fmtVal(b.prov ? b.res / b.prov : null, 'pct')]];
+function pdfAssinaturas(R){
+  const h = 24; if (R.y + h > R.bottom) pdfNovaPagina(R);
+  const {doc, m, W} = R, w = (W - 2 * m - 16) / 3;
+  ['Preparado por', 'Verificado por (responsável)', 'Data'].forEach((t, i) => {
+    const x = m + i * (w + 8);
+    doc.setDrawColor(...PC.suave); doc.setLineWidth(0.25); doc.line(x, R.y + 14, x + w, R.y + 14);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...PC.suave); doc.text(pt(t), x, R.y + 18.5);
+  });
+  R.y += h;
+}
+// Mapa indicador × camião, ajustado para caber numa página (divide por grupos de camiões se forem muitos)
+function pdfMapa(R, titulo, r){
+  const ids = colunasDe(r), tot = somarBlocos(ids.map(id => r[id])), todos = [...ids.map(id => r[id]), tot];
+  const linhas = linhasResultado().filter(L => L.grupo || !L.cat || todos.some(b => L.v(b)));
+  const maxCam = Math.max(1, Math.floor((R.W - 2 * R.m - 56) / 25) - 1), grupos = [];
+  for (let i = 0; i < ids.length; i += maxCam) grupos.push(ids.slice(i, i + maxCam));
+  if (!grupos.length) return;
+  // Ajusta letra e espaçamento para o mapa inteiro caber numa página
+  const disp = R.bottom - R.top - 14, porLinha = disp / (linhas.length + 2.5);
+  const padV = porLinha > 5.2 ? 1.1 : 0.6;
+  const fs = Math.max(5.8, Math.min(8.5, (porLinha - 2 * padV - 0.4) / (0.3528 * 1.15)));
+  grupos.forEach((g, gi) => {
+    const ultimo = gi === grupos.length - 1, colsB = [...g.map(id => r[id]), ...(ultimo ? [tot] : [])];
+    const head = ['Indicador', ...g.map(id => nomeCamiao(id) + (r[id].motoristas.size ? '\n' + [...r[id].motoristas].join(', ') : '')), ...(ultimo ? ['Total frota'] : [])];
+    const n = head.length;
+    pdfSecao(R, titulo + (grupos.length > 1 ? ` (parte ${gi + 1} de ${grupos.length})` : ''), (linhas.length + 2.5) * alturaLinha(fs, padV));
+    const body = linhas.map(L => {
+      if (L.grupo) return [{content:pt(L.rot), colSpan:n, styles:{fillColor:PC.sinal, fontStyle:'bold', textColor:PC.asf}}];
+      const est = L.cls === 'sub' ? EST_SUB : L.cls === 'destaque' ? EST_DEST : {};
+      const rot = L.cls === 'custo' ? pS(L.rot, {cellPadding:{top:padV, bottom:padV, left:5, right:1.4}, textColor:PC.suave}) : pS(L.rot, est);
+      return [rot, ...colsB.map(b => pN(L.v(b), L.t, est))];
+    });
+    pdfTabela(R, {head, body, cols:[{w:56}, ...Array(n - 1).fill({n:true})], fs, padV});
+  });
+}
+function pdfPorCamiao(R, titulo, r){
+  const ids = colunasDe(r); if (!ids.length) return;
+  const t = somarBlocos(ids.map(id => r[id]));
+  const head = ['Camião','Motoristas','Cargas','Km','Dias em viagem','Ocupação','Proveitos','Custos variáveis','Custos pessoal','Custos fixos','Total custos','Resultado','Margem','Proveito por km','Custo por km'];
+  const linha = (nome, mot, b, est = {}) => [pS(nome, est), pS(mot, est), pN(b.nCargas, 'int', est), pN(b.km, 'int', est), pN(b.diasViagem, 'int', est),
+    pN(b.diasDisp ? b.diasViagem / b.diasDisp : null, 'pct', est), pN(b.prov / 100, 'eur', est), pN(b.totVar / 100, 'eur', est), pN(b.totPes / 100, 'eur', est),
+    pN(b.totFix / 100, 'eur', est), pN(b.totCustos / 100, 'eur', est), pN(b.res / 100, 'eur', {...est, fontStyle:'bold'}), pN(b.prov ? b.res / b.prov : null, 'pct', est),
+    pN(b.km ? b.prov / 100 / b.km : null, 'eur', est), pN(b.km ? b.totCustos / 100 / b.km : null, 'eur', est)];
+  const body = ids.map(id => linha(nomeCamiao(id), [...r[id].motoristas].join(', '), r[id]));
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7) + 4);
+  pdfTabela(R, {head, body, foot:linha('Total frota', '', t, EST_DEST), fs:7,
+    cols:[{w:22},{w:34},{n:1,w:12},{n:1,w:14},{n:1,w:14},{n:1,w:16},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1,w:14},{n:1,w:15},{n:1,w:15}]});
+}
+function pdfPontos(R, pontos){
+  const niv = {alerta:['Alerta', PC.perda], aviso:['Atenção', [154,106,0]], info:['Informação', PC.suave], ok:['Sem alertas', PC.ganho]};
+  const body = pontos.map(p => [pS(niv[p.n][0], {textColor:niv[p.n][1], fontStyle:'bold'}), pS(p.t)]);
+  pdfSecao(R, 'Pontos de atenção', (body.length + 1) * alturaLinha(8) + body.length * 1.5);
+  pdfTabela(R, {head:['Nível', 'Descrição'], body, cols:[{w:24}, {}], fs:8});
+}
+function pdfComparacao(R, ym, r){
+  const ymA = addMes(ym, -1), rA = calcularMes(ymA), ids = [...new Set([...colunasDe(rA), ...colunasDe(r)])];
+  if (!ids.length) return;
+  const body = ids.map(id => { const a = rA[id] ? rA[id].res / 100 : 0, b = r[id] ? r[id].res / 100 : 0; return [pS(nomeCamiao(id)), pN(a, 'eur'), pN(b, 'eur'), pN(b - a, 'eur')]; });
+  const tA = somarBlocos(Object.values(rA)).res / 100, tM = somarBlocos(Object.values(r)).res / 100;
+  pdfSecao(R, `Resultado: comparação com ${nomeMesAno(ymA)}`, (body.length + 2) * alturaLinha(8));
+  pdfTabela(R, {head:['Camião', nomeMesAno(ymA), nomeMesAno(ym), 'Variação'], body, foot:[pS('Frota'), pN(tA, 'eur'), pN(tM, 'eur'), pN(tM - tA, 'eur')], cols:[{w:40}, {n:1}, {n:1}, {n:1}], fs:8, largura:150});
+}
+function pdfAgregados(R, titulo, filtro, max = 15){
+  const listas = [['País de destino', agregarCargas(filtro, g => g.destinoPais)], ['Cliente', agregarCargas(filtro, g => g.cliente)]];
+  if (!listas[0][1].length) return;
+  const n = Math.min(max, Math.max(listas[0][1].length, listas[1][1].length));
+  pdfSecao(R, titulo, (n + 2) * alturaLinha(7.5) + 3);
+  const larg = (R.W - 2 * R.m - 8) / 2, y0 = R.y; let fim = y0;
+  listas.forEach(([rot, l], i) => {
+    R.y = y0;
+    const extra = l.length > max;
+    const body = l.slice(0, max).map(a => [pS(a.k), pN(a.n, 'int'), pN(a.prov / 100, 'eur'), pN(a.km, 'int'), pN(a.km ? a.prov / 100 / a.km : null, 'eur'), pN(a.nd ? a.dias / a.nd : null, 'dec')]);
+    if (extra) body.push([{content:pt(`Mais ${l.length - max}: ver folha de cálculo.`), colSpan:6, styles:{textColor:PC.suave, fontStyle:'italic'}}]);
+    fim = Math.max(fim, pdfTabela(R, {head:[rot, 'Cargas', 'Proveitos', 'Km', '€/km', 'Dias médios'], body, cols:[{}, {n:1, w:13}, {n:1, w:24}, {n:1, w:15}, {n:1, w:14}, {n:1, w:16}], fs:7.5, largura:larg, esquerda:R.m + i * (larg + 8), semAvanco:true}));
+  });
+  R.y = fim;
+}
+function pdfPessoalTabela(R, titulo, lista){
+  if (!lista.length) return;
+  const body = lista.map(cm => { const c = cm.comp; return [pS(cm.m.nome), pS(Object.keys(cm.porCam).map(nomeCamiao).join(', ')), pN(cm.diasTrab, 'int'), pN(cm.diasDesl, 'int'), pN(cm.nViag, 'int'),
+    pN(c.rem / 100, 'eur'), pN(c.subalim / 100, 'eur'), pN(c.ajudas / 100, 'eur'), pN(c.subsidios / 100, 'eur'), pN(c.ss / 100, 'eur'), pN((c.segpes + c.outpes) / 100, 'eur'), pN(cm.total / 100, 'eur', {fontStyle:'bold'})]; });
+  const s = k => lista.reduce((a, cm) => a + cm.comp[k], 0) / 100;
+  const foot = [pS('Total'), pS(''), pS(''), pS(''), pS(''), pN(s('rem'), 'eur'), pN(s('subalim'), 'eur'), pN(s('ajudas'), 'eur'), pN(s('subsidios'), 'eur'), pN(s('ss'), 'eur'), pN(s('segpes') + s('outpes'), 'eur'), pN(lista.reduce((a, cm) => a + cm.total, 0) / 100, 'eur')];
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7.5));
+  pdfTabela(R, {head:['Motorista','Camião','Dias trabalho','Dias fora','Viagens','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguros e outros','Custo total'], body, foot, fs:7.5,
+    cols:[{w:38},{w:30},{n:1,w:15},{n:1,w:13},{n:1,w:13},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1}]});
+}
+function pdfFixosTabela(R, titulo, ym){
+  const body = []; let t = [0, 0, 0];
+  camioesOrdenados().forEach(c => { const fx = custosFixosCamiao(c, ym); if (!fx) return; t = [t[0] + fx.segcam, t[1] + fx.leasing, t[2] + fx.outfix];
+    body.push([pS(c.matricula), pN(fx.dias, 'int'), pN(fx.segcam / 100, 'eur'), pN(fx.leasing / 100, 'eur'), pN(fx.outfix / 100, 'eur'), pN((fx.segcam + fx.leasing + fx.outfix) / 100, 'eur', {fontStyle:'bold'})]); });
+  if (!body.length) return;
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(8));
+  pdfTabela(R, {head:['Camião','Dias na frota','Seguro, IUC, inspeção e tacógrafo','Leasing e amortização','Outros custos fixos','Total'], body,
+    foot:[pS('Total'), pS(''), pN(t[0] / 100, 'eur'), pN(t[1] / 100, 'eur'), pN(t[2] / 100, 'eur'), pN((t[0] + t[1] + t[2]) / 100, 'eur')], cols:[{w:30}, {n:1, w:24}, {n:1}, {n:1}, {n:1}, {n:1}], fs:8, largura:200});
+}
+function diretasPorCarga(){ const d = {}; store.despesas.forEach(x => { if (x.cargaId) d[x.cargaId] = (d[x.cargaId] || 0) + cent(x.valor); }); return d; }
+function pdfCargasTabela(R, titulo, lista){
+  if (!lista.length) return;
+  const dir = diretasPorCarga();
+  const body = lista.map(g => { const v = cent(g.valor) / 100, d = (dir[g.id] || 0) / 100, dd = diasEntre(g.dataSaida, g.dataRegresso);
+    return [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dd != null && dd >= 0 ? dd + 1 : null, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(g.cliente), pS(destinoTxt(g)), pS(g.mercadoria),
+      pN(+g.km || null, 'int'), pN(v, 'eur'), pN(g.km ? v / g.km : null, 'eur'), pN(d || null, 'eur'), pN(d ? v - d : null, 'eur'), pS(g.fatura)]; });
+  const tv = lista.reduce((s, g) => s + cent(g.valor), 0) / 100, tk = lista.reduce((s, g) => s + (+g.km || 0), 0), td = lista.reduce((s, g) => s + (dir[g.id] || 0), 0) / 100;
+  const tm = lista.reduce((s, g) => s + (dir[g.id] ? cent(g.valor) - dir[g.id] : 0), 0) / 100;
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7));
+  pdfTabela(R, {head:['Saída','Regresso','Dias','Camião','Motorista','Cliente','Destino','Mercadoria','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura'], body,
+    foot:[pS(`${lista.length} cargas`), pS(''), pS(''), pS(''), pS(''), pS(''), pS(''), pS(''), pN(tk, 'int'), pN(tv, 'eur'), pN(tk ? tv / tk : null, 'eur'), pN(td || null, 'eur'), pN(td ? tm : null, 'eur'), pS('')],
+    cols:[{w:15},{w:15},{n:1,w:8},{w:17},{w:24},{},{},{w:28},{n:1,w:12},{n:1,w:18},{n:1,w:11},{n:1,w:17},{n:1,w:17},{w:19}], fs:7});
+}
+function pdfDespesasTabela(R, titulo, lista){
+  if (!lista.length) return;
+  const body = lista.map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
+    return [pS(fmtData(d.data)), pS(nomeCamiao(d.camiaoId || GERAL)), pS(t.nome), pS(catNome(t.cat)), pS(d.fornecedor), pS(d.documento), pN(+d.litros || null, 'dec'), pN(+d.valor || 0, 'eur'), pS(d.diluir ? '12 meses' : 'No mês'), pS(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : '')]; });
+  const tv = lista.reduce((s, d) => s + cent(d.valor), 0) / 100, tl = lista.reduce((s, d) => s + (+d.litros || 0), 0);
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7.5));
+  pdfTabela(R, {head:['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação','Viagem'], body,
+    foot:[pS(`${lista.length} despesas`), pS(''), pS(''), pS(''), pS(''), pS(''), pN(tl || null, 'dec'), pN(tv, 'eur'), pS(''), pS('')],
+    cols:[{w:17},{w:20},{w:36},{w:36},{},{w:24},{n:1,w:14},{n:1,w:20},{w:17},{w:38}], fs:7.5});
+}
+function pdfPorMes(R, titulo, ids, meses, porId, fn, t){
+  if (!ids.length) return;
+  const body = ids.map(id => [pS(nomeCamiao(id)), ...meses.map(m => pN(m[id] ? fn(m[id]) : 0, t)), pN(fn(porId[id]), t, {fontStyle:'bold'})]);
+  const foot = [pS('Total frota'), ...meses.map(m => pN(fn(somarBlocos(Object.values(m))), t)), pN(fn(somarBlocos(Object.values(porId))), t)];
+  pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7));
+  pdfTabela(R, {head:['Camião', ...MESES_C, 'Ano'], body, foot, cols:[{w:22}, ...Array(12).fill({n:1}), {n:1, w:21}], fs:6.8});
+}
+
+// ---- Documentos
+function pdfMes(){
+  if (!pdfDisponivel()) return;
+  const ym = `${$('#r-ano').value}-${$('#r-mes').value}`, nm = nomeMesAno(ym), r = calcularMes(ym);
+  const R = novoPDF('Relatório mensal de frota', nm);
+  pdfKpis(R, kpisDe(somarBlocos(Object.values(r))));
+  pdfPorCamiao(R, 'Indicadores por camião', r);
+  pdfPontos(R, pontosAtencao(ym));
+  pdfComparacao(R, ym, r);
+  pdfMapa(R, 'Mapa de resultados por camião', r);
+  pdfPessoalTabela(R, 'Custos com pessoal', pessoalMes(ym));
+  pdfFixosTabela(R, 'Custos fixos dos camiões', ym);
+  pdfAgregados(R, 'Rentabilidade por destino e por cliente', g => (g.dataSaida || '').slice(0, 7) === ym);
+  pdfCargasTabela(R, 'Cargas com saída no mês', store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida)));
+  pdfDespesasTabela(R, 'Despesas lançadas no mês', store.despesas.filter(d => (d.data || '').slice(0, 7) === ym).sort((a, b) => a.data.localeCompare(b.data)));
+  pdfFecho(R, fechoDe(somarBlocos(Object.values(r))));
+  pdfFinalizar(R, `frota-relatorio-${ym}.pdf`);
+}
+function pdfAno(){
+  if (!pdfDisponivel()) return;
+  const ano = $('#r-ano').value, {porId, meses} = calcularAno(ano), ids = colunasDe(porId);
+  const R = novoPDF('Relatório anual de frota', `Ano de ${ano}`);
+  pdfKpis(R, kpisDe(somarBlocos(Object.values(porId))));
+  pdfPorCamiao(R, 'Indicadores por camião no ano', porId);
+  pdfMapa(R, 'Mapa de resultados do ano por camião', porId);
+  pdfPorMes(R, 'Resultado por camião e mês', ids, meses, porId, b => b.res / 100, 'eur');
+  pdfPorMes(R, 'Proveitos por camião e mês', ids, meses, porId, b => b.prov / 100, 'eur');
+  pdfPorMes(R, 'Custos totais por camião e mês', ids, meses, porId, b => b.totCustos / 100, 'eur');
+  pdfPorMes(R, 'Custos com pessoal por camião e mês', ids, meses, porId, b => b.totPes / 100, 'eur');
+  pdfPorMes(R, 'Km por camião e mês', ids, meses, porId, b => b.km, 'int');
+  const mots = motoristasOrdenados().map(m => ({m, v:MESES_C.map((_, i) => { const cm = custoMotorista(m, `${ano}-${pad2(i + 1)}`); return cm ? cm.total / 100 : 0; })})).filter(x => x.v.some(Boolean));
+  if (mots.length){
+    const tm = MESES_C.map((_, i) => mots.reduce((s, x) => s + x.v[i], 0));
+    pdfSecao(R, 'Custo de cada motorista por mês', (mots.length + 3) * alturaLinha(6.8));
+    pdfTabela(R, {head:['Motorista', ...MESES_C, 'Ano'], body:mots.map(x => [pS(x.m.nome), ...x.v.map(v => pN(v, 'eur')), pN(x.v.reduce((s, v) => s + v, 0), 'eur', {fontStyle:'bold'})]),
+      foot:[pS('Total'), ...tm.map(v => pN(v, 'eur')), pN(tm.reduce((s, v) => s + v, 0), 'eur')], cols:[{w:30}, ...Array(12).fill({n:1}), {n:1, w:21}], fs:6.8});
+  }
+  pdfAgregados(R, 'Rentabilidade por destino e por cliente', g => (g.dataSaida || '').slice(0, 4) === ano, 20);
+  pdfFecho(R, fechoDe(somarBlocos(Object.values(porId))));
+  pdfFinalizar(R, `frota-relatorio-anual-${ano}.pdf`);
+}
+function pdfFolhaCargas(){
+  if (!pdfDisponivel()) return;
+  const linhas = dadosFolha(), de = $('#f-de').value, ate = $('#f-ate').value;
+  const extra = [$('#f-cam').value ? 'Camião ' + nomeCamiao($('#f-cam').value) : '', $('#f-pais').value ? 'Destino ' + $('#f-pais').value : ''].filter(Boolean).join(', ');
+  const R = novoPDF('Folha de registo de cargas' + (extra ? ` (${extra})` : ''), `${de ? fmtData(de) : 'Início'} a ${ate ? fmtData(ate) : fmtData(hoje())}`);
+  if (!linhas.length){ pdfNota(R, 'Não há cargas com estes filtros.'); pdfFinalizar(R, 'folha-cargas.pdf'); return; }
+  const body = linhas.map(({g, v, dir, km, dias, eurKm, margem}) => [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dias, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(g.cliente),
+    pS(destinoTxt(g) + (g.origem && g.origem !== 'Portugal' ? `\n(origem: ${g.origem})` : '')), pS(g.mercadoria), pN(+g.pesoKg || null, 'int'), pN(km || null, 'int'), pN(v / 100, 'eur'), pN(eurKm, 'eur'),
+    pN(dir ? dir / 100 : null, 'eur'), pN(dir ? margem / 100 : null, 'eur'), pS(g.fatura), pS(g.cmr), pS(g.obs)]);
+  const sm = fn => linhas.reduce((s, l) => s + fn(l), 0);
+  const tv = sm(l => l.v) / 100, tk = sm(l => l.km), td = sm(l => l.dir) / 100, tm = sm(l => l.dir ? l.margem : 0) / 100;
+  pdfSecao(R, `Registo de cargas (${linhas.length})`, (body.length + 3) * alturaLinha(6.6));
+  pdfTabela(R, {head:['Saída','Regresso','Dias','Camião','Motorista','Cliente','Destino','Mercadoria','Peso (kg)','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura','CMR','Observações'], body,
+    foot:[pS('Total'), pS(''), pS(''), pS(''), pS(''), pS(''), pS(''), pS(''), pN(sm(l => +l.g.pesoKg || 0) || null, 'int'), pN(tk, 'int'), pN(tv, 'eur'), pN(tk ? tv / tk : null, 'eur'), pN(td || null, 'eur'), pN(td ? tm : null, 'eur'), pS(''), pS(''), pS('')],
+    cols:[{w:14},{w:14},{n:1,w:8},{w:16},{w:20},{w:22},{w:24},{w:24},{n:1,w:12},{n:1,w:11},{n:1,w:17},{n:1,w:11},{n:1,w:15},{n:1,w:15},{w:18},{w:11},{}], fs:6.6});
+  pdfNota(R, 'Dias: do dia de saída ao dia de regresso, inclusive. Despesas da viagem: apenas as despesas associadas a cada carga; salários e custos fixos entram no resultado mensal do camião.');
+  pdfFecho(R, [['Cargas', String(linhas.length)], ['Km', fmtInt.format(tk)], ['Valor dos fretes', fmtEur(tv)], ['Proveito por km', fmtVal(tk ? tv / tk : null, 'eur')]]);
+  pdfFinalizar(R, `folha-cargas-${de || 'inicio'}-a-${ate || hoje()}.pdf`);
+}
+function pdfListaCargas(){
+  if (!pdfDisponivel()) return;
+  const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value;
+  const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam)).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida));
+  const per = mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`;
+  const R = novoPDF('Lista de cargas' + (cam ? ` (camião ${nomeCamiao(cam)})` : ''), per);
+  if (!lista.length) pdfNota(R, 'Não há cargas neste período.'); else pdfCargasTabela(R, 'Cargas por data de saída', lista);
+  pdfFinalizar(R, `cargas-${ano}${mes ? '-' + mes : ''}.pdf`);
+}
+function pdfListaDespesas(){
+  if (!pdfDisponivel()) return;
+  const ano = $('#d-ano').value, mes = $('#d-mes').value, cam = $('#d-cam').value, tipo = $('#d-tipo').value;
+  const lista = store.despesas.filter(d => noPeriodo(d.data, ano, mes) && (!cam || (d.camiaoId || GERAL) === cam) && (!tipo || d.tipo === tipo)).sort((a, b) => a.data.localeCompare(b.data));
+  const per = mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`;
+  const R = novoPDF('Lista de despesas' + (cam ? ` (${nomeCamiao(cam)})` : '') + (tipo ? ` (${tipoPorId(tipo).nome})` : ''), per);
+  if (!lista.length) pdfNota(R, 'Não há despesas neste período.');
+  else {
+    pdfDespesasTabela(R, 'Despesas por data do documento', lista);
+    const porCat = {}; lista.forEach(d => { const c = tipoPorId(d.tipo).cat; porCat[c] = (porCat[c] || 0) + cent(d.valor); });
+    const body = CATS.filter(c => porCat[c.id]).map(c => [pS(c.nome), pN(porCat[c.id] / 100, 'eur')]);
+    pdfSecao(R, 'Resumo por categoria', (body.length + 2) * alturaLinha(8));
+    pdfTabela(R, {head:['Categoria', 'Valor'], body, foot:[pS('Total'), pN(lista.reduce((s, d) => s + cent(d.valor), 0) / 100, 'eur')], cols:[{}, {n:1, w:30}], fs:8, largura:120});
+  }
+  pdfFinalizar(R, `despesas-${ano}${mes ? '-' + mes : ''}.pdf`);
+}
+function pdfProcessamento(){
+  if (!pdfDisponivel()) return;
+  const ym = `${$('#p-ano').value}-${$('#p-mes').value}`, lista = pessoalMes(ym);
+  const R = novoPDF('Processamento de pessoal', nomeMesAno(ym));
+  if (!lista.length) pdfNota(R, 'Nenhum motorista com contrato ativo neste mês.');
+  else {
+    pdfPessoalTabela(R, 'Custo de cada motorista', lista);
+    const aj = lista.filter(cm => cm.extras || cm.faltas || store.mensal.some(x => x.id === `${ym}_${cm.m.id}`));
+    if (aj.length){
+      const body = aj.map(cm => { const p = store.mensal.find(x => x.id === `${ym}_${cm.m.id}`) || {};
+        return [pS(cm.m.nome), pS(p.diasTrabalho != null ? String(p.diasTrabalho) : 'automático'), pS(p.diasDeslocacao != null ? String(p.diasDeslocacao) : `automático (${cm.autoDesl})`), pN(cm.extras || null, 'eur'), pS(p.extrasSemTSU ? 'Sim' : ''), pN(cm.faltas || null, 'eur')]; });
+      pdfSecao(R, 'Acertos do mês', (body.length + 2) * alturaLinha(8));
+      pdfTabela(R, {head:['Motorista','Dias de trabalho','Dias fora','Prémios e extras','Extras sem Seg. Social','Faltas descontadas'], body, cols:[{w:50}, {}, {}, {n:1}, {}, {n:1}], fs:8});
+    }
+    pdfNota(R, 'Custos para a empresa, calculados a partir das fichas dos motoristas: inclui a parte mensal dos subsídios de férias e de Natal (2/12) e a Segurança Social da entidade patronal sobre as remunerações sujeitas.');
+  }
+  pdfFecho(R, [['Motoristas', String(lista.length)], ['Custo total para a empresa', fmtC(lista.reduce((a, cm) => a + cm.total, 0))]]);
+  pdfFinalizar(R, `processamento-pessoal-${ym}.pdf`);
+}
+function pdfKV(R, titulo, pares){
+  const rows = [];
+  for (let i = 0; i < pares.length; i += 2){
+    const a = pares[i], b = pares[i + 1] || ['', ''];
+    rows.push([pS(a[0], {fillColor:PC.sub, fontStyle:'bold'}), pS(a[1] ?? ''), pS(b[0], {fillColor:PC.sub, fontStyle:'bold'}), pS(b[1] ?? '')]);
+  }
+  pdfSecao(R, titulo, rows.length * alturaLinha(8.5) + 2);
+  pdfTabela(R, {body:rows, cols:[{w:47}, {}, {w:47}, {}], fs:8.5});
+}
+const ultimos12 = () => Array.from({length:12}, (_, i) => addMes(hoje().slice(0, 7), i - 11));
+function pdfFichaMotoristaEm(R, m){
+  const eur = v => v == null || v === '' ? '' : fmtEur(v), P = params();
+  pdfKV(R, `Ficha do motorista: ${m.nome}`, [['Nome', m.nome], ['NIF', m.nif], ['NISS', m.niss], ['Telefone', m.telefone],
+    ['Carta de condução', fmtData(m.validadeCarta)], ['CAM', fmtData(m.validadeCAM)], ['Cartão de condutor', fmtData(m.validadeCartaoTacografo)], ['Camião atual', (() => { const c = camiaoDoMotoristaEm(m, hoje()); return c ? nomeCamiao(c) : 'Sem camião'; })()]]);
+  pdfKV(R, 'Contrato', [['Tipo de contrato', CONTRATOS[m.tipoContrato] || ''], ['Categoria', m.categoria], ['Admissão', fmtData(m.dataAdmissao)], ['Saída', fmtData(m.dataSaida)], ['Convenção e notas', m.cct]]);
+  pdfKV(R, 'Remuneração e encargos', [['Salário base', eur(m.salarioBase)], ['Sub. alimentação por dia', eur(m.subAlimDia) + (m.subAlimModo ? ` (${({cartao:'cartão', dinheiro:'dinheiro', nenhum:'não recebe'})[m.subAlimModo]})` : '')],
+    ['Dias de trabalho por mês', String(m.diasUteis ?? P.diasUteis)], ['Subsídios férias e Natal', m.semProvisaoSubsidios ? 'Não incluídos' : 'Incluídos (2/12 por mês)'],
+    ['Taxa Segurança Social', fmtDec.format(m.taxaTSU ?? P.taxaTSU) + ' %'], ['Seguro AT por ano', eur(m.seguroATAnual)], ['Medicina do trabalho por ano', eur(m.medicinaAnual)], ['Formação por ano', eur(m.formacaoAnual)], ['Outros encargos por mês', eur(m.outrosEncargosMensais)]]);
+  const cl = m.clausulas || [];
+  if (cl.length){
+    pdfSecao(R, 'Cláusulas do contrato', (cl.length + 1) * alturaLinha(8));
+    pdfTabela(R, {head:['Descrição', 'Valor', 'Conta por', 'Natureza', 'Seg. Social', 'Subsídios'], body:cl.map(c => [pS(c.descricao), pN(c.valor, 'eur'), pS((BASES.find(b => b[0] === c.base) || ['', 'Mês'])[1]), pS(c.grupo === 'ajudas' ? 'Ajudas de custo' : 'Remuneração'), pS(c.incideTSU ? 'Sim' : 'Não'), pS(c.incideSubsidios ? 'Sim' : 'Não')]),
+      cols:[{}, {n:1, w:24}, {w:28}, {w:30}, {w:20}, {w:18}], fs:8});
+  }
+  const at = m.atribuicoes || [];
+  if (at.length){
+    pdfSecao(R, 'Camiões atribuídos', (at.length + 1) * alturaLinha(8));
+    pdfTabela(R, {head:['A partir de', 'Camião'], body:at.map(a => [pS(fmtData(a.desde)), pS(nomeCamiao(a.camiaoId))]), cols:[{w:30}, {}], fs:8, largura:100});
+  }
+  const hist = ultimos12().map(ym => ({ym, cm:custoMotorista(m, ym)})).filter(x => x.cm);
+  if (hist.length){
+    const body = hist.map(({ym, cm}) => { const c = cm.comp; return [pS(nomeMesAno(ym)), pN(cm.diasTrab, 'int'), pN(cm.diasDesl, 'int'), pN(c.rem / 100, 'eur'), pN(c.subalim / 100, 'eur'), pN(c.ajudas / 100, 'eur'), pN(c.subsidios / 100, 'eur'), pN(c.ss / 100, 'eur'), pN((c.segpes + c.outpes) / 100, 'eur'), pN(cm.total / 100, 'eur', {fontStyle:'bold'})]; });
+    pdfSecao(R, 'Custo para a empresa nos últimos 12 meses', (body.length + 3) * alturaLinha(7));
+    pdfTabela(R, {head:['Mês', 'Dias trab.', 'Dias fora', 'Remunerações', 'Sub. alim.', 'Ajudas', 'Subsídios', 'Seg. Social', 'Outros', 'Total'], body,
+      foot:[pS('Total'), pS(''), pS(''), ...['rem', 'subalim', 'ajudas', 'subsidios', 'ss'].map(k => pN(hist.reduce((s, x) => s + x.cm.comp[k], 0) / 100, 'eur')), pN(hist.reduce((s, x) => s + x.cm.comp.segpes + x.cm.comp.outpes, 0) / 100, 'eur'), pN(hist.reduce((s, x) => s + x.cm.total, 0) / 100, 'eur')],
+      cols:[{w:30}, {n:1, w:14}, {n:1, w:13}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1}], fs:7});
+  }
+  if (m.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, m.obs); }
+}
+function pdfFichaCamiaoEm(R, c){
+  const eur = v => v == null || v === '' ? '' : fmtEur(v);
+  pdfKV(R, `Ficha do camião: ${c.matricula}`, [['Matrícula', c.matricula], ['Marca e modelo', c.marcaModelo], ['Ano', c.ano ? String(c.ano) : ''], ['Estado', c.ativo === false ? 'Inativo' : 'Ativo'],
+    ['Entrada na frota', fmtData(c.dataInicio)], ['Saída da frota', fmtData(c.dataFim)], ['Motorista atual', motoristaAtualTxt(c)], ['', '']]);
+  pdfKV(R, 'Custos fixos', [['Seguro por ano', eur(c.seguroAnual)], ['Validade do seguro', fmtData(c.seguroValidade)], ['IUC por ano', eur(c.iucAnual)], ['Inspeções por ano', eur(c.inspecaoAnual)],
+    ['Próxima inspeção', fmtData(c.proximaInspecao)], ['Tacógrafo por ano', eur(c.tacografoAnual)], ['Verificação do tacógrafo', fmtData(c.validadeTacografo)], ['Leasing por mês', eur(c.leasingMensal)],
+    ['Última renda', fmtData(c.leasingFim)], ['Amortização por mês', eur(c.amortizacaoMensal)], ['Outros fixos por mês', eur(c.outrosFixosMensais) + (c.outrosFixosDesc ? ` (${c.outrosFixosDesc})` : '')], ['Total de custos fixos por mês', fmtEur(fixosMensaisTeoricos(c))]]);
+  const hist = ultimos12().map(ym => ({ym, b:calcularMes(ym)[c.id]})).filter(x => x.b);
+  if (hist.length){
+    const body = hist.map(({ym, b}) => [pS(nomeMesAno(ym)), pN(b.nCargas, 'int'), pN(b.km, 'int'), pN(b.prov / 100, 'eur'), pN(b.totVar / 100, 'eur'), pN(b.totPes / 100, 'eur'), pN(b.totFix / 100, 'eur'), pN(b.res / 100, 'eur', {fontStyle:'bold'}), pN(b.km ? b.totCustos / 100 / b.km : null, 'eur')]);
+    const t = somarBlocos(hist.map(x => x.b));
+    pdfSecao(R, 'Resultado nos últimos 12 meses', (body.length + 3) * alturaLinha(7.5));
+    pdfTabela(R, {head:['Mês', 'Cargas', 'Km', 'Proveitos', 'Custos variáveis', 'Pessoal', 'Fixos', 'Resultado', 'Custo por km'], body,
+      foot:[pS('Total'), pN(t.nCargas, 'int'), pN(t.km, 'int'), pN(t.prov / 100, 'eur'), pN(t.totVar / 100, 'eur'), pN(t.totPes / 100, 'eur'), pN(t.totFix / 100, 'eur'), pN(t.res / 100, 'eur'), pN(t.km ? t.totCustos / 100 / t.km : null, 'eur')],
+      cols:[{w:32}, {n:1, w:14}, {n:1, w:16}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1, w:18}], fs:7.5});
+  }
+  if (c.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, c.obs); }
+}
+function pdfFichaMotorista(id){ if (!pdfDisponivel()) return; const m = motoristaPorId(id); if (!m) return; const R = novoPDF('Ficha do motorista', m.nome, 'portrait'); pdfFichaMotoristaEm(R, m); pdfFinalizar(R, `ficha-motorista-${(m.nome || 'motorista').replace(/\s+/g, '-').toLowerCase()}.pdf`); }
+function pdfFichaCamiao(id){ if (!pdfDisponivel()) return; const c = camiaoPorId(id); if (!c) return; const R = novoPDF('Ficha do camião', c.matricula, 'portrait'); pdfFichaCamiaoEm(R, c); pdfFinalizar(R, `ficha-camiao-${c.matricula}.pdf`); }
+function pdfTodasFichas(){
+  if (!pdfDisponivel()) return;
+  const R = novoPDF('Fichas da frota e dos motoristas', fmtData(hoje()), 'portrait'); let primeira = true;
+  const nova = () => { if (!primeira) pdfNovaPagina(R); primeira = false; };
+  camioesOrdenados().forEach(c => { nova(); pdfFichaCamiaoEm(R, c); });
+  motoristasOrdenados().forEach(m => { nova(); pdfFichaMotoristaEm(R, m); });
+  if (primeira) pdfNota(R, 'Ainda não há camiões nem motoristas registados.');
+  pdfFinalizar(R, `fichas-frota-${hoje()}.pdf`);
+}
+
+/* ---------- Diversos ---------- */
+let toastT = null;
+function toast(msg, tipo){
+  const t = $('#toast'); t.textContent = msg; t.className = tipo === 'erro' ? 'erro' : ''; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, tipo === 'erro' ? 6000 : 2800);
+}
+function abrirTab(t){
+  if (!$('#tab-' + t)) t = 'resultados';
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  $$('.tab').forEach(s => { s.hidden = s.id !== 'tab-' + t; });
+  // Em pré-visualizações (iframe sandbox/srcdoc) o histórico está bloqueado: ignora-se sem afetar a app
+  try { if (location.hash !== '#' + t) history.replaceState(null, '', '#' + t); } catch (e) {}
+}
+$$('.tabs button').forEach(b => b.addEventListener('click', () => abrirTab(b.dataset.tab)));
+$$('[data-imprimir]').forEach(b => b.addEventListener('click', () => window.print()));
+['#r-ano','#r-mes'].forEach(s => $(s).addEventListener('change', renderResultados));
+$('#r-ind').addEventListener('change', renderAnual);
+['#c-ano','#c-mes','#c-cam'].forEach(s => $(s).addEventListener('change', renderCargas));
+['#d-ano','#d-mes','#d-cam','#d-tipo'].forEach(s => $(s).addEventListener('change', renderDespesas));
+['#p-ano','#p-mes'].forEach(s => $(s).addEventListener('change', renderPessoal));
+['#f-de','#f-ate','#f-cam','#f-pais'].forEach(s => $(s).addEventListener('change', renderFolha));
+$('#c-nova').addEventListener('click', () => abrirCarga());
+$('#d-nova').addEventListener('click', () => abrirDespesa());
+$('#cam-novo').addEventListener('click', () => abrirCamiao());
+$('#mot-novo').addEventListener('click', () => abrirMotorista());
+$('#r-xls-mes').addEventListener('click', exportarMes);
+$('#r-xls-ano').addEventListener('click', exportarAno);
+$('#f-excel').addEventListener('click', exportarFolha);
+$('#bk-excel').addEventListener('click', exportarTudo);
+$('#bk-json').addEventListener('click', exportarJSON);
+$('#r-pdf-mes').addEventListener('click', pdfMes);
+$('#r-pdf-ano').addEventListener('click', pdfAno);
+$('#f-pdf').addEventListener('click', pdfFolhaCargas);
+$('#c-pdf').addEventListener('click', pdfListaCargas);
+$('#d-pdf').addEventListener('click', pdfListaDespesas);
+$('#p-pdf').addEventListener('click', pdfProcessamento);
+$('#bk-pdf').addEventListener('click', pdfTodasFichas);
+
+function estadoSync(){
+  const el = $('#estado-sync');
+  if (MODO_LOCAL){ el.textContent = 'Modo de teste'; el.className = 'sync'; return; }
+  if (!navigator.onLine){ el.textContent = 'Sem ligação, a guardar no dispositivo'; el.className = 'sync off'; return; }
+  el.textContent = Object.values(pendentes).some(Boolean) ? 'A sincronizar…' : 'Sincronizado'; el.className = 'sync';
+}
+window.addEventListener('online', estadoSync);
+window.addEventListener('offline', estadoSync);
+
+/* ---------- Arranque e autenticação ---------- */
+function mostrarApp(nome){ $('#ecra-login').hidden = true; $('#app').hidden = false; $('#utilizador').textContent = nome; $('#btn-sair').hidden = MODO_LOCAL; estadoSync(); abrirTab(location.hash.slice(1) || 'resultados'); }
+function mostrarLogin(){ $('#app').hidden = true; $('#ecra-login').hidden = false; }
+function subscrever(){
+  unsubs.forEach(u => u());
+  unsubs = COLS.map(c => fbDb.collection(c).onSnapshot({includeMetadataChanges:true}, snap => {
+    store[c] = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    pendentes[c] = snap.metadata.hasPendingWrites; estadoSync(); renderTudo();
+  }, err => toast(`Erro ao ler dados (${c}): ` + (err.code === 'permission-denied' ? 'esta conta não tem acesso.' : err.message), 'erro')));
+}
+const ERROS_LOGIN = {
+  'auth/invalid-credential':'Email ou palavra-passe incorretos.', 'auth/wrong-password':'Email ou palavra-passe incorretos.',
+  'auth/user-not-found':'Email ou palavra-passe incorretos.', 'auth/invalid-email':'O email não é válido.',
+  'auth/too-many-requests':'Demasiadas tentativas. Aguarde alguns minutos.', 'auth/network-request-failed':'Sem ligação à internet.',
+  'auth/user-disabled':'Esta conta está desativada.'
+};
+function iniciar(){
+  $$('select[data-meses]').forEach(s => {
+    s.innerHTML = (s.dataset.meses === 'todos' ? '<option value="">Todos</option>' : '') + MESES.map((m, i) => `<option value="${pad2(i + 1)}">${m}</option>`).join('');
+  });
+  const agora = new Date(), mesAtual = pad2(agora.getMonth() + 1), anoAtual = agora.getFullYear();
+  ['#r-mes','#c-mes','#d-mes','#p-mes'].forEach(s => { $(s).value = mesAtual; });
+  $('#f-de').value = `${anoAtual}-01-01`; $('#f-ate').value = `${anoAtual}-12-31`;
+  preencherTiposSelect($('#d-tipo'), true);
+  preencherTiposSelect($('#f-despesa').elements.tipo, false);
+  $('#dl-paises').innerHTML = PAISES.map(p => `<option value="${p}">`).join('');
+
+  if (MODO_LOCAL){ carregarLocal(); $('#aviso-local').hidden = false; mostrarApp(''); renderTudo(); return; }
+  if (typeof firebase === 'undefined'){ document.body.innerHTML = '<p style="padding:24px">Não foi possível carregar o Firebase. Verifique a ligação à internet e recarregue a página.</p>'; return; }
+  firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth(); fbDb = firebase.firestore();
+  fbDb.enablePersistence({synchronizeTabs:true}).catch(() => {});
+  fbAuth.onAuthStateChanged(u => {
+    utilizadorAtual = u;
+    if (u){ mostrarApp(u.email); subscrever(); }
+    else { unsubs.forEach(f => f()); unsubs = []; COLS.forEach(c => { store[c] = []; }); mostrarLogin(); }
+  });
+  $('#f-login').addEventListener('submit', async ev => {
+    ev.preventDefault(); const e = ev.target.elements, erro = $('#login-erro'); erro.textContent = '';
+    try { await fbAuth.signInWithEmailAndPassword(e.email.value.trim(), e.pass.value); }
+    catch (x) { erro.textContent = ERROS_LOGIN[x.code] || x.message; }
+  });
+  $('#btn-recuperar').addEventListener('click', async () => {
+    const em = $('#f-login').elements.email.value.trim(), erro = $('#login-erro');
+    if (!em){ erro.textContent = 'Escreva o email e carregue novamente em «Recuperar palavra-passe».'; return; }
+    try { await fbAuth.sendPasswordResetEmail(em); erro.textContent = ''; toast('Enviámos um email para redefinir a palavra-passe.'); }
+    catch (x) { erro.textContent = ERROS_LOGIN[x.code] || x.message; }
+  });
+  $('#btn-sair').addEventListener('click', () => fbAuth.signOut());
+}
+iniciar();
+</script>
+</body>
+</html>
