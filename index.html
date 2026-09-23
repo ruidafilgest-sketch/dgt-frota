@@ -320,11 +320,11 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         </div>
         <div class="tabela-wrap">
           <table id="p-tabela" class="proc">
-            <thead><tr><th>Motorista</th><th>Camião no mês</th><th class="n">Dias de trabalho</th><th class="n">Dias fora</th><th class="n">Prémios e extras (€)</th><th>Sem TSU</th><th class="n">Faltas a descontar (€)</th><th class="n">Remunerações</th><th class="n">Sub. alimentação</th><th class="n">Ajudas de custo</th><th class="n">Subs. férias e Natal</th><th class="n">Segurança Social</th><th class="n">Seguros e outros</th><th class="n">Custo total</th></tr></thead>
+            <thead><tr><th>Motorista</th><th>Camião no mês</th><th class="n">Dias de trabalho</th><th class="n">Dias fora</th><th class="n">Ajudas de custo sem SS (€)</th><th class="n">Prémios e extras (€)</th><th>Sem TSU</th><th class="n">Faltas a descontar (€)</th><th class="n">Remunerações</th><th class="n">Sub. alimentação</th><th class="n">Ajudas de custo</th><th class="n">Subs. férias e Natal</th><th class="n">Segurança Social</th><th class="n">Seguros e outros</th><th class="n">Custo total</th></tr></thead>
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
-        <p class="nota">Os campos em branco usam o valor automático (a cinzento): dias de trabalho pela ficha, dias fora contados das cargas do motorista (saída a regresso). Escreva um número só quando o mês for diferente, por exemplo com férias, baixa ou faltas. As alterações ficam guardadas ao sair do campo.</p>
+        <p class="nota">Os campos em branco usam o valor automático (a cinzento): dias de trabalho pela ficha, dias fora contados das cargas (saída a regresso) e ajudas de custo sem Segurança Social pelo valor da ficha. Escreva um número só quando o mês for diferente, por exemplo o valor das ajudas de custo que vem no recibo, férias, baixa ou faltas. As alterações ficam guardadas ao sair do campo.</p>
       </div>
       <div class="painel">
         <h3>Fichas dos motoristas</h3>
@@ -389,6 +389,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <label class="campo">Limite isento do sub. alimentação em cartão (€/dia)<input type="number" name="limiteSubAlimCartao" step="0.01" min="0"></label>
             <label class="campo">Alerta de desvio face à média da frota (%)<input type="number" name="alertaDesvio" step="1" min="0"></label>
             <label class="campo">Avisar documentos a expirar com (dias)<input type="number" name="avisoValidadeDias" step="1" min="0"></label>
+            <label class="campo">Início dos registos na app<input type="date" name="inicioRegisto"><span class="ajuda">Salários e custos fixos só contam a partir desta data.</span></label>
           </div>
           <div class="barra" style="margin-top:12px"><button class="btn btn-pri" type="submit">Guardar parâmetros</button><p class="erro" id="param-erro" role="alert"></p></div>
         </form>
@@ -515,9 +516,10 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <fieldset><legend>Contrato</legend>
         <div class="grelha-3">
           <label class="campo">Tipo de contrato<select name="tipoContrato">
+            <option value="">Por indicar</option>
             <option value="sem_termo">Sem termo</option><option value="termo_certo">A termo certo</option><option value="termo_incerto">A termo incerto</option><option value="outro">Outro</option>
           </select></label>
-          <label class="campo">Data de admissão *<input type="date" name="dataAdmissao" required></label>
+          <label class="campo">Data de admissão<input type="date" name="dataAdmissao"><span class="ajuda">Os custos contam a partir desta data.</span></label>
           <label class="campo">Data de saída<input type="date" name="dataSaida"><span class="ajuda">Fim do contrato. Os custos param aqui.</span></label>
           <label class="campo">Categoria profissional<input name="categoria" autocomplete="off" placeholder="Motorista de pesados internacional"></label>
           <label class="campo inteiro">Convenção coletiva e notas do contrato<input name="cct" autocomplete="off"></label>
@@ -662,7 +664,8 @@ const MESES_C = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','No
 const COLS = ['camioes','motoristas','cargas','despesas','mensal','config'];
 const GERAL = '_geral';
 const CHAVE_LOCAL = 'dgt-frota-dados-v1';
-const PARAM_DEF = {taxaTSU:23.75, taxaFCT:0, diasUteis:22, limiteSubAlimDinheiro:null, limiteSubAlimCartao:null, alertaDesvio:15, avisoValidadeDias:60};
+const PARAM_DEF = {taxaTSU:23.75, taxaFCT:0, diasUteis:22, limiteSubAlimDinheiro:null, limiteSubAlimCartao:null, alertaDesvio:15, avisoValidadeDias:60, inicioRegisto:null};
+const PARAM_DATAS = ['inicioRegisto'];
 
 /* ---------- Estado ---------- */
 const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[]};
@@ -704,7 +707,7 @@ function placaHtml(id){
 }
 function destinoTxt(g){ return [g.destinoCidade, g.destinoPais].filter(Boolean).join(', '); }
 function nomeMotoristaCarga(g){ const m = g.motoristaId && motoristaPorId(g.motoristaId); return m ? m.nome : (g.motorista || ''); }
-function params(){ const p = store.config.find(c => c.id === 'parametros') || {}; const o = {...PARAM_DEF}; Object.keys(PARAM_DEF).forEach(k => { if (p[k] != null && p[k] !== '') o[k] = +p[k]; }); return o; }
+function params(){ const p = store.config.find(c => c.id === 'parametros') || {}; const o = {...PARAM_DEF}; Object.keys(PARAM_DEF).forEach(k => { if (p[k] != null && p[k] !== '') o[k] = PARAM_DATAS.includes(k) ? String(p[k]) : +p[k]; }); return o; }
 
 /* ---------- Datas ---------- */
 const utc = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
@@ -784,7 +787,7 @@ const DB = {
       COLS.forEach(col => (dados[col] || []).forEach(o => {
         if (!o || !o.id) return;
         const i = store[col].findIndex(x => x.id === o.id);
-        if (i >= 0) store[col][i] = o; else store[col].push(o);
+        if (i >= 0) store[col][i] = col === 'config' ? {...store[col][i], ...o} : o; else store[col].push(o);
       }));
       guardarLocal(); renderTudo(); return;
     }
@@ -792,7 +795,7 @@ const DB = {
     COLS.forEach(col => (dados[col] || []).forEach(o => { if (o && o.id) ops.push([col, o.id, semId(o)]); }));
     for (let i = 0; i < ops.length; i += 400){
       const b = fbDb.batch();
-      ops.slice(i, i + 400).forEach(([col, id, d]) => b.set(fbDb.collection(col).doc(id), d));
+      ops.slice(i, i + 400).forEach(([col, id, d]) => b.set(fbDb.collection(col).doc(id), d, col === 'config' ? {merge:true} : {}));
       await b.commit();
     }
   }
@@ -819,9 +822,10 @@ function alocar(d){
 // Custo de um motorista num mês, por componente (cêntimos) e dias por camião.
 function custoMotorista(m, ym, opts = {}){
   const P = params(), dias = diasDoMes(ym);
-  const diasEmp = dias.filter(d => empregadoEm(m, d));
+  const diasEmp = dias.filter(d => empregadoEm(m, d) && (!P.inicioRegisto || d >= P.inicioRegisto));
   if (!diasEmp.length) return null;
-  const frac = diasEmp.length / dias.length;
+  // Mês incompleto: proporcional a 30 dias, como no processamento salarial
+  const frac = diasEmp.length === dias.length ? 1 : Math.min(1, diasEmp.length / 30);
   const proc = opts.semProc ? {} : (store.mensal.find(x => x.id === `${ym}_${m.id}`) || {});
   const diasUteis = (m.diasUteis != null && m.diasUteis !== '') ? num0(m.diasUteis) : P.diasUteis;
   const diasTrab = (proc.diasTrabalho != null && proc.diasTrabalho !== '') ? num0(proc.diasTrabalho) : Math.round(diasUteis * frac);
@@ -830,7 +834,7 @@ function custoMotorista(m, ym, opts = {}){
   const nViag = opts.nViag != null ? opts.nViag : store.cargas.filter(g => g.motoristaId === m.id && (g.dataSaida || '').slice(0, 7) === ym).length;
 
   const base = num0(m.salarioBase) * frac;
-  let rem = base, ajudas = 0, incid = base, baseSub = base;
+  let rem = base, ajTSU = 0, ajLivre = 0, incid = base, baseSub = base;
   (m.clausulas || []).forEach(cl => {
     const v = num0(cl.valor); let q;
     switch (cl.base){
@@ -840,10 +844,13 @@ function custoMotorista(m, ym, opts = {}){
       case 'anual': q = v / 12 * frac; break;
       default: q = v * frac;
     }
-    if (cl.grupo === 'ajudas') ajudas += q; else rem += q;
+    if (cl.grupo === 'ajudas'){ if (cl.incideTSU) ajTSU += q; else ajLivre += q; } else rem += q;
     if (cl.incideTSU) incid += q;
     if (cl.incideSubsidios && (!cl.base || cl.base === 'mensal')) baseSub += q;
   });
+  // Ajudas de custo sem Seg. Social: o valor do mês (processamento) substitui o da ficha
+  const ajudasAuto = ajLivre, temAjMes = proc.ajudasMes != null && proc.ajudasMes !== '';
+  const ajudas = ajTSU + (temAjMes ? num0(proc.ajudasMes) : ajLivre);
   const extras = num0(proc.extras), faltas = num0(proc.faltas);
   rem += extras - faltas;
   incid += (proc.extrasSemTSU ? 0 : extras) - faltas;
@@ -862,12 +869,13 @@ function custoMotorista(m, ym, opts = {}){
   const comp = {}; let total = 0;
   CATS_PES.forEach(k => { comp[k] = Math.round((compE[k] || 0) * 100); total += comp[k]; });
   const porCam = {};
-  diasEmp.forEach(d => { const c = camiaoDoMotoristaEm(m, d) || GERAL; porCam[c] = (porCam[c] || 0) + 1; });
-  return {m, ym, frac, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
+  let diasSemAtrib = 0;
+  diasEmp.forEach(d => { const c0 = camiaoDoMotoristaEm(m, d); if (!c0) diasSemAtrib++; const c = c0 || GERAL; porCam[c] = (porCam[c] || 0) + 1; });
+  return {m, ym, frac, ajudasAuto, temAjMes, diasSemAtrib, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
 }
 
 function custosFixosCamiao(c, ym){
-  const dias = diasDoMes(ym), n = dias.filter(d => camiaoAtivoEm(c, d)).length;
+  const P = params(), dias = diasDoMes(ym), n = dias.filter(d => camiaoAtivoEm(c, d) && (!P.inicioRegisto || d >= P.inicioRegisto)).length;
   if (!n) return null;
   const f = n / dias.length;
   const segcam = (num0(c.seguroAnual) + num0(c.iucAnual) + num0(c.inspecaoAnual) + num0(c.tacografoAnual)) / 12 * f;
@@ -995,7 +1003,8 @@ function pontosAtencao(ym){
     if (mCons && b.litros > 0 && comLit.length > 1){ const c = b.litros / b.km * 100; if (c > mCons * (1 + d)) out.push({n:'aviso', t:`${nm}: consumo de ${fmtDec.format(c)} L/100 km, acima da média da frota (${fmtDec.format(mCons)} L/100 km).`}); }
     if (b.diasDisp > 0 && b.diasViagem / b.diasDisp < 0.5) out.push({n:'aviso', t:`${nm} esteve em viagem ${b.diasViagem} de ${b.diasDisp} dias (${fmtPct.format(b.diasViagem / b.diasDisp)}).`});
   });
-  if (r[GERAL] && r[GERAL].totPes > 0) out.push({n:'aviso', t:`${fmtC(r[GERAL].totPes)} de custos com pessoal não têm camião atribuído e ficaram em Estrutura. Verifique a atribuição na ficha do motorista.`});
+  const semAt = pessoalMes(ym).filter(cm => cm.diasSemAtrib > 0);
+  if (semAt.length) out.push({n:'aviso', t:`Sem camião atribuído na ficha: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura; indique o camião na ficha (ou «Sem camião» se não for motorista).`});
   const cm = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym);
   const semKm = cm.filter(g => !g.km).length, semReg = cm.filter(g => !g.dataRegresso).length, semMot = cm.filter(g => !g.motoristaId).length;
   if (semKm) out.push({n:'info', t:`${semKm} carga(s) sem km registados: não entram nos indicadores por km.`});
@@ -1204,7 +1213,7 @@ function renderPessoal(){
   const foco = document.activeElement && document.activeElement.dataset ? {mot:document.activeElement.dataset.mot, k:document.activeElement.dataset.k} : null;
   const lista = pessoalMes(ym), tb = $('#p-tabela tbody');
   if (!lista.length){
-    tb.innerHTML = `<tr><td colspan="14" class="vazio">${store.motoristas.length ? 'Nenhum motorista com contrato ativo neste mês.' : 'Ainda não há motoristas. Comece por «Adicionar motorista».'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="15" class="vazio">${store.motoristas.length ? 'Nenhum motorista com contrato ativo neste mês.' : 'Ainda não há motoristas. Comece por «Adicionar motorista».'}</td></tr>`;
     $('#p-tabela tfoot').innerHTML = ''; return;
   }
   const proc = id => store.mensal.find(x => x.id === `${ym}_${id}`) || {};
@@ -1215,6 +1224,7 @@ function renderPessoal(){
     return `<tr><td><strong>${esc(m.nome)}</strong>${cm.frac < 1 ? `<span class="motorista-sub">${cm.diasEmp} dias de contrato no mês</span>` : ''}</td><td>${cams}</td>
       <td class="n">${inp(m.id, 'diasTrabalho', p.diasTrabalho, Math.round(cm.diasUteis * cm.frac), 1)}</td>
       <td class="n">${inp(m.id, 'diasDeslocacao', p.diasDeslocacao, cm.autoDesl, 1)}</td>
+      <td class="n">${inp(m.id, 'ajudasMes', p.ajudasMes, r2(cm.ajudasAuto).toFixed(2), 0.01)}</td>
       <td class="n">${inp(m.id, 'extras', p.extras, '0', 0.01)}</td>
       <td><input type="checkbox" data-mot="${esc(m.id)}" data-k="extrasSemTSU" ${p.extrasSemTSU ? 'checked' : ''} aria-label="Extras sem TSU"></td>
       <td class="n">${inp(m.id, 'faltas', p.faltas, '0', 0.01)}</td>
@@ -1222,7 +1232,7 @@ function renderPessoal(){
       <td class="n">${fmtC(c.ss)}</td><td class="n">${fmtC(c.segpes + c.outpes)}</td><td class="n"><strong>${fmtC(cm.total)}</strong></td></tr>`;
   }).join('');
   const s = k => lista.reduce((a, cm) => a + cm.comp[k], 0);
-  $('#p-tabela tfoot').innerHTML = `<tr><td colspan="7">${lista.length} motorista${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtC(s('rem'))}</td><td class="n">${fmtC(s('subalim'))}</td><td class="n">${fmtC(s('ajudas'))}</td><td class="n">${fmtC(s('subsidios'))}</td><td class="n">${fmtC(s('ss'))}</td><td class="n">${fmtC(s('segpes') + s('outpes'))}</td><td class="n">${fmtC(lista.reduce((a, cm) => a + cm.total, 0))}</td></tr>`;
+  $('#p-tabela tfoot').innerHTML = `<tr><td colspan="8">${lista.length} motorista${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtC(s('rem'))}</td><td class="n">${fmtC(s('subalim'))}</td><td class="n">${fmtC(s('ajudas'))}</td><td class="n">${fmtC(s('subsidios'))}</td><td class="n">${fmtC(s('ss'))}</td><td class="n">${fmtC(s('segpes') + s('outpes'))}</td><td class="n">${fmtC(lista.reduce((a, cm) => a + cm.total, 0))}</td></tr>`;
   if (foco && foco.mot){ const el = $(`#p-tabela [data-mot="${CSS.escape(foco.mot)}"][data-k="${foco.k}"]`); if (el) el.focus(); }
 }
 function renderMotoristas(){
@@ -1232,7 +1242,7 @@ function renderMotoristas(){
   else tb.innerHTML = lista.map(m => {
     const cid = camiaoDoMotoristaEm(m, h), cm = custoMotorista(m, ymH), ativo = !m.dataSaida || m.dataSaida >= h;
     return `<tr><td><strong>${esc(m.nome)}</strong>${m.categoria ? `<span class="motorista-sub">${esc(m.categoria)}</span>` : ''}</td>
-      <td>${cid ? placaHtml(cid) : '<span class="etiq">Sem camião</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${fmtData(m.dataAdmissao)}</td>
+      <td>${cid ? placaHtml(cid) : '<span class="etiq">Sem camião</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${m.dataAdmissao ? fmtData(m.dataAdmissao) : '<span class="etiq prox">Por indicar</span>'}</td>
       <td class="n">${fmtEur(m.salarioBase)}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
       <td>${ativo ? '<span class="etiq ativo">Ativo</span>' : `<span class="etiq">Saiu em ${fmtData(m.dataSaida)}</span>`}</td>
       <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-motorista" data-id="${esc(m.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-motorista" data-id="${esc(m.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-motorista" data-id="${esc(m.id)}">Apagar</button></td></tr>`;
@@ -1505,7 +1515,7 @@ function atualizarPreviewMotorista(){
       <tr><td>Subsídio de alimentação (${cm.diasTrab} dias)</td><td class="n">${fmtC(c.subalim)}</td></tr>
       <tr><td>Ajudas de custo</td><td class="n">${fmtC(c.ajudas)}</td></tr>
       <tr><td>Subsídios de férias e de Natal (parte mensal)</td><td class="n">${fmtC(c.subsidios)}</td></tr>
-      <tr><td>Segurança Social da empresa (${fmtDec.format(cm.taxa)} %${cm.excessoSubAlim ? ', inclui excesso do sub. alimentação' : ''})</td><td class="n">${fmtC(c.ss)}</td></tr>
+      <tr><td>Segurança Social da empresa (${new Intl.NumberFormat('pt-PT', {maximumFractionDigits:2}).format(cm.taxa)} %${cm.excessoSubAlim ? ', inclui excesso do sub. alimentação' : ''})</td><td class="n">${fmtC(c.ss)}</td></tr>
       <tr><td>Seguro AT, medicina, formação e outros</td><td class="n">${fmtC(c.segpes + c.outpes)}</td></tr>
       <tr class="tot"><td>Custo mensal</td><td class="n">${fmtC(cm.total)}</td></tr>
       <tr><td>Custo anual (12 meses)</td><td class="n">${fmtC(cm.total * 12)}</td></tr>
@@ -1543,9 +1553,8 @@ $('#f-motorista').addEventListener('submit', ev => {
   ev.preventDefault();
   const f = ev.target, erro = $('#motorista-erro'), id = f.dataset.id, d = lerMotorista(f);
   if (!d.nome) return erro.textContent = 'Indique o nome.';
-  if (!d.dataAdmissao) return erro.textContent = 'Indique a data de admissão.';
   if (d.salarioBase == null || !isFinite(d.salarioBase) || d.salarioBase < 0) return erro.textContent = 'Indique o salário base.';
-  if (d.dataSaida && d.dataSaida < d.dataAdmissao) return erro.textContent = 'A data de saída é anterior à admissão.';
+  if (d.dataSaida && d.dataAdmissao && d.dataSaida < d.dataAdmissao) return erro.textContent = 'A data de saída é anterior à admissão.';
   if (d.nif && !validarNIF(d.nif)) return erro.textContent = 'O NIF não é válido.';
   if (d.nif && store.motoristas.some(m => m.id !== id && m.nif === d.nif)) return erro.textContent = 'Já existe um motorista com este NIF.';
   if (CAMPOS_NUM_MOT.some(k => d[k] != null && (!isFinite(d[k]) || d[k] < 0))) return erro.textContent = 'Os valores têm de ser números positivos.';
@@ -1574,6 +1583,7 @@ $('#f-param').addEventListener('submit', ev => {
   ev.preventDefault();
   const e = ev.target.elements, d = {};
   for (const k of Object.keys(PARAM_DEF)){
+    if (PARAM_DATAS.includes(k)){ d[k] = e[k].value || null; continue; }
     const v = numOuNull(e[k].value);
     if (v != null && (!isFinite(v) || v < 0)){ $('#param-erro').textContent = 'Os valores têm de ser números positivos.'; return; }
     d[k] = v;
@@ -1825,8 +1835,8 @@ function exportarTudo(){
   XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data','Camião','Tipo','Categoria','Valor','Litros','Repartida 12 meses','Fornecedor','Documento','Viagem','Observações']),
     ...[...store.despesas].sort((a, b) => (a.data || '').localeCompare(b.data || '')).map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
       return [X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(+d.valor || 0, 'eur'), X(d.litros ?? '', 'dec'), X(d.diluir ? 'Sim' : 'Não'), X(d.fornecedor), X(d.documento), X(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : ''), X(d.obs)]; })], [11, 16, 28, 26, 12, 9, 10, 20, 14, 24, 30]), 'Despesas');
-  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Mês','Motorista','Dias de trabalho','Dias fora','Prémios e extras','Extras sem TSU','Faltas']),
-    ...[...store.mensal].sort((a, b) => (a.id || '').localeCompare(b.id || '')).map(x => [X(x.ym), X((motoristaPorId(x.motoristaId) || {}).nome || ''), X(x.diasTrabalho ?? '', 'int'), X(x.diasDeslocacao ?? '', 'int'), X(x.extras ?? '', 'eur'), X(x.extrasSemTSU ? 'Sim' : ''), X(x.faltas ?? '', 'eur')])], [9, 24, 12, 10, 14, 12, 10]), 'Processamento mensal');
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Mês','Motorista','Dias de trabalho','Dias fora','Ajudas de custo sem SS','Prémios e extras','Extras sem TSU','Faltas']),
+    ...[...store.mensal].sort((a, b) => (a.id || '').localeCompare(b.id || '')).map(x => [X(x.ym), X((motoristaPorId(x.motoristaId) || {}).nome || ''), X(x.diasTrabalho ?? '', 'int'), X(x.diasDeslocacao ?? '', 'int'), X(x.ajudasMes ?? '', 'eur'), X(x.extras ?? '', 'eur'), X(x.extrasSemTSU ? 'Sim' : ''), X(x.faltas ?? '', 'eur')])], [9, 24, 12, 10, 14, 14, 12, 10]), 'Processamento mensal');
   XLSX.writeFile(wb, `frota-dados-completos-${hoje()}.xlsx`);
 }
 function exportarJSON(){
@@ -2179,12 +2189,12 @@ function pdfProcessamento(){
   if (!lista.length) pdfNota(R, 'Nenhum motorista com contrato ativo neste mês.');
   else {
     pdfPessoalTabela(R, 'Custo de cada motorista', lista);
-    const aj = lista.filter(cm => cm.extras || cm.faltas || store.mensal.some(x => x.id === `${ym}_${cm.m.id}`));
+    const aj = lista.filter(cm => cm.extras || cm.faltas || cm.temAjMes || store.mensal.some(x => x.id === `${ym}_${cm.m.id}`));
     if (aj.length){
       const body = aj.map(cm => { const p = store.mensal.find(x => x.id === `${ym}_${cm.m.id}`) || {};
-        return [pS(cm.m.nome), pS(p.diasTrabalho != null ? String(p.diasTrabalho) : 'automático'), pS(p.diasDeslocacao != null ? String(p.diasDeslocacao) : `automático (${cm.autoDesl})`), pN(cm.extras || null, 'eur'), pS(p.extrasSemTSU ? 'Sim' : ''), pN(cm.faltas || null, 'eur')]; });
+        return [pS(cm.m.nome), pS(p.diasTrabalho != null ? String(p.diasTrabalho) : 'automático'), pS(p.diasDeslocacao != null ? String(p.diasDeslocacao) : `automático (${cm.autoDesl})`), pS(cm.temAjMes ? fmtEur(num0(p.ajudasMes)) : `ficha (${fmtEur(cm.ajudasAuto)})`), pN(cm.extras || null, 'eur'), pS(p.extrasSemTSU ? 'Sim' : ''), pN(cm.faltas || null, 'eur')]; });
       pdfSecao(R, 'Acertos do mês', (body.length + 2) * alturaLinha(8));
-      pdfTabela(R, {head:['Motorista','Dias de trabalho','Dias fora','Prémios e extras','Extras sem Seg. Social','Faltas descontadas'], body, cols:[{w:50}, {}, {}, {n:1}, {}, {n:1}], fs:8});
+      pdfTabela(R, {head:['Motorista','Dias de trabalho','Dias fora','Ajudas de custo sem SS','Prémios e extras','Extras sem Seg. Social','Faltas descontadas'], body, cols:[{w:50}, {}, {}, {}, {n:1}, {}, {n:1}], fs:8});
     }
     pdfNota(R, 'Custos para a empresa, calculados a partir das fichas dos motoristas: inclui a parte mensal dos subsídios de férias e de Natal (2/12) e a Segurança Social da entidade patronal sobre as remunerações sujeitas.');
   }
@@ -2205,10 +2215,10 @@ function pdfFichaMotoristaEm(R, m){
   const eur = v => v == null || v === '' ? '' : fmtEur(v), P = params();
   pdfKV(R, `Ficha do motorista: ${m.nome}`, [['Nome', m.nome], ['NIF', m.nif], ['NISS', m.niss], ['Telefone', m.telefone],
     ['Carta de condução', fmtData(m.validadeCarta)], ['CAM', fmtData(m.validadeCAM)], ['Cartão de condutor', fmtData(m.validadeCartaoTacografo)], ['Camião atual', (() => { const c = camiaoDoMotoristaEm(m, hoje()); return c ? nomeCamiao(c) : 'Sem camião'; })()]]);
-  pdfKV(R, 'Contrato', [['Tipo de contrato', CONTRATOS[m.tipoContrato] || ''], ['Categoria', m.categoria], ['Admissão', fmtData(m.dataAdmissao)], ['Saída', fmtData(m.dataSaida)], ['Convenção e notas', m.cct]]);
+  pdfKV(R, 'Contrato', [['Tipo de contrato', CONTRATOS[m.tipoContrato] || ''], ['Categoria', m.categoria], ['Admissão', m.dataAdmissao ? fmtData(m.dataAdmissao) : 'Por indicar'], ['Saída', fmtData(m.dataSaida)], ['Convenção e notas', m.cct]]);
   pdfKV(R, 'Remuneração e encargos', [['Salário base', eur(m.salarioBase)], ['Sub. alimentação por dia', eur(m.subAlimDia) + (m.subAlimModo ? ` (${({cartao:'cartão', dinheiro:'dinheiro', nenhum:'não recebe'})[m.subAlimModo]})` : '')],
     ['Dias de trabalho por mês', String(m.diasUteis ?? P.diasUteis)], ['Subsídios férias e Natal', m.semProvisaoSubsidios ? 'Não incluídos' : 'Incluídos (2/12 por mês)'],
-    ['Taxa Segurança Social', fmtDec.format(m.taxaTSU ?? P.taxaTSU) + ' %'], ['Seguro AT por ano', eur(m.seguroATAnual)], ['Medicina do trabalho por ano', eur(m.medicinaAnual)], ['Formação por ano', eur(m.formacaoAnual)], ['Outros encargos por mês', eur(m.outrosEncargosMensais)]]);
+    ['Taxa Segurança Social', new Intl.NumberFormat('pt-PT', {minimumFractionDigits:2, maximumFractionDigits:2}).format(m.taxaTSU ?? P.taxaTSU) + ' %'], ['Seguro AT por ano', eur(m.seguroATAnual)], ['Medicina do trabalho por ano', eur(m.medicinaAnual)], ['Formação por ano', eur(m.formacaoAnual)], ['Outros encargos por mês', eur(m.outrosEncargosMensais)]]);
   const cl = m.clausulas || [];
   if (cl.length){
     pdfSecao(R, 'Cláusulas do contrato', (cl.length + 1) * alturaLinha(8));
