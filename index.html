@@ -330,7 +330,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         <h3>Fichas dos motoristas</h3>
         <div class="tabela-wrap">
           <table id="mot-tabela">
-            <thead><tr><th>Nome</th><th>Camião atual</th><th>Contrato</th><th>Admissão</th><th class="n">Salário base</th><th class="n">Custo no mês atual</th><th>Estado</th><th class="no-print"></th></tr></thead>
+            <thead><tr><th>Nome</th><th>Último camião</th><th>Contrato</th><th>Admissão</th><th class="n">Salário base</th><th class="n">Custo no mês atual</th><th>Estado</th><th class="no-print"></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -372,7 +372,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel">
         <div class="tabela-wrap">
           <table id="cam-tabela">
-            <thead><tr><th>Matrícula</th><th>Marca e modelo</th><th>Motorista atual</th><th class="n">Custos fixos por mês</th><th>Estado</th><th class="n">Cargas</th><th class="no-print"></th></tr></thead>
+            <thead><tr><th>Matrícula</th><th>Marca e modelo</th><th>Último motorista</th><th class="n">Custos fixos por mês</th><th>Estado</th><th class="n">Cargas</th><th class="no-print"></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -401,6 +401,12 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <button class="btn" type="button" id="bk-json">Descarregar cópia (JSON)</button>
           <button class="btn" type="button" id="bk-excel">Exportar tudo para Excel</button>
           <button class="btn" type="button" id="bk-pdf">Fichas de camiões e motoristas em PDF</button>
+        </div>
+        <h3 style="margin-top:18px">Importar dados colados</h3>
+        <p class="nota" style="margin:0 0 8px">Cole aqui o texto de importação (começa por <code>{"app":"dgt-frota"</code>) e carregue em «Importar texto». Só acrescenta os registos que ainda não existem; nada do que já está gravado é alterado.</p>
+        <label class="campo" style="max-width:none"><textarea id="imp-texto" rows="5" spellcheck="false" style="font-family:monospace;font-size:12px"></textarea></label>
+        <div class="barra" style="margin-top:8px">
+          <button class="btn btn-pri" type="button" id="imp-btn">Importar texto</button>
           <label class="btn" for="bk-import" style="display:inline-flex;align-items:center">Repor a partir de cópia</label>
           <input type="file" id="bk-import" accept="application/json,.json" hidden>
         </div>
@@ -556,15 +562,15 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <label class="campo">Outros encargos (€/mês)<input type="number" name="outrosEncargosMensais" step="0.01" min="0"></label>
         </div>
       </fieldset>
-      <fieldset><legend>Camião atribuído</legend>
+      <fieldset><legend>Camião habitual (opcional)</legend>
         <div class="tabela-wrap">
           <table class="linhas-edit" id="m-atribuicoes">
             <thead><tr><th>A partir de</th><th>Camião</th><th></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="m-add-atrib">Acrescentar atribuição</button></div>
-        <p class="ajuda" style="margin-top:8px">Quando o motorista muda de camião, acrescente uma linha com a data da mudança em vez de alterar a anterior. Assim os meses passados continuam certos.</p>
+        <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="m-add-atrib">Acrescentar camião habitual</button></div>
+        <p class="ajuda" style="margin-top:8px">Os custos de cada motorista são repartidos pelos camiões que conduziu no mês, conforme as cargas registadas (dias em viagem com cada camião). O mesmo camião pode ser conduzido por vários motoristas. O camião habitual só serve para os meses em que o motorista não tem cargas registadas e para sugerir o motorista ao criar uma carga. Para trabalhadores que não conduzem (por exemplo, comerciais), escolha «Sem camião (estrutura)».</p>
       </fieldset>
       <label class="campo">Observações<textarea name="obs"></textarea></label>
       <div class="previsao" style="margin-top:14px"><div class="barra" style="margin-bottom:8px"><strong style="margin-right:auto">Custo mensal estimado para a empresa</strong><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Simular com<input id="m-sim-desl" type="number" min="0" max="31" step="1" value="20" style="width:70px;min-height:32px">dias fora e 2 viagens</label></div><div id="m-preview"></div></div>
@@ -729,8 +735,23 @@ function camiaoDoMotoristaEm(m, d){
   (m.atribuicoes || []).forEach(a => { if (a && a.camiaoId && a.desde && a.desde <= d && a.desde >= desde){ desde = a.desde; res = a.camiaoId; } });
   return res;
 }
-function motoristaDoCamiaoEm(cid, d){ return motoristasOrdenados().find(m => empregadoEm(m, d) && camiaoDoMotoristaEm(m, d) === cid) || null; }
-function motoristaAtualTxt(c){ const m = motoristaDoCamiaoEm(c.id, hoje()); return m ? m.nome : (c.motorista || ''); }
+// Dias em viagem de um motorista com cada camião, no mês
+function diasViagemPorCamiao(motId, ym){
+  const out = {};
+  [...new Set(store.cargas.filter(g => g.motoristaId === motId && g.camiaoId).map(g => g.camiaoId))].forEach(c => {
+    const n = diasViagem(g => g.motoristaId === motId && g.camiaoId === c, ym); if (n) out[c] = n;
+  });
+  return out;
+}
+function ultimaCarga(filtro){ const h = hoje(); return store.cargas.filter(g => g.dataSaida && g.dataSaida <= h && filtro(g)).sort((a, b) => b.dataSaida.localeCompare(a.dataSaida))[0] || null; }
+// Sugestão de motorista para um camião: camião habitual; senão, quem fez a última carga com esse camião
+function motoristaDoCamiaoEm(cid, d){
+  const hab = motoristasOrdenados().find(m => empregadoEm(m, d) && camiaoDoMotoristaEm(m, d) === cid);
+  if (hab) return hab;
+  const g = ultimaCarga(x => x.camiaoId === cid && x.motoristaId); return g ? (motoristaPorId(g.motoristaId) || null) : null;
+}
+function motoristaAtualTxt(c){ const g = ultimaCarga(x => x.camiaoId === c.id); const m = g && g.motoristaId ? motoristaPorId(g.motoristaId) : motoristaDoCamiaoEm(c.id, hoje()); return m ? m.nome : (g && g.motorista) || c.motorista || ''; }
+function ultimoCamiaoDoMotorista(m){ const g = ultimaCarga(x => x.motoristaId === m.id); return g ? g.camiaoId : camiaoDoMotoristaEm(m, hoje()); }
 // Dias (dentro do mês) em que houve viagens que cumprem o filtro; cada dia conta uma vez.
 function diasViagem(filtro, ym){
   const ini = ym + '-01', fim = `${ym}-${pad2(diasNoMes(ym))}`, s = new Set();
@@ -782,7 +803,21 @@ const DB = {
     if (MODO_LOCAL){ store[col] = store[col].filter(x => x.id !== id); guardarLocal(); renderTudo(); return Promise.resolve(); }
     return fbDb.collection(col).doc(id).delete();
   },
-  async repor(dados){
+  async repor(dados, soNovos = false){
+    // soNovos: só acrescenta registos com identificador novo; nos parâmetros só preenche campos vazios
+    if (soNovos){
+      const d2 = {};
+      COLS.forEach(col => {
+        d2[col] = (dados[col] || []).filter(o => o && o.id).map(o => {
+          const ex = store[col].find(x => x.id === o.id);
+          if (!ex) return o;
+          if (col !== 'config') return null;
+          const extra = {id:o.id}; Object.keys(o).forEach(k => { if (k !== 'id' && (ex[k] == null || ex[k] === '')) extra[k] = o[k]; });
+          return Object.keys(extra).length > 1 ? extra : null;
+        }).filter(Boolean);
+      });
+      dados = d2;
+    }
     if (MODO_LOCAL){
       COLS.forEach(col => (dados[col] || []).forEach(o => {
         if (!o || !o.id) return;
@@ -868,10 +903,15 @@ function custoMotorista(m, ym, opts = {}){
   const compE = {rem, subalim, ajudas, subsidios, ss:tsu + fct, segpes, outpes};
   const comp = {}; let total = 0;
   CATS_PES.forEach(k => { comp[k] = Math.round((compE[k] || 0) * 100); total += comp[k]; });
-  const porCam = {};
-  let diasSemAtrib = 0;
-  diasEmp.forEach(d => { const c0 = camiaoDoMotoristaEm(m, d); if (!c0) diasSemAtrib++; const c = c0 || GERAL; porCam[c] = (porCam[c] || 0) + 1; });
-  return {m, ym, frac, ajudasAuto, temAjMes, diasSemAtrib, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
+  // Repartição pelos camiões: 1) dias em viagem com cada camião (cargas do mês);
+  // 2) sem cargas no mês, camião habitual da ficha; 3) sem nenhum dos dois, Estrutura.
+  let porCam = diasViagemPorCamiao(m.id, ym), criterio = 'viagens', diasSemAtrib = 0;
+  if (!Object.keys(porCam).length){
+    criterio = 'habitual'; porCam = {};
+    diasEmp.forEach(d => { const c0 = camiaoDoMotoristaEm(m, d); if (!c0) diasSemAtrib++; const c = c0 || GERAL; porCam[c] = (porCam[c] || 0) + 1; });
+  }
+  const pesoTotal = Object.values(porCam).reduce((a, v) => a + v, 0) || 1;
+  return {m, ym, frac, ajudasAuto, temAjMes, diasSemAtrib, criterio, pesoTotal, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
 }
 
 function custosFixosCamiao(c, ym){
@@ -934,7 +974,7 @@ function calcularMes(ym){
     CATS_PES.forEach(k => {
       let resto = cm.comp[k];
       ids.forEach((id, i) => {
-        const parte = i === ids.length - 1 ? resto : Math.round(cm.comp[k] * cm.porCam[id] / cm.diasEmp);
+        const parte = i === ids.length - 1 ? resto : Math.round(cm.comp[k] * cm.porCam[id] / cm.pesoTotal);
         resto -= parte; g(id).custos[k] += parte;
       });
     });
@@ -1004,7 +1044,7 @@ function pontosAtencao(ym){
     if (b.diasDisp > 0 && b.diasViagem / b.diasDisp < 0.5) out.push({n:'aviso', t:`${nm} esteve em viagem ${b.diasViagem} de ${b.diasDisp} dias (${fmtPct.format(b.diasViagem / b.diasDisp)}).`});
   });
   const semAt = pessoalMes(ym).filter(cm => cm.diasSemAtrib > 0);
-  if (semAt.length) out.push({n:'aviso', t:`Sem camião atribuído na ficha: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura; indique o camião na ficha (ou «Sem camião» se não for motorista).`});
+  if (semAt.length) out.push({n:'aviso', t:`Sem cargas registadas neste mês nem camião habitual: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura. Registe as cargas com o motorista ou indique um camião habitual na ficha (ou «Sem camião» se não for motorista).`});
   const cm = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym);
   const semKm = cm.filter(g => !g.km).length, semReg = cm.filter(g => !g.dataRegresso).length, semMot = cm.filter(g => !g.motoristaId).length;
   if (semKm) out.push({n:'info', t:`${semKm} carga(s) sem km registados: não entram nos indicadores por km.`});
@@ -1220,7 +1260,7 @@ function renderPessoal(){
   const inp = (id, k, v, ph, step) => `<input type="number" step="${step}" min="0" data-mot="${esc(id)}" data-k="${k}" value="${v == null || v === '' ? '' : esc(v)}" placeholder="${esc(ph)}" aria-label="${k}">`;
   tb.innerHTML = lista.map(cm => {
     const m = cm.m, p = proc(m.id), c = cm.comp;
-    const cams = Object.keys(cm.porCam).map(id => placaHtml(id)).join(' ');
+    const cams = Object.keys(cm.porCam).map(id => placaHtml(id)).join(' ') + `<span class="motorista-sub">${cm.criterio === 'viagens' ? 'pelas cargas do mês' : (cm.diasSemAtrib ? 'sem cargas nem camião habitual' : (Object.keys(cm.porCam).every(k => k === GERAL) ? 'não conduz' : 'camião habitual'))}</span>`;
     return `<tr><td><strong>${esc(m.nome)}</strong>${cm.frac < 1 ? `<span class="motorista-sub">${cm.diasEmp} dias de contrato no mês</span>` : ''}</td><td>${cams}</td>
       <td class="n">${inp(m.id, 'diasTrabalho', p.diasTrabalho, Math.round(cm.diasUteis * cm.frac), 1)}</td>
       <td class="n">${inp(m.id, 'diasDeslocacao', p.diasDeslocacao, cm.autoDesl, 1)}</td>
@@ -1240,9 +1280,9 @@ function renderMotoristas(){
   const h = hoje(), ymH = h.slice(0, 7), tb = $('#mot-tabela tbody'), lista = motoristasOrdenados();
   if (!lista.length) tb.innerHTML = '<tr><td colspan="8" class="vazio">Ainda não há motoristas. Comece por «Adicionar motorista».</td></tr>';
   else tb.innerHTML = lista.map(m => {
-    const cid = camiaoDoMotoristaEm(m, h), cm = custoMotorista(m, ymH), ativo = !m.dataSaida || m.dataSaida >= h;
+    const cid = ultimoCamiaoDoMotorista(m), cm = custoMotorista(m, ymH), ativo = !m.dataSaida || m.dataSaida >= h;
     return `<tr><td><strong>${esc(m.nome)}</strong>${m.categoria ? `<span class="motorista-sub">${esc(m.categoria)}</span>` : ''}</td>
-      <td>${cid ? placaHtml(cid) : '<span class="etiq">Sem camião</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${m.dataAdmissao ? fmtData(m.dataAdmissao) : '<span class="etiq prox">Por indicar</span>'}</td>
+      <td>${cid ? placaHtml(cid) : '<span class="etiq">—</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${m.dataAdmissao ? fmtData(m.dataAdmissao) : '<span class="etiq prox">Por indicar</span>'}</td>
       <td class="n">${fmtEur(m.salarioBase)}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
       <td>${ativo ? '<span class="etiq ativo">Ativo</span>' : `<span class="etiq">Saiu em ${fmtData(m.dataSaida)}</span>`}</td>
       <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-motorista" data-id="${esc(m.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-motorista" data-id="${esc(m.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-motorista" data-id="${esc(m.id)}">Apagar</button></td></tr>`;
@@ -1561,7 +1601,7 @@ $('#f-motorista').addEventListener('submit', ev => {
   const clErr = d.clausulas.findIndex(c => !c.descricao || c.valor == null || !isFinite(c.valor));
   if (clErr >= 0) return erro.textContent = `Complete a descrição e o valor da cláusula ${clErr + 1}.`;
   d.atribuicoes = d.atribuicoes.filter(a => a.desde || a.camiaoId).map(a => ({...a, desde:a.desde || (a.camiaoId && d.atribuicoes.length === 1 ? d.dataAdmissao : '')}));
-  if (d.atribuicoes.some(a => !a.desde || !a.camiaoId)) return erro.textContent = 'Cada atribuição precisa de data e camião.';
+  if (d.atribuicoes.some(a => !a.desde || !a.camiaoId)) return erro.textContent = 'Cada linha de camião habitual precisa de data e camião.';
   if (new Set(d.atribuicoes.map(a => a.desde)).size !== d.atribuicoes.length) return erro.textContent = 'Há duas atribuições com a mesma data.';
   gravar(id ? DB.update('motoristas', id, d) : DB.add('motoristas', d), 'Ficha do motorista guardada.');
   fecharDialogo($('#dlg-motorista'));
@@ -2214,7 +2254,7 @@ const ultimos12 = () => Array.from({length:12}, (_, i) => addMes(hoje().slice(0,
 function pdfFichaMotoristaEm(R, m){
   const eur = v => v == null || v === '' ? '' : fmtEur(v), P = params();
   pdfKV(R, `Ficha do motorista: ${m.nome}`, [['Nome', m.nome], ['NIF', m.nif], ['NISS', m.niss], ['Telefone', m.telefone],
-    ['Carta de condução', fmtData(m.validadeCarta)], ['CAM', fmtData(m.validadeCAM)], ['Cartão de condutor', fmtData(m.validadeCartaoTacografo)], ['Camião atual', (() => { const c = camiaoDoMotoristaEm(m, hoje()); return c ? nomeCamiao(c) : 'Sem camião'; })()]]);
+    ['Carta de condução', fmtData(m.validadeCarta)], ['CAM', fmtData(m.validadeCAM)], ['Cartão de condutor', fmtData(m.validadeCartaoTacografo)], ['Último camião conduzido', (() => { const c = ultimoCamiaoDoMotorista(m); return c ? nomeCamiao(c) : '—'; })()]]);
   pdfKV(R, 'Contrato', [['Tipo de contrato', CONTRATOS[m.tipoContrato] || ''], ['Categoria', m.categoria], ['Admissão', m.dataAdmissao ? fmtData(m.dataAdmissao) : 'Por indicar'], ['Saída', fmtData(m.dataSaida)], ['Convenção e notas', m.cct]]);
   pdfKV(R, 'Remuneração e encargos', [['Salário base', eur(m.salarioBase)], ['Sub. alimentação por dia', eur(m.subAlimDia) + (m.subAlimModo ? ` (${({cartao:'cartão', dinheiro:'dinheiro', nenhum:'não recebe'})[m.subAlimModo]})` : '')],
     ['Dias de trabalho por mês', String(m.diasUteis ?? P.diasUteis)], ['Subsídios férias e Natal', m.semProvisaoSubsidios ? 'Não incluídos' : 'Incluídos (2/12 por mês)'],
@@ -2227,7 +2267,7 @@ function pdfFichaMotoristaEm(R, m){
   }
   const at = m.atribuicoes || [];
   if (at.length){
-    pdfSecao(R, 'Camiões atribuídos', (at.length + 1) * alturaLinha(8));
+    pdfSecao(R, 'Camião habitual', (at.length + 1) * alturaLinha(8));
     pdfTabela(R, {head:['A partir de', 'Camião'], body:at.map(a => [pS(fmtData(a.desde)), pS(nomeCamiao(a.camiaoId))]), cols:[{w:30}, {}], fs:8, largura:100});
   }
   const hist = ultimos12().map(ym => ({ym, cm:custoMotorista(m, ym)})).filter(x => x.cm);
@@ -2243,7 +2283,7 @@ function pdfFichaMotoristaEm(R, m){
 function pdfFichaCamiaoEm(R, c){
   const eur = v => v == null || v === '' ? '' : fmtEur(v);
   pdfKV(R, `Ficha do camião: ${c.matricula}`, [['Matrícula', c.matricula], ['Marca e modelo', c.marcaModelo], ['Ano', c.ano ? String(c.ano) : ''], ['Estado', c.ativo === false ? 'Inativo' : 'Ativo'],
-    ['Entrada na frota', fmtData(c.dataInicio)], ['Saída da frota', fmtData(c.dataFim)], ['Motorista atual', motoristaAtualTxt(c)], ['', '']]);
+    ['Entrada na frota', fmtData(c.dataInicio)], ['Saída da frota', fmtData(c.dataFim)], ['Último motorista', motoristaAtualTxt(c)], ['', '']]);
   pdfKV(R, 'Custos fixos', [['Seguro por ano', eur(c.seguroAnual)], ['Validade do seguro', fmtData(c.seguroValidade)], ['IUC por ano', eur(c.iucAnual)], ['Inspeções por ano', eur(c.inspecaoAnual)],
     ['Próxima inspeção', fmtData(c.proximaInspecao)], ['Tacógrafo por ano', eur(c.tacografoAnual)], ['Verificação do tacógrafo', fmtData(c.validadeTacografo)], ['Leasing por mês', eur(c.leasingMensal)],
     ['Última renda', fmtData(c.leasingFim)], ['Amortização por mês', eur(c.amortizacaoMensal)], ['Outros fixos por mês', eur(c.outrosFixosMensais) + (c.outrosFixosDesc ? ` (${c.outrosFixosDesc})` : '')], ['Total de custos fixos por mês', fmtEur(fixosMensaisTeoricos(c))]]);
@@ -2307,6 +2347,19 @@ $('#c-pdf').addEventListener('click', pdfListaCargas);
 $('#d-pdf').addEventListener('click', pdfListaDespesas);
 $('#p-pdf').addEventListener('click', pdfProcessamento);
 $('#bk-pdf').addEventListener('click', pdfTodasFichas);
+$('#imp-btn').addEventListener('click', async () => {
+  const txt = $('#imp-texto').value.trim();
+  if (!txt){ toast('Cole primeiro o texto de importação.', 'erro'); return; }
+  let dados;
+  try { dados = JSON.parse(txt); } catch (e) { toast('O texto não está completo. Copie-o outra vez desde o primeiro { até ao último }.', 'erro'); return; }
+  if (!dados || dados.app !== 'dgt-frota'){ toast('Este texto não é de importação desta aplicação.', 'erro'); return; }
+  const novos = c => (dados[c] || []).filter(o => o && o.id && !store[c].some(x => x.id === o.id)).length;
+  const nCam = novos('camioes'), nMot = novos('motoristas'), nCar = novos('cargas'), nDes = novos('despesas');
+  if (!nCam && !nMot && !nCar && !nDes && !(dados.config || []).length){ toast('Estes dados já estão todos na aplicação.'); return; }
+  if (!confirm(`Acrescentar ${nCam} camião(ões), ${nMot} trabalhador(es), ${nCar} carga(s) e ${nDes} despesa(s)?\n\nOs registos que já existem não são alterados.`)) return;
+  try { await DB.repor(dados, true); $('#imp-texto').value = ''; toast('Importação concluída. Os registos que já existiam ficaram como estavam.'); }
+  catch (e) { toast('Não foi possível importar: ' + (e.code === 'permission-denied' ? 'sem permissão para esta conta.' : e.message), 'erro'); }
+});
 
 function estadoSync(){
   const el = $('#estado-sync');
