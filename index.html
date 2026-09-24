@@ -63,6 +63,9 @@ main{max-width:1360px;margin:0 auto;padding:20px}
 .campo-check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--texto);min-height:40px}
 .campo-check input{width:18px;height:18px}
 .ajuda{font-size:12px;color:var(--suave);font-weight:400}
+.linha-sel{display:flex;gap:6px;align-items:stretch}
+.linha-sel select{flex:1;min-width:0;border:1px solid var(--linha);border-radius:4px;padding:8px 10px;background:#fff;min-height:40px;color:var(--texto);font-size:15px}
+.linha-sel .btn{min-height:40px}
 
 .btn{border:1px solid var(--linha);background:#fff;border-radius:4px;padding:8px 14px;min-height:40px;font-weight:600;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--suave)}
@@ -211,6 +214,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
     <button type="button" role="tab" data-tab="cargas" aria-selected="false">Cargas</button>
     <button type="button" role="tab" data-tab="despesas" aria-selected="false">Despesas</button>
     <button type="button" role="tab" data-tab="motoristas" aria-selected="false">Motoristas</button>
+    <button type="button" role="tab" data-tab="entidades" aria-selected="false">Clientes e fornecedores</button>
     <button type="button" role="tab" data-tab="folha" aria-selected="false">Folha de cargas</button>
     <button type="button" role="tab" data-tab="frota" aria-selected="false">Frota e dados</button>
   </nav>
@@ -338,6 +342,22 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel"><h3>Documentos a renovar</h3><div class="tabela-wrap"><table id="mot-validades"></table></div></div>
     </section>
 
+    <!-- CLIENTES E FORNECEDORES -->
+    <section id="tab-entidades" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Clientes e fornecedores</h2>
+        <div class="barra no-print"><label class="campo">Procurar<input type="search" id="e-procura" placeholder="Nome, NIF, localidade, país…"></label></div>
+      </div>
+      <div class="painel">
+        <div class="painel-cab"><h3>Clientes</h3><div class="barra no-print"><button class="btn" type="button" id="cli-pdf">PDF</button><button class="btn" type="button" id="cli-xls">Excel</button><button class="btn btn-pri" type="button" id="cli-novo">Novo cliente</button></div></div>
+        <div class="tabela-wrap"><table id="cli-tabela"><thead><tr><th>Nome</th><th>NIF</th><th>País</th><th>Localidade</th><th>Telefone</th><th>Email</th><th class="n">Cargas</th><th class="n">Faturado</th><th>Estado</th><th class="no-print"></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="painel">
+        <div class="painel-cab"><h3>Fornecedores</h3><div class="barra no-print"><button class="btn" type="button" id="forn-pdf">PDF</button><button class="btn" type="button" id="forn-xls">Excel</button><button class="btn btn-pri" type="button" id="forn-novo">Novo fornecedor</button></div></div>
+        <div class="tabela-wrap"><table id="forn-tabela"><thead><tr><th>Nome</th><th>NIF</th><th>País</th><th>Localidade</th><th>Telefone</th><th>Email</th><th>Despesa habitual</th><th class="n">Despesas</th><th class="n">Total</th><th>Estado</th><th class="no-print"></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
     <!-- FOLHA DE CARGAS -->
     <section id="tab-folha" class="tab" role="tabpanel" hidden>
       <div class="cab-sec">
@@ -424,9 +444,9 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo">Motorista<select name="motoristaId"></select></label>
       <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
       <label class="campo">Data de regresso<input type="date" name="dataRegresso"></label>
-      <label class="campo inteiro">Cliente *<input name="cliente" list="dl-clientes" required autocomplete="off"></label>
+      <label class="campo inteiro">Cliente *<span class="linha-sel"><select name="clienteId" required></select><button class="btn btn-peq" type="button" id="c-novo-cli">+ Novo cliente</button></span></label>
       <label class="campo">Origem<input name="origem" autocomplete="off"></label>
-      <label class="campo">País de destino *<input name="destinoPais" list="dl-paises" required autocomplete="off"></label>
+      <label class="campo">País de destino *<select name="destinoPais" required></select></label>
       <label class="campo">Cidade de destino<input name="destinoCidade" autocomplete="off"></label>
       <label class="campo">Mercadoria<input name="mercadoria" autocomplete="off"></label>
       <label class="campo">Peso (kg)<input type="number" name="pesoKg" min="0" step="1" inputmode="numeric"></label>
@@ -452,11 +472,56 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo" id="wrap-litros">Litros<input type="number" name="litros" min="0" step="0.01" inputmode="decimal"></label>
       <label class="campo-check inteiro"><input type="checkbox" name="diluir"> Diluir por 12 meses a partir desta data</label>
       <label class="campo inteiro" id="wrap-cargaId">Viagem associada<select name="cargaId"></select><span class="ajuda">Opcional. Permite ver na Folha de cargas quanto custou cada viagem.</span></label>
-      <label class="campo">Fornecedor<input name="fornecedor" list="dl-fornecedores" autocomplete="off"></label>
+      <label class="campo">Fornecedor<span class="linha-sel"><select name="fornecedorId"></select><button class="btn btn-peq" type="button" id="d-novo-forn">+ Novo</button></span></label>
       <label class="campo">Nº do documento<input name="documento" autocomplete="off"></label>
       <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
     </div>
     <div class="dlg-rod"><p class="erro" id="despesa-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar despesa</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo: cliente / fornecedor -->
+<dialog id="dlg-entidade" class="largo">
+  <form id="f-entidade" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-entidade-tit">Novo cliente</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo">
+      <fieldset><legend>Identificação</legend>
+        <div class="grelha-3">
+          <label class="campo inteiro">Nome ou denominação social *<input name="nome" required autocomplete="off"></label>
+          <label class="campo">País *<select name="pais" required></select></label>
+          <label class="campo"><span id="ent-nif-rot">NIF</span><input name="nif" autocomplete="off"><span class="ajuda" id="ent-nif-ajuda">Portugal: 9 dígitos. Estrangeiro: número de IVA (ex.: FR12345678901).</span></label>
+          <label class="campo-check"><input type="checkbox" name="ativo" checked> Ativo</label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Morada</legend>
+        <div class="grelha-3">
+          <label class="campo inteiro">Morada<input name="morada" autocomplete="off"></label>
+          <label class="campo">Código postal<input name="codPostal" autocomplete="off"></label>
+          <label class="campo">Localidade<input name="localidade" autocomplete="off"></label>
+          <label class="campo">Região / distrito<input name="regiao" autocomplete="off"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Contactos</legend>
+        <div class="grelha-3">
+          <label class="campo">Pessoa de contacto<input name="contacto" autocomplete="off"></label>
+          <label class="campo">Telefone<input name="telefone" type="tel" autocomplete="off"></label>
+          <label class="campo">Telemóvel<input name="telemovel" type="tel" autocomplete="off"></label>
+          <label class="campo">Email<input name="email" type="email" autocomplete="off"></label>
+          <label class="campo">Email para faturas<input name="emailFaturas" type="email" autocomplete="off"></label>
+          <label class="campo">Site<input name="site" autocomplete="off"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Condições comerciais</legend>
+        <div class="grelha-3">
+          <label class="campo">Prazo de pagamento (dias)<input type="number" name="prazoPagamento" min="0" step="1"></label>
+          <label class="campo">IBAN<input name="iban" autocomplete="off"></label>
+          <label class="campo">Moeda<select name="moeda"><option>EUR</option><option>GBP</option><option>CHF</option><option>PLN</option><option>CZK</option><option>HUF</option><option>RON</option><option>SEK</option><option>DKK</option><option>NOK</option><option>USD</option></select></label>
+          <label class="campo" id="wrap-tipoHabitual">Despesa habitual<select name="tipoHabitual"></select><span class="ajuda">Preenche o tipo ao lançar uma despesa deste fornecedor.</span></label>
+        </div>
+      </fieldset>
+      <label class="campo">Observações<textarea name="obs"></textarea></label>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="entidade-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar</button></div>
   </form>
 </dialog>
 
@@ -481,6 +546,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <label class="campo">Seguro (€/ano)<input type="number" name="seguroAnual" step="0.01" min="0"></label>
           <label class="campo">Validade do seguro<input type="date" name="seguroValidade"></label>
           <label class="campo">IUC (€/ano)<input type="number" name="iucAnual" step="0.01" min="0"></label>
+          <label class="campo">Próximo pagamento do IUC<input type="date" name="proximoIUC"></label>
           <label class="campo">Inspeções (€/ano)<input type="number" name="inspecaoAnual" step="0.01" min="0"></label>
           <label class="campo">Próxima inspeção<input type="date" name="proximaInspecao"></label>
           <label class="campo">Tacógrafo e licenças (€/ano)<input type="number" name="tacografoAnual" step="0.01" min="0"></label>
@@ -664,17 +730,33 @@ const PRESETS = [
 ];
 const BASES = [['mensal','Mês'],['dia_trabalho','Dia de trabalho'],['dia_deslocacao','Dia fora'],['viagem','Viagem'],['anual','Ano']];
 const CONTRATOS = {sem_termo:'Sem termo', termo_certo:'Termo certo', termo_incerto:'Termo incerto', outro:'Outro'};
-const PAISES = ['Alemanha','Áustria','Bélgica','Bulgária','Chéquia','Croácia','Dinamarca','Eslováquia','Eslovénia','Espanha','Estónia','Finlândia','França','Grécia','Hungria','Irlanda','Itália','Letónia','Lituânia','Luxemburgo','Noruega','Países Baixos','Polónia','Portugal','Reino Unido','Roménia','Suécia','Suíça'];
+const PAISES_EUROPA = ['Albânia','Alemanha','Andorra','Arménia','Áustria','Azerbaijão','Bélgica','Bielorrússia','Bósnia e Herzegovina','Bulgária','Cazaquistão','Chéquia','Chipre','Croácia','Dinamarca','Eslováquia','Eslovénia','Espanha','Estónia','Finlândia','França','Geórgia','Gibraltar','Grécia','Hungria','Irlanda','Islândia','Itália','Kosovo','Letónia','Liechtenstein','Lituânia','Luxemburgo','Macedónia do Norte','Malta','Moldávia','Mónaco','Montenegro','Noruega','Países Baixos','Polónia','Portugal','Reino Unido','Roménia','Rússia','São Marinho','Sérvia','Suécia','Suíça','Turquia','Ucrânia','Vaticano'];
+// Resto do mundo: nomes em português dados pelo navegador a partir dos códigos ISO (sem os europeus acima)
+const CODS_MUNDO = 'AE AF AG AI AO AR AS AU AW BB BD BF BH BI BJ BL BM BN BO BQ BR BS BT BW BZ CA CC CD CF CG CI CK CL CM CN CO CR CU CV CW CX DJ DM DO DZ EC EG EH ER ET FJ FK FM GA GD GF GH GL GM GN GP GQ GT GU GW GY HK HN HT ID IL IN IQ IR JM JO JP KE KG KH KI KM KN KP KR KW KY LA LB LC LK LR LS LY MA MF MG MH ML MM MN MO MP MQ MR MS MU MV MW MX MY MZ NA NC NE NF NG NI NP NR NU NZ OM PA PE PF PG PH PK PM PN PR PS PW PY QA RE RW SA SB SC SD SG SH SL SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TT TV TW TZ UG US UY UZ VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
+const PAISES_MUNDO = (() => {
+  let nomes = [];
+  try { const dn = new Intl.DisplayNames(['pt-PT', 'pt'], {type:'region'}); nomes = CODS_MUNDO.map(c => dn.of(c)).filter(n => n && n.length > 2); } catch (e) {}
+  return [...new Set(nomes)].filter(n => !PAISES_EUROPA.includes(n)).sort((a, b) => a.localeCompare(b, 'pt'));
+})();
+const PAISES = PAISES_EUROPA;
+function opcoesPaises(valor, {todos = false, mundo = true, extra = [], vazio = 'Escolha o país…'} = {}){
+  let h = todos ? '<option value="">Todos</option>' : `<option value="">${vazio}</option>`;
+  const fora = [...new Set([valor, ...extra].filter(v => v && !PAISES_EUROPA.includes(v) && !(mundo && PAISES_MUNDO.includes(v))))];
+  h += '<optgroup label="Europa">' + PAISES_EUROPA.map(p => `<option>${esc(p)}</option>`).join('') + '</optgroup>';
+  if (mundo && PAISES_MUNDO.length) h += '<optgroup label="Resto do mundo">' + PAISES_MUNDO.map(p => `<option>${esc(p)}</option>`).join('') + '</optgroup>';
+  if (fora.length) h += '<optgroup label="Outros">' + fora.map(p => `<option>${esc(p)}</option>`).join('') + '</optgroup>';
+  return h;
+}
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_C = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const COLS = ['camioes','motoristas','cargas','despesas','mensal','config'];
+const COLS = ['camioes','motoristas','cargas','despesas','mensal','config','clientes','fornecedores'];
 const GERAL = '_geral';
 const CHAVE_LOCAL = 'dgt-frota-dados-v1';
 const PARAM_DEF = {taxaTSU:23.75, taxaFCT:0, diasUteis:22, limiteSubAlimDinheiro:null, limiteSubAlimCartao:null, alertaDesvio:15, avisoValidadeDias:60, inicioRegisto:null};
 const PARAM_DATAS = ['inicioRegisto'];
 
 /* ---------- Estado ---------- */
-const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[]};
+const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[], clientes:[], fornecedores:[]};
 const pendentes = Object.fromEntries(COLS.map(c => [c, false]));
 let fbDb = null, fbAuth = null, utilizadorAtual = null, unsubs = [];
 
@@ -712,6 +794,10 @@ function placaHtml(id){
   return `<span class="placa"><span class="placa-eu">P</span><span class="placa-num">${esc(c.matricula)}</span></span>`;
 }
 function destinoTxt(g){ return [g.destinoCidade, g.destinoPais].filter(Boolean).join(', '); }
+function clientePorId(id){ return store.clientes.find(x => x.id === id); }
+function fornecedorPorId(id){ return store.fornecedores.find(x => x.id === id); }
+function nomeCliente(g){ const c = g.clienteId && clientePorId(g.clienteId); return c ? c.nome : (g.cliente || ''); }
+function nomeFornecedor(d){ const f = d.fornecedorId && fornecedorPorId(d.fornecedorId); return f ? f.nome : (d.fornecedor || ''); }
 function nomeMotoristaCarga(g){ const m = g.motoristaId && motoristaPorId(g.motoristaId); return m ? m.nome : (g.motorista || ''); }
 function params(){ const p = store.config.find(c => c.id === 'parametros') || {}; const o = {...PARAM_DEF}; Object.keys(PARAM_DEF).forEach(k => { if (p[k] != null && p[k] !== '') o[k] = PARAM_DATAS.includes(k) ? String(p[k]) : +p[k]; }); return o; }
 
@@ -779,6 +865,12 @@ const DB = {
     const data = {...obj, criadoEm:new Date().toISOString(), criadoPor:email()};
     if (MODO_LOCAL){ store[col].push({id:novoId(), ...data}); guardarLocal(); renderTudo(); return Promise.resolve(); }
     return fbDb.collection(col).add(data);
+  },
+  // Cria com identificador conhecido de imediato (para escolher logo a ficha num formulário)
+  addComId(col, obj){
+    const data = {...obj, criadoEm:new Date().toISOString(), criadoPor:email()};
+    if (MODO_LOCAL){ const id = novoId(); store[col].push({id, ...data}); guardarLocal(); renderTudo(); return {id, p:Promise.resolve()}; }
+    const ref = fbDb.collection(col).doc(); return {id:ref.id, p:ref.set(data)};
   },
   update(col, id, obj){
     const data = {...obj, atualizadoEm:new Date().toISOString(), atualizadoPor:email()};
@@ -1074,7 +1166,7 @@ function validades(tipo){
       [['validadeCarta','Carta de condução'],['validadeCAM','CAM'],['validadeCartaoTacografo','Cartão de condutor']].forEach(([k, n]) => { if (m[k] && m[k] <= lim) out.push({quem:esc(m.nome), doc:n, data:m[k]}); }));
   } else {
     store.camioes.filter(c => !c.dataFim || c.dataFim >= h).forEach(c =>
-      [['seguroValidade','Seguro'],['proximaInspecao','Inspeção periódica'],['validadeTacografo','Verificação do tacógrafo']].forEach(([k, n]) => { if (c[k] && c[k] <= lim) out.push({quem:placaHtml(c.id), doc:n, data:c[k]}); }));
+      [['seguroValidade','Seguro'],['proximoIUC','IUC'],['proximaInspecao','Inspeção periódica'],['validadeTacografo','Verificação do tacógrafo']].forEach(([k, n]) => { if (c[k] && c[k] <= lim) out.push({quem:placaHtml(c.id), doc:n, data:c[k]}); }));
   }
   return out.sort((a, b) => a.data.localeCompare(b.data));
 }
@@ -1117,11 +1209,10 @@ function preencherFiltros(){
   preencherSelCamiao($('#d-cam'), {todos:true, geral:true});
   preencherSelCamiao($('#f-cam'), {todos:true});
   const fp = $('#f-pais'), vp = fp.value;
-  const paises = [...new Set(store.cargas.map(g => g.destinoPais).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  fp.innerHTML = '<option value="">Todos</option>' + paises.map(p => `<option>${esc(p)}</option>`).join('');
+  fp.innerHTML = opcoesPaises('', {todos:true, mundo:false, extra:store.cargas.map(g => g.destinoPais).filter(Boolean)});
   if ([...fp.options].some(o => o.value === vp)) fp.value = vp;
-  $('#dl-clientes').innerHTML = [...new Set(store.cargas.map(g => g.cliente).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
-  $('#dl-fornecedores').innerHTML = [...new Set(store.despesas.map(d => d.fornecedor).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
+  $('#dl-clientes').innerHTML = [...new Set(store.cargas.map(g => nomeCliente(g)).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
+  $('#dl-fornecedores').innerHTML = [...new Set(store.despesas.map(d => nomeFornecedor(d)).filter(Boolean))].sort().map(c => `<option value="${esc(c)}">`).join('');
 }
 function noPeriodo(data, ano, mes){
   if (!data) return false;
@@ -1180,7 +1271,7 @@ function renderResultados(){
 
   const doMes = g => (g.dataSaida || '').slice(0, 7) === ym;
   $('#r-destinos').innerHTML = tabelaAgregado(agregarCargas(doMes, g => g.destinoPais), 'País');
-  $('#r-clientes').innerHTML = tabelaAgregado(agregarCargas(doMes, g => g.cliente), 'Cliente');
+  $('#r-clientes').innerHTML = tabelaAgregado(agregarCargas(doMes, g => nomeCliente(g)), 'Cliente');
   renderAnual();
 }
 function renderAnual(){
@@ -1210,7 +1301,7 @@ function renderCargas(){
   const tb = $('#c-tabela tbody');
   if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há cargas neste período. Registe uma com «Nova carga».</td></tr>'; $('#c-tabela tfoot').innerHTML = ''; return; }
   tb.innerHTML = lista.map(g => { const mt = nomeMotoristaCarga(g); return `<tr>
-    <td>${fmtData(g.dataSaida)}</td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td><td>${esc(g.cliente)}</td><td>${esc(destinoTxt(g))}</td>
+    <td>${fmtData(g.dataSaida)}</td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td><td>${esc(nomeCliente(g))}</td><td>${esc(destinoTxt(g))}</td>
     <td>${esc(g.mercadoria)}</td><td class="n">${g.km ? fmtInt.format(g.km) : ''}</td><td class="n">${fmtEur(g.valor)}</td>
     <td>${fmtData(g.dataRegresso)}</td><td>${esc(g.fatura)}</td>
     <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`; }).join('');
@@ -1228,7 +1319,7 @@ function renderDespesas(){
   tb.innerHTML = lista.map(d => {
     const carga = d.cargaId ? store.cargas.find(g => g.id === d.cargaId) : null;
     return `<tr>
-    <td>${fmtData(d.data)}</td><td>${placaHtml(d.camiaoId || GERAL)}</td><td>${esc(tipoPorId(d.tipo).nome)}</td><td>${esc(d.fornecedor)}</td><td>${esc(d.documento)}</td>
+    <td>${fmtData(d.data)}</td><td>${placaHtml(d.camiaoId || GERAL)}</td><td>${esc(tipoPorId(d.tipo).nome)}</td><td>${esc(nomeFornecedor(d))}</td><td>${esc(d.documento)}</td>
     <td class="n">${d.litros ? fmtDec.format(d.litros) : ''}</td><td class="n">${fmtEur(d.valor)}</td>
     <td>${d.diluir ? '<span class="etiq">12 meses</span>' : '<span class="etiq">No mês</span>'}</td>
     <td>${carga ? esc(fmtData(carga.dataSaida) + ' ' + destinoTxt(carga)) : ''}</td>
@@ -1309,7 +1400,7 @@ function renderFolha(){
   if (!linhas.length){ tb.innerHTML = '<tr><td colspan="18" class="vazio">Não há cargas com estes filtros.</td></tr>'; $('#f-tabela tfoot').innerHTML = ''; return; }
   tb.innerHTML = linhas.map(({g, v, dir, km, dias, eurKm, margem}) => `<tr>
     <td>${fmtData(g.dataSaida)}</td><td>${fmtData(g.dataRegresso)}</td><td class="n">${dias == null ? '' : dias}</td>
-    <td>${placaHtml(g.camiaoId)}</td><td>${esc(nomeMotoristaCarga(g))}</td><td>${esc(g.cliente)}</td><td>${esc(g.origem)}</td><td>${esc(destinoTxt(g))}</td>
+    <td>${placaHtml(g.camiaoId)}</td><td>${esc(nomeMotoristaCarga(g))}</td><td>${esc(nomeCliente(g))}</td><td>${esc(g.origem)}</td><td>${esc(destinoTxt(g))}</td>
     <td>${esc(g.mercadoria)}</td><td class="n">${g.pesoKg ? fmtInt.format(g.pesoKg) : ''}</td><td class="n">${km ? fmtInt.format(km) : ''}</td>
     <td class="n">${fmtC(v)}</td><td class="n">${eurKm == null ? '' : fmtEur(eurKm)}</td>
     <td class="n">${dir ? fmtC(dir) : ''}</td><td class="n ${dir ? clsSinal(margem) : ''}">${dir ? fmtC(margem) : ''}</td>
@@ -1345,9 +1436,135 @@ function renderTudo(){
   if (agendado) return; agendado = true;
   requestAnimationFrame(() => {
     agendado = false;
-    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderFolha(); renderFrota();
+    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderEntidades(); renderFolha(); renderFrota();
   });
 }
+
+/* ---------- Clientes e fornecedores ---------- */
+const ENT = {
+  clientes:{sing:'cliente', Sing:'Cliente', novo:'Novo cliente', artigo:'o'},
+  fornecedores:{sing:'fornecedor', Sing:'Fornecedor', novo:'Novo fornecedor', artigo:'o'}
+};
+const CAMPOS_ENT = ['nome','nif','pais','morada','codPostal','localidade','regiao','contacto','telefone','telemovel','email','emailFaturas','site','iban','moeda','tipoHabitual','obs'];
+function entidadesOrdenadas(col){ return [...store[col]].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt')); }
+function preencherSelEntidade(sel, col, manter, textoAntigo, vazio){
+  let h = `<option value="">${esc(vazio || 'Escolha…')}</option>`;
+  entidadesOrdenadas(col).filter(x => x.ativo !== false || x.id === manter).forEach(x => { h += `<option value="${esc(x.id)}">${esc(x.nome)}${x.nif ? ' · ' + esc(x.nif) : ''}</option>`; });
+  if (textoAntigo) h += `<option value="__texto__">${esc(textoAntigo)} (sem ficha)</option>`;
+  sel.innerHTML = h;
+  sel.value = manter && [...sel.options].some(o => o.value === manter) ? manter : (textoAntigo ? '__texto__' : '');
+}
+function usoEntidade(col, id){
+  if (col === 'clientes'){ const l = store.cargas.filter(g => g.clienteId === id); return {n:l.length, total:l.reduce((a, g) => a + cent(g.valor), 0)}; }
+  const l = store.despesas.filter(d => d.fornecedorId === id); return {n:l.length, total:l.reduce((a, d) => a + cent(d.valor), 0)};
+}
+function moradaTxt(x){ return [x.morada, [x.codPostal, x.localidade].filter(Boolean).join(' '), x.regiao, x.pais].filter(Boolean).join(', '); }
+function filtrarEntidades(col){
+  const q = ($('#e-procura').value || '').trim().toLowerCase();
+  return entidadesOrdenadas(col).filter(x => !q || [x.nome, x.nif, x.localidade, x.pais, x.email, x.contacto].some(v => (v || '').toLowerCase().includes(q)));
+}
+function renderEntidades(){
+  ['clientes', 'fornecedores'].forEach(col => {
+    const tb = $(col === 'clientes' ? '#cli-tabela tbody' : '#forn-tabela tbody'), lista = filtrarEntidades(col), E = ENT[col];
+    const ncol = col === 'clientes' ? 10 : 11;
+    if (!lista.length){ tb.innerHTML = `<tr><td colspan="${ncol}" class="vazio">${store[col].length ? 'Nada encontrado com esta procura.' : `Ainda não há ${col}. Use «${E.novo}».`}</td></tr>`; return; }
+    tb.innerHTML = lista.map(x => {
+      const u = usoEntidade(col, x.id);
+      return `<tr><td><strong>${esc(x.nome)}</strong>${x.contacto ? `<span class="motorista-sub">${esc(x.contacto)}</span>` : ''}</td><td>${esc(x.nif)}</td><td>${esc(x.pais)}</td><td>${esc(x.localidade)}</td>
+        <td>${esc(x.telefone || x.telemovel)}</td><td>${x.email ? `<a href="mailto:${esc(x.email)}">${esc(x.email)}</a>` : ''}</td>
+        ${col === 'fornecedores' ? `<td>${x.tipoHabitual ? esc(tipoPorId(x.tipoHabitual).nome) : ''}</td>` : ''}
+        <td class="n">${u.n}</td><td class="n">${fmtC(u.total)}</td>
+        <td>${x.ativo === false ? '<span class="etiq">Inativo</span>' : '<span class="etiq ativo">Ativo</span>'}</td>
+        <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="editar-ent" data-col="${col}" data-id="${esc(x.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-ent" data-col="${col}" data-id="${esc(x.id)}">Eliminar</button></td></tr>`;
+    }).join('');
+  });
+}
+let entidadeCallback = null;
+function atualizarCamposEntidade(){
+  const f = $('#f-entidade'), pt = f.elements.pais.value === 'Portugal';
+  $('#ent-nif-rot').textContent = pt ? 'NIF' : 'NIF / número de IVA';
+}
+function abrirEntidade(col, id, aoGuardar){
+  const f = $('#f-entidade'), E = ENT[col]; f.reset(); $('#entidade-erro').textContent = '';
+  const x = id ? store[col].find(o => o.id === id) : null;
+  f.dataset.col = col; f.dataset.id = x ? x.id : ''; entidadeCallback = aoGuardar || null;
+  $('#dlg-entidade-tit').textContent = x ? `${E.Sing}: ${x.nome}` : E.novo;
+  f.elements.pais.innerHTML = opcoesPaises(x ? x.pais : 'Portugal');
+  $('#wrap-tipoHabitual').hidden = col !== 'fornecedores';
+  if (x) preencherForm(f, {...x, ativo:x.ativo !== false}); else { f.elements.pais.value = 'Portugal'; f.elements.ativo.checked = true; f.elements.moeda.value = 'EUR'; }
+  atualizarCamposEntidade();
+  abrirDialogo('#dlg-entidade');
+  setTimeout(() => f.elements.nome.focus(), 50);
+}
+$('#f-entidade').elements.pais.addEventListener('change', atualizarCamposEntidade);
+$('#f-entidade').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, e = f.elements, col = f.dataset.col, id = f.dataset.id, erro = $('#entidade-erro'), d = {};
+  CAMPOS_ENT.forEach(k => { d[k] = e[k] ? txt(e[k]) : ''; });
+  if (col !== 'fornecedores') d.tipoHabitual = '';
+  d.prazoPagamento = numOuNull(e.prazoPagamento.value); d.ativo = e.ativo.checked;
+  d.nif = d.nif.replace(/\s+/g, '').toUpperCase(); d.iban = d.iban.replace(/\s+/g, '').toUpperCase();
+  if (!d.nome) return erro.textContent = 'Indique o nome.';
+  if (!d.pais) return erro.textContent = 'Escolha o país.';
+  if (d.pais === 'Portugal' && d.nif && !validarNIF(d.nif.replace(/^PT/, ''))) return erro.textContent = 'O NIF português não é válido.';
+  if (d.nif && store[col].some(o => o.id !== id && (o.nif || '').replace(/\s+/g, '').toUpperCase() === d.nif)) return erro.textContent = `Já existe um ${ENT[col].sing} com este NIF.`;
+  if (store[col].some(o => o.id !== id && (o.nome || '').trim().toLowerCase() === d.nome.toLowerCase()) && !confirm(`Já existe um ${ENT[col].sing} com o nome «${d.nome}». Guardar mesmo assim?`)) return;
+  if (d.prazoPagamento != null && (!isFinite(d.prazoPagamento) || d.prazoPagamento < 0)) return erro.textContent = 'O prazo de pagamento tem de ser um número positivo.';
+  if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return erro.textContent = 'O email não é válido.';
+  let novoId = id;
+  if (id) gravar(DB.update(col, id, d), 'Ficha guardada.');
+  else { const r = DB.addComId(col, d); novoId = r.id; gravar(r.p, 'Ficha criada.'); }
+  // Atualiza o nome guardado nas cargas/despesas ligadas (para listas e exportações antigas)
+  if (id){
+    const ligados = col === 'clientes' ? store.cargas.filter(g => g.clienteId === id && g.cliente !== d.nome) : store.despesas.filter(x => x.fornecedorId === id && x.fornecedor !== d.nome);
+    ligados.forEach(o => gravar(DB.update(col === 'clientes' ? 'cargas' : 'despesas', o.id, col === 'clientes' ? {cliente:d.nome} : {fornecedor:d.nome})));
+  }
+  fecharDialogo($('#dlg-entidade'));
+  if (entidadeCallback){ const cb = entidadeCallback; entidadeCallback = null; cb(novoId, d.nome); }
+});
+function apagarEntidade(col, id){
+  const x = store[col].find(o => o.id === id); if (!x) return;
+  const u = usoEntidade(col, id);
+  if (u.n){ toast(`${x.nome} tem ${u.n} ${col === 'clientes' ? 'carga(s)' : 'despesa(s)'} registada(s). Marque como inativo em vez de eliminar.`, 'erro'); return; }
+  if (!confirm(`Eliminar a ficha de ${x.nome}? Esta ação não pode ser desfeita.`)) return;
+  gravar(DB.remove(col, id), 'Ficha eliminada.');
+}
+$('#cli-novo').addEventListener('click', () => abrirEntidade('clientes'));
+$('#forn-novo').addEventListener('click', () => abrirEntidade('fornecedores'));
+$('#e-procura').addEventListener('input', renderEntidades);
+// «+ Novo» dentro das cargas e despesas: cria a ficha e escolhe-a logo
+function selecionarNovo(sel, id, nome){
+  if (![...sel.options].some(o => o.value === id)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(id)}">${esc(nome)}</option>`);
+  sel.value = id; sel.dispatchEvent(new Event('change'));
+}
+$('#c-novo-cli').addEventListener('click', () => abrirEntidade('clientes', null, (id, nome) => selecionarNovo($('#f-carga').elements.clienteId, id, nome)));
+$('#d-novo-forn').addEventListener('click', () => abrirEntidade('fornecedores', null, (id, nome) => selecionarNovo($('#f-despesa').elements.fornecedorId, id, nome)));
+function folhaEntidades(col){
+  const cab = ['Nome','NIF','País','Morada','Código postal','Localidade','Região','Contacto','Telefone','Telemóvel','Email','Email faturas','Site','Prazo (dias)','IBAN','Moeda', ...(col === 'fornecedores' ? ['Despesa habitual'] : []), col === 'clientes' ? 'Cargas' : 'Despesas', col === 'clientes' ? 'Faturado' : 'Total', 'Estado','Observações'];
+  const L = [cab.map(c => X(c, null, 'cab'))];
+  entidadesOrdenadas(col).forEach(x => { const u = usoEntidade(col, x.id); L.push([X(x.nome), X(x.nif), X(x.pais), X(x.morada), X(x.codPostal), X(x.localidade), X(x.regiao), X(x.contacto), X(x.telefone), X(x.telemovel), X(x.email), X(x.emailFaturas), X(x.site), X(x.prazoPagamento ?? '', 'int'), X(x.iban), X(x.moeda),
+    ...(col === 'fornecedores' ? [X(x.tipoHabitual ? tipoPorId(x.tipoHabitual).nome : '')] : []), X(u.n, 'int'), X(u.total / 100, 'eur'), X(x.ativo === false ? 'Inativo' : 'Ativo'), X(x.obs)]); });
+  return criarFolha(L, [30, 14, 14, 30, 11, 16, 12, 18, 14, 14, 26, 26, 20, 9, 26, 7, ...(col === 'fornecedores' ? [22] : []), 9, 13, 9, 30]);
+}
+function exportarEntidadesXls(col){
+  if (!xlsxDisponivel()) return;
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, folhaEntidades(col), col === 'clientes' ? 'Clientes' : 'Fornecedores');
+  XLSX.writeFile(wb, `${col}-${hoje()}.xlsx`);
+}
+function pdfEntidades(col){
+  if (!pdfDisponivel()) return;
+  const lista = filtrarEntidades(col), R = novoPDF(col === 'clientes' ? 'Lista de clientes' : 'Lista de fornecedores', fmtData(hoje()));
+  if (!lista.length){ pdfNota(R, 'Sem registos.'); pdfFinalizar(R, `${col}.pdf`); return; }
+  const body = lista.map(x => { const u = usoEntidade(col, x.id); return [pS(x.nome + (x.ativo === false ? ' (inativo)' : ''), {fontStyle:'bold'}), pS(x.nif), pS(moradaTxt(x)), pS([x.contacto, x.telefone, x.telemovel].filter(Boolean).join('\n')), pS([x.email, x.emailFaturas && x.emailFaturas !== x.email ? 'Faturas: ' + x.emailFaturas : ''].filter(Boolean).join('\n')), pN(x.prazoPagamento ?? null, 'int'), pN(u.n, 'int'), pN(u.total / 100, 'eur')]; });
+  pdfSecao(R, `${col === 'clientes' ? 'Clientes' : 'Fornecedores'} (${lista.length})`, (body.length + 2) * alturaLinha(7.5) * 1.6);
+  pdfTabela(R, {head:['Nome', 'NIF', 'Morada', 'Contacto e telefone', 'Email', 'Prazo (dias)', col === 'clientes' ? 'Cargas' : 'Despesas', col === 'clientes' ? 'Faturado' : 'Total'], body,
+    cols:[{w:50}, {w:24}, {}, {w:38}, {w:48}, {n:1, w:14}, {n:1, w:15}, {n:1, w:22}], fs:7.5});
+  pdfFinalizar(R, `${col}-${hoje()}.pdf`);
+}
+$('#cli-pdf').addEventListener('click', () => pdfEntidades('clientes'));
+$('#forn-pdf').addEventListener('click', () => pdfEntidades('fornecedores'));
+$('#cli-xls').addEventListener('click', () => exportarEntidadesXls('clientes'));
+$('#forn-xls').addEventListener('click', () => exportarEntidadesXls('fornecedores'));
 
 /* ---------- Formulários ---------- */
 function preencherForm(f, o){
@@ -1374,7 +1591,9 @@ function abrirCarga(id){
   $('#dlg-carga-tit').textContent = g ? 'Editar carga' : 'Nova carga';
   preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, manter: g ? g.camiaoId : ($('#c-cam').value || '')});
   preencherSelMotorista(f.elements.motoristaId, g ? (g.motoristaId || '') : '');
-  if (g){ preencherForm(f, {...g, motoristaId:g.motoristaId || ''}); }
+  preencherSelEntidade(f.elements.clienteId, 'clientes', g ? (g.clienteId || '') : '', g && !g.clienteId ? g.cliente : '');
+  f.elements.destinoPais.innerHTML = opcoesPaises(g ? g.destinoPais : '');
+  if (g){ preencherForm(f, {...g, motoristaId:g.motoristaId || '', clienteId:g.clienteId || (g.cliente ? '__texto__' : '')}); }
   else { f.elements.dataSaida.value = hoje(); f.elements.origem.value = 'Portugal'; sugerirMotoristaCarga(); }
   abrirDialogo('#dlg-carga');
 }
@@ -1387,13 +1606,15 @@ $('#f-carga').addEventListener('submit', ev => {
   const d = {
     camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : (anterior.motoristaId ? '' : (anterior.motorista || '')),
     dataSaida:e.dataSaida.value, dataRegresso:e.dataRegresso.value,
-    cliente:txt(e.cliente), origem:txt(e.origem), destinoPais:txt(e.destinoPais), destinoCidade:txt(e.destinoCidade),
+    clienteId: e.clienteId.value && e.clienteId.value !== '__texto__' ? e.clienteId.value : null,
+    cliente: e.clienteId.value === '__texto__' ? (anterior.cliente || '') : ((clientePorId(e.clienteId.value) || {}).nome || e.clienteId.selectedOptions[0]?.textContent || ''),
+    origem:txt(e.origem), destinoPais:txt(e.destinoPais), destinoCidade:txt(e.destinoCidade),
     mercadoria:txt(e.mercadoria), pesoKg:numOuNull(e.pesoKg.value), km:numOuNull(e.km.value),
     valor:r2(parseFloat(e.valor.value)), fatura:txt(e.fatura), cmr:txt(e.cmr), obs:txt(e.obs)
   };
   if (!d.camiaoId) return erro.textContent = 'Escolha o camião.';
   if (!d.dataSaida) return erro.textContent = 'Indique a data de saída.';
-  if (!d.cliente) return erro.textContent = 'Indique o cliente.';
+  if (!e.clienteId.value) return erro.textContent = 'Escolha o cliente (ou crie-o com «+ Novo cliente»).';
   if (!d.destinoPais) return erro.textContent = 'Indique o país de destino.';
   if (!isFinite(d.valor)) return erro.textContent = 'Indique o valor do frete.';
   if (d.dataRegresso && d.dataRegresso < d.dataSaida) return erro.textContent = 'A data de regresso é anterior à data de saída.';
@@ -1419,7 +1640,7 @@ function atualizarCamposDespesa(){
   const cam = f.elements.camiaoId.value, sel = f.elements.cargaId, atual = sel.value || f.dataset.cargaId || '';
   $('#wrap-cargaId').hidden = !cam || cam === GERAL;
   const cargas = store.cargas.filter(g => g.camiaoId === cam).sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || '')).slice(0, 80);
-  sel.innerHTML = '<option value="">Nenhuma</option>' + cargas.map(g => `<option value="${esc(g.id)}">${fmtData(g.dataSaida)} · ${esc(destinoTxt(g))} · ${esc(g.cliente)}</option>`).join('');
+  sel.innerHTML = '<option value="">Nenhuma</option>' + cargas.map(g => `<option value="${esc(g.id)}">${fmtData(g.dataSaida)} · ${esc(destinoTxt(g))} · ${esc(nomeCliente(g))}</option>`).join('');
   if ([...sel.options].some(o => o.value === atual)) sel.value = atual;
 }
 function abrirDespesa(id){
@@ -1429,7 +1650,8 @@ function abrirDespesa(id){
   $('#dlg-despesa-tit').textContent = d ? 'Editar despesa' : 'Nova despesa';
   preencherTiposSelect(f.elements.tipo, false, d ? d.tipo : null);
   preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, geral:true, manter: d ? (d.camiaoId || GERAL) : ($('#d-cam').value || '')});
-  if (d) preencherForm(f, {...d, camiaoId:d.camiaoId || GERAL, cargaId:''});
+  preencherSelEntidade(f.elements.fornecedorId, 'fornecedores', d ? (d.fornecedorId || '') : '', d && !d.fornecedorId ? d.fornecedor : '', 'Sem fornecedor');
+  if (d) preencherForm(f, {...d, camiaoId:d.camiaoId || GERAL, cargaId:'', fornecedorId:d.fornecedorId || (d.fornecedor ? '__texto__' : '')});
   else { f.elements.data.value = hoje(); f.elements.tipo.value = 'gasoleo'; f.elements.diluir.checked = false; }
   atualizarCamposDespesa();
   abrirDialogo('#dlg-despesa');
@@ -1438,6 +1660,10 @@ $('#f-despesa').elements.tipo.addEventListener('change', () => {
   const f = $('#f-despesa'); f.elements.diluir.checked = !!tipoPorId(f.elements.tipo.value).anual; atualizarCamposDespesa();
 });
 $('#f-despesa').elements.camiaoId.addEventListener('change', () => { $('#f-despesa').dataset.cargaId = ''; atualizarCamposDespesa(); });
+$('#f-despesa').elements.fornecedorId.addEventListener('change', () => {
+  const f = $('#f-despesa'), fo = fornecedorPorId(f.elements.fornecedorId.value);
+  if (fo && fo.tipoHabitual && !f.dataset.id){ f.elements.tipo.value = fo.tipoHabitual; f.elements.diluir.checked = !!tipoPorId(fo.tipoHabitual).anual; atualizarCamposDespesa(); }
+});
 $('#f-despesa').addEventListener('submit', ev => {
   ev.preventDefault();
   const f = ev.target, e = f.elements, erro = $('#despesa-erro'), t = tipoPorId(e.tipo.value);
@@ -1445,7 +1671,9 @@ $('#f-despesa').addEventListener('submit', ev => {
     camiaoId:e.camiaoId.value, data:e.data.value, tipo:t.id, valor:r2(parseFloat(e.valor.value)),
     litros: t.litros ? numOuNull(e.litros.value) : null, diluir:e.diluir.checked,
     cargaId: (e.camiaoId.value !== GERAL && e.cargaId.value) ? e.cargaId.value : null,
-    fornecedor:txt(e.fornecedor), documento:txt(e.documento), obs:txt(e.obs)
+    fornecedorId: e.fornecedorId.value && e.fornecedorId.value !== '__texto__' ? e.fornecedorId.value : null,
+    fornecedor: e.fornecedorId.value === '__texto__' ? ((store.despesas.find(x => x.id === f.dataset.id) || {}).fornecedor || '') : ((fornecedorPorId(e.fornecedorId.value) || {}).nome || (e.fornecedorId.value ? e.fornecedorId.selectedOptions[0]?.textContent : '') || ''),
+    documento:txt(e.documento), obs:txt(e.obs)
   };
   if (!d.camiaoId) return erro.textContent = 'Escolha o camião ou «Estrutura».';
   if (!d.data) return erro.textContent = 'Indique a data do documento.';
@@ -1458,7 +1686,7 @@ $('#f-despesa').addEventListener('submit', ev => {
 
 // ---- Camião
 const CAMPOS_NUM_CAMIAO = ['ano','seguroAnual','iucAnual','inspecaoAnual','tacografoAnual','leasingMensal','amortizacaoMensal','outrosFixosMensais'];
-const CAMPOS_TXT_CAMIAO = ['marcaModelo','dataInicio','dataFim','seguroValidade','proximaInspecao','validadeTacografo','leasingFim','outrosFixosDesc','obs'];
+const CAMPOS_TXT_CAMIAO = ['marcaModelo','dataInicio','dataFim','seguroValidade','proximoIUC','proximaInspecao','validadeTacografo','leasingFim','outrosFixosDesc','obs'];
 function lerCamiao(f){
   const e = f.elements, d = {matricula:formatarMatricula(e.matricula.value), ativo:e.ativo.checked};
   CAMPOS_NUM_CAMIAO.forEach(k => { d[k] = numOuNull(e[k].value); });
@@ -1644,6 +1872,8 @@ document.addEventListener('click', ev => {
     case 'editar-despesa': abrirDespesa(id); break;
     case 'editar-camiao': abrirCamiao(id); break;
     case 'editar-motorista': abrirMotorista(id); break;
+    case 'editar-ent': abrirEntidade(b.dataset.col, id); break;
+    case 'apagar-ent': apagarEntidade(b.dataset.col, id); break;
     case 'pdf-motorista': pdfFichaMotorista(id); break;
     case 'pdf-camiao': pdfFichaCamiao(id); break;
     case 'apagar-carga': {
@@ -1749,7 +1979,7 @@ function folhaCamioes(titulo, r){
 }
 function folhaAgregados(titulo, filtro){
   const L = cabecalhoFolha(titulo);
-  [['País de destino', g => g.destinoPais], ['Cliente', g => g.cliente]].forEach(([nome, ch]) => {
+  [['País de destino', g => g.destinoPais], ['Cliente', g => nomeCliente(g)]].forEach(([nome, ch]) => {
     L.push([X(nome, null, 'cab'), X('Cargas', null, 'cab'), X('Proveitos', null, 'cab'), X('Km', null, 'cab'), X('€/km', null, 'cab'), X('Proveito médio por carga', null, 'cab'), X('Dias médios por viagem', null, 'cab')]);
     agregarCargas(filtro, ch).forEach(a => L.push([X(a.k), X(a.n, 'int'), X(a.prov / 100, 'eur'), X(a.km, 'int'), X(a.km ? a.prov / 100 / a.km : '', 'eur'), X(a.prov / 100 / a.n, 'eur'), X(a.nd ? a.dias / a.nd : '', 'dec')]));
     L.push([]);
@@ -1798,7 +2028,7 @@ function exportarMes(){
   Lc.push(['Saída','Regresso','Dias','Camião','Motorista','Cliente','Destino','Mercadoria','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura'].map(c => X(c, null, 'cab')));
   store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida)).forEach(g => {
     const v = cent(g.valor) / 100, dir = (diretas[g.id] || 0) / 100, dd = diasEntre(g.dataSaida, g.dataRegresso);
-    Lc.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dd != null && dd >= 0 ? dd + 1 : '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(destinoTxt(g)), X(g.mercadoria), X(+g.km || '', 'int'), X(v, 'eur'), X(g.km ? v / g.km : '', 'eur'), X(dir || '', 'eur'), X(dir ? v - dir : '', 'eur'), X(g.fatura)]);
+    Lc.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dd != null && dd >= 0 ? dd + 1 : '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(nomeCliente(g)), X(destinoTxt(g)), X(g.mercadoria), X(+g.km || '', 'int'), X(v, 'eur'), X(g.km ? v / g.km : '', 'eur'), X(dir || '', 'eur'), X(dir ? v - dir : '', 'eur'), X(g.fatura)]);
   });
   XLSX.utils.book_append_sheet(wb, criarFolha(Lc, [11, 11, 6, 12, 20, 24, 22, 16, 9, 12, 9, 13, 13, 12]), 'Cargas');
   // Despesas lançadas no mês
@@ -1806,7 +2036,7 @@ function exportarMes(){
   Ld.push(['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação'].map(c => X(c, null, 'cab')));
   store.despesas.filter(d => (d.data || '').slice(0, 7) === ym).sort((a, b) => a.data.localeCompare(b.data)).forEach(d => {
     const t = tipoPorId(d.tipo);
-    Ld.push([X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(d.fornecedor), X(d.documento), X(+d.litros || '', 'dec'), X(+d.valor || 0, 'eur'), X(d.diluir ? 'Repartida por 12 meses' : 'No mês')]);
+    Ld.push([X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(nomeFornecedor(d)), X(d.documento), X(+d.litros || '', 'dec'), X(+d.valor || 0, 'eur'), X(d.diluir ? 'Repartida por 12 meses' : 'No mês')]);
   });
   XLSX.utils.book_append_sheet(wb, criarFolha(Ld, [11, 16, 28, 26, 20, 14, 9, 12, 20]), 'Despesas');
   XLSX.utils.book_append_sheet(wb, folhaAgregados(`Rentabilidade por destino e cliente: ${nm}`, g => (g.dataSaida || '').slice(0, 7) === ym), 'Destinos e clientes');
@@ -1852,7 +2082,7 @@ function exportarFolha(){
   const L = cabecalhoFolha(`Folha de registo de cargas: ${$('#f-print-tit').textContent}`);
   L.push(['Data saída','Data regresso','Dias','Camião','Motorista','Cliente','Origem','País destino','Cidade destino','Mercadoria','Peso (kg)','Km','Valor','€/km','Despesas da viagem','Margem da viagem','Fatura','CMR','Observações'].map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
-  linhas.forEach(({g, v, dir, km, dias, eurKm, margem}) => L.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dias ?? '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria),
+  linhas.forEach(({g, v, dir, km, dias, eurKm, margem}) => L.push([X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(dias ?? '', 'int'), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(nomeCliente(g)), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria),
     X(g.pesoKg ?? '', 'int'), X(km || '', 'int'), X(v / 100, 'eur'), X(eurKm ?? '', 'eur'), X(dir ? dir / 100 : '', 'eur'), X(dir ? margem / 100 : '', 'eur'), X(g.fatura), X(g.cmr), X(g.obs)]));
   const fim = L.length;
   const sm = fn => r2(linhas.reduce((s, l) => s + fn(l), 0));
@@ -1871,12 +2101,14 @@ function exportarTudo(){
       X((m.clausulas || []).map(c => `${c.descricao}: ${fmtEur(c.valor)} / ${(BASES.find(b => b[0] === c.base) || ['', ''])[1]}`).join('; ')), X(+m.seguroATAnual || '', 'eur'), X(+m.medicinaAnual || '', 'eur'), X(+m.formacaoAnual || '', 'eur'), X(+m.outrosEncargosMensais || '', 'eur'),
       X((m.atribuicoes || []).map(a => `${fmtData(a.desde)} ${nomeCamiao(a.camiaoId)}`).join('; ')), X(fmtData(m.validadeCarta)), X(fmtData(m.validadeCAM)), X(fmtData(m.validadeCartaoTacografo))])], [24, 11, 12, 12, 11, 11, 20, 11, 10, 9, 50, 11, 11, 11, 10, 30, 11, 11, 11]), 'Motoristas');
   XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data saída','Data regresso','Camião','Motorista','Cliente','Origem','País destino','Cidade destino','Mercadoria','Peso (kg)','Km','Valor','Fatura','CMR','Observações']),
-    ...[...store.cargas].sort((a, b) => (a.dataSaida || '').localeCompare(b.dataSaida || '')).map(g => [X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(g.cliente), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria), X(g.pesoKg ?? '', 'int'), X(g.km ?? '', 'int'), X(+g.valor || 0, 'eur'), X(g.fatura), X(g.cmr), X(g.obs)])], [11, 11, 12, 20, 24, 12, 14, 14, 16, 10, 9, 12, 12, 10, 30]), 'Cargas');
+    ...[...store.cargas].sort((a, b) => (a.dataSaida || '').localeCompare(b.dataSaida || '')).map(g => [X(fmtData(g.dataSaida)), X(fmtData(g.dataRegresso)), X(nomeCamiao(g.camiaoId)), X(nomeMotoristaCarga(g)), X(nomeCliente(g)), X(g.origem), X(g.destinoPais), X(g.destinoCidade), X(g.mercadoria), X(g.pesoKg ?? '', 'int'), X(g.km ?? '', 'int'), X(+g.valor || 0, 'eur'), X(g.fatura), X(g.cmr), X(g.obs)])], [11, 11, 12, 20, 24, 12, 14, 14, 16, 10, 9, 12, 12, 10, 30]), 'Cargas');
   XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data','Camião','Tipo','Categoria','Valor','Litros','Repartida 12 meses','Fornecedor','Documento','Viagem','Observações']),
     ...[...store.despesas].sort((a, b) => (a.data || '').localeCompare(b.data || '')).map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
-      return [X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(+d.valor || 0, 'eur'), X(d.litros ?? '', 'dec'), X(d.diluir ? 'Sim' : 'Não'), X(d.fornecedor), X(d.documento), X(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : ''), X(d.obs)]; })], [11, 16, 28, 26, 12, 9, 10, 20, 14, 24, 30]), 'Despesas');
+      return [X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(+d.valor || 0, 'eur'), X(d.litros ?? '', 'dec'), X(d.diluir ? 'Sim' : 'Não'), X(nomeFornecedor(d)), X(d.documento), X(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : ''), X(d.obs)]; })], [11, 16, 28, 26, 12, 9, 10, 20, 14, 24, 30]), 'Despesas');
   XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Mês','Motorista','Dias de trabalho','Dias fora','Ajudas de custo sem SS','Prémios e extras','Extras sem TSU','Faltas']),
     ...[...store.mensal].sort((a, b) => (a.id || '').localeCompare(b.id || '')).map(x => [X(x.ym), X((motoristaPorId(x.motoristaId) || {}).nome || ''), X(x.diasTrabalho ?? '', 'int'), X(x.diasDeslocacao ?? '', 'int'), X(x.ajudasMes ?? '', 'eur'), X(x.extras ?? '', 'eur'), X(x.extrasSemTSU ? 'Sim' : ''), X(x.faltas ?? '', 'eur')])], [9, 24, 12, 10, 14, 14, 12, 10]), 'Processamento mensal');
+  XLSX.utils.book_append_sheet(wb, folhaEntidades('clientes'), 'Clientes');
+  XLSX.utils.book_append_sheet(wb, folhaEntidades('fornecedores'), 'Fornecedores');
   XLSX.writeFile(wb, `frota-dados-completos-${hoje()}.xlsx`);
 }
 function exportarJSON(){
@@ -2072,7 +2304,7 @@ function pdfComparacao(R, ym, r){
   pdfTabela(R, {head:['Camião', nomeMesAno(ymA), nomeMesAno(ym), 'Variação'], body, foot:[pS('Frota'), pN(tA, 'eur'), pN(tM, 'eur'), pN(tM - tA, 'eur')], cols:[{w:40}, {n:1}, {n:1}, {n:1}], fs:8, largura:150});
 }
 function pdfAgregados(R, titulo, filtro, max = 15){
-  const listas = [['País de destino', agregarCargas(filtro, g => g.destinoPais)], ['Cliente', agregarCargas(filtro, g => g.cliente)]];
+  const listas = [['País de destino', agregarCargas(filtro, g => g.destinoPais)], ['Cliente', agregarCargas(filtro, g => nomeCliente(g))]];
   if (!listas[0][1].length) return;
   const n = Math.min(max, Math.max(listas[0][1].length, listas[1][1].length));
   pdfSecao(R, titulo, (n + 2) * alturaLinha(7.5) + 3);
@@ -2110,7 +2342,7 @@ function pdfCargasTabela(R, titulo, lista){
   if (!lista.length) return;
   const dir = diretasPorCarga();
   const body = lista.map(g => { const v = cent(g.valor) / 100, d = (dir[g.id] || 0) / 100, dd = diasEntre(g.dataSaida, g.dataRegresso);
-    return [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dd != null && dd >= 0 ? dd + 1 : null, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(g.cliente), pS(destinoTxt(g)), pS(g.mercadoria),
+    return [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dd != null && dd >= 0 ? dd + 1 : null, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(nomeCliente(g)), pS(destinoTxt(g)), pS(g.mercadoria),
       pN(+g.km || null, 'int'), pN(v, 'eur'), pN(g.km ? v / g.km : null, 'eur'), pN(d || null, 'eur'), pN(d ? v - d : null, 'eur'), pS(g.fatura)]; });
   const tv = lista.reduce((s, g) => s + cent(g.valor), 0) / 100, tk = lista.reduce((s, g) => s + (+g.km || 0), 0), td = lista.reduce((s, g) => s + (dir[g.id] || 0), 0) / 100;
   const tm = lista.reduce((s, g) => s + (dir[g.id] ? cent(g.valor) - dir[g.id] : 0), 0) / 100;
@@ -2122,7 +2354,7 @@ function pdfCargasTabela(R, titulo, lista){
 function pdfDespesasTabela(R, titulo, lista){
   if (!lista.length) return;
   const body = lista.map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
-    return [pS(fmtData(d.data)), pS(nomeCamiao(d.camiaoId || GERAL)), pS(t.nome), pS(catNome(t.cat)), pS(d.fornecedor), pS(d.documento), pN(+d.litros || null, 'dec'), pN(+d.valor || 0, 'eur'), pS(d.diluir ? '12 meses' : 'No mês'), pS(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : '')]; });
+    return [pS(fmtData(d.data)), pS(nomeCamiao(d.camiaoId || GERAL)), pS(t.nome), pS(catNome(t.cat)), pS(nomeFornecedor(d)), pS(d.documento), pN(+d.litros || null, 'dec'), pN(+d.valor || 0, 'eur'), pS(d.diluir ? '12 meses' : 'No mês'), pS(g ? fmtData(g.dataSaida) + ' ' + destinoTxt(g) : '')]; });
   const tv = lista.reduce((s, d) => s + cent(d.valor), 0) / 100, tl = lista.reduce((s, d) => s + (+d.litros || 0), 0);
   pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7.5));
   pdfTabela(R, {head:['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação','Viagem'], body,
@@ -2184,7 +2416,7 @@ function pdfFolhaCargas(){
   const extra = [$('#f-cam').value ? 'Camião ' + nomeCamiao($('#f-cam').value) : '', $('#f-pais').value ? 'Destino ' + $('#f-pais').value : ''].filter(Boolean).join(', ');
   const R = novoPDF('Folha de registo de cargas' + (extra ? ` (${extra})` : ''), `${de ? fmtData(de) : 'Início'} a ${ate ? fmtData(ate) : fmtData(hoje())}`);
   if (!linhas.length){ pdfNota(R, 'Não há cargas com estes filtros.'); pdfFinalizar(R, 'folha-cargas.pdf'); return; }
-  const body = linhas.map(({g, v, dir, km, dias, eurKm, margem}) => [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dias, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(g.cliente),
+  const body = linhas.map(({g, v, dir, km, dias, eurKm, margem}) => [pS(fmtData(g.dataSaida)), pS(fmtData(g.dataRegresso)), pN(dias, 'int'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)), pS(nomeCliente(g)),
     pS(destinoTxt(g) + (g.origem && g.origem !== 'Portugal' ? `\n(origem: ${g.origem})` : '')), pS(g.mercadoria), pN(+g.pesoKg || null, 'int'), pN(km || null, 'int'), pN(v / 100, 'eur'), pN(eurKm, 'eur'),
     pN(dir ? dir / 100 : null, 'eur'), pN(dir ? margem / 100 : null, 'eur'), pS(g.fatura), pS(g.cmr), pS(g.obs)]);
   const sm = fn => linhas.reduce((s, l) => s + fn(l), 0);
@@ -2284,7 +2516,7 @@ function pdfFichaCamiaoEm(R, c){
   const eur = v => v == null || v === '' ? '' : fmtEur(v);
   pdfKV(R, `Ficha do camião: ${c.matricula}`, [['Matrícula', c.matricula], ['Marca e modelo', c.marcaModelo], ['Ano', c.ano ? String(c.ano) : ''], ['Estado', c.ativo === false ? 'Inativo' : 'Ativo'],
     ['Entrada na frota', fmtData(c.dataInicio)], ['Saída da frota', fmtData(c.dataFim)], ['Último motorista', motoristaAtualTxt(c)], ['', '']]);
-  pdfKV(R, 'Custos fixos', [['Seguro por ano', eur(c.seguroAnual)], ['Validade do seguro', fmtData(c.seguroValidade)], ['IUC por ano', eur(c.iucAnual)], ['Inspeções por ano', eur(c.inspecaoAnual)],
+  pdfKV(R, 'Custos fixos', [['Seguro por ano', eur(c.seguroAnual)], ['Validade do seguro', fmtData(c.seguroValidade)], ['IUC por ano', eur(c.iucAnual)], ['Próximo IUC', fmtData(c.proximoIUC)], ['Inspeções por ano', eur(c.inspecaoAnual)],
     ['Próxima inspeção', fmtData(c.proximaInspecao)], ['Tacógrafo por ano', eur(c.tacografoAnual)], ['Verificação do tacógrafo', fmtData(c.validadeTacografo)], ['Leasing por mês', eur(c.leasingMensal)],
     ['Última renda', fmtData(c.leasingFim)], ['Amortização por mês', eur(c.amortizacaoMensal)], ['Outros fixos por mês', eur(c.outrosFixosMensais) + (c.outrosFixosDesc ? ` (${c.outrosFixosDesc})` : '')], ['Total de custos fixos por mês', fmtEur(fixosMensaisTeoricos(c))]]);
   const hist = ultimos12().map(ym => ({ym, b:calcularMes(ym)[c.id]})).filter(x => x.b);
@@ -2354,10 +2586,28 @@ $('#imp-btn').addEventListener('click', async () => {
   try { dados = JSON.parse(txt); } catch (e) { toast('O texto não está completo. Copie-o outra vez desde o primeiro { até ao último }.', 'erro'); return; }
   if (!dados || dados.app !== 'dgt-frota'){ toast('Este texto não é de importação desta aplicação.', 'erro'); return; }
   const novos = c => (dados[c] || []).filter(o => o && o.id && !store[c].some(x => x.id === o.id)).length;
-  const nCam = novos('camioes'), nMot = novos('motoristas'), nCar = novos('cargas'), nDes = novos('despesas');
-  if (!nCam && !nMot && !nCar && !nDes && !(dados.config || []).length){ toast('Estes dados já estão todos na aplicação.'); return; }
-  if (!confirm(`Acrescentar ${nCam} camião(ões), ${nMot} trabalhador(es), ${nCar} carga(s) e ${nDes} despesa(s)?\n\nOs registos que já existem não são alterados.`)) return;
-  try { await DB.repor(dados, true); $('#imp-texto').value = ''; toast('Importação concluída. Os registos que já existiam ficaram como estavam.'); }
+  const nCam = novos('camioes'), nMot = novos('motoristas'), nCar = novos('cargas'), nDes = novos('despesas'), nCli = novos('clientes'), nFor = novos('fornecedores');
+  // Atualizações de campos em registos existentes
+  const atual = [];
+  Object.entries(dados.atualizar || {}).forEach(([col, lista]) => { if (!COLS.includes(col)) return; (lista || []).forEach(o => { const ex = o && o.id && store[col].find(x => x.id === o.id); if (ex) atual.push([col, ex, o]); }); });
+  if (!nCam && !nMot && !nCar && !nDes && !nCli && !nFor && !atual.length && !(dados.config || []).length){ toast('Estes dados já estão todos na aplicação.'); return; }
+  const partes = [];
+  if (nCam || nMot || nCar || nDes || nCli || nFor) partes.push(`Acrescentar ${nCam} camião(ões), ${nMot} trabalhador(es), ${nCli} cliente(s), ${nFor} fornecedor(es), ${nCar} carga(s) e ${nDes} despesa(s).`);
+  if (atual.length) partes.push(`Atualizar ${atual.length} ficha(s): ` + atual.map(([col, ex]) => ex.matricula || ex.nome || ex.id).join(', ') + '.');
+  if (!confirm(partes.join('\n\n') + '\n\nNada mais é alterado.')) return;
+  try {
+    await DB.repor(dados, true);
+    for (const [col, ex, o] of atual){
+      const upd = {};
+      Object.keys(o).forEach(k => {
+        if (k === 'id') return;
+        if (k === '_acrescentarObs'){ const t = String(o[k]); if (!(ex.obs || '').includes(t)) upd.obs = (ex.obs ? ex.obs + '\n' : '') + t; return; }
+        upd[k] = o[k];
+      });
+      if (Object.keys(upd).length) gravar(DB.update(col, ex.id, upd));
+    }
+    $('#imp-texto').value = ''; toast('Importação concluída.');
+  }
   catch (e) { toast('Não foi possível importar: ' + (e.code === 'permission-denied' ? 'sem permissão para esta conta.' : e.message), 'erro'); }
 });
 
@@ -2396,6 +2646,8 @@ function iniciar(){
   preencherTiposSelect($('#d-tipo'), true);
   preencherTiposSelect($('#f-despesa').elements.tipo, false);
   $('#dl-paises').innerHTML = PAISES.map(p => `<option value="${p}">`).join('');
+  $('#f-entidade').elements.pais.innerHTML = opcoesPaises('Portugal');
+  preencherTiposSelect($('#f-entidade').elements.tipoHabitual, false); $('#f-entidade').elements.tipoHabitual.insertAdjacentHTML('afterbegin', '<option value="">Nenhuma</option>');
 
   if (MODO_LOCAL){ carregarLocal(); $('#aviso-local').hidden = false; mostrarApp(''); renderTudo(); return; }
   if (typeof firebase === 'undefined'){ document.body.innerHTML = '<p style="padding:24px">Não foi possível carregar o Firebase. Verifique a ligação à internet e recarregue a página.</p>'; return; }
