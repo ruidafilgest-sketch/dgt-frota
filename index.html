@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -645,6 +646,29 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   </form>
 </dialog>
 
+<!-- Diálogo: dossier de documentos (carga, camião, motorista) -->
+<dialog id="dlg-docs" class="largo">
+  <form id="f-docs" novalidate>
+    <div class="dlg-cab"><h3 id="docs-tit">Dossier</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo">
+      <p class="nota" id="docs-sub" style="margin:0 0 12px;font-weight:600"></p>
+      <fieldset>
+        <legend>Anexar documentos</legend>
+        <div class="grelha">
+          <label class="campo">Tipo de documento<select name="categoria"></select></label>
+          <label class="campo" id="docs-validade-wrap" hidden>Validade (se aplicável)<input type="date" name="validade"></label>
+          <label class="campo inteiro">Ficheiros (PDF, Excel, Word ou imagem · máx. 5 MB cada · pode escolher vários)<input type="file" name="ficheiros" multiple accept=".pdf,.xls,.xlsx,.csv,.doc,.docx,.jpg,.jpeg,.png,.webp,image/*"></label>
+          <label class="campo inteiro">Observações<input name="obs" autocomplete="off" maxlength="200"></label>
+        </div>
+        <div style="margin-top:10px"><button class="btn btn-pri" type="submit" id="docs-add">Anexar ao dossier</button></div>
+      </fieldset>
+      <div class="tabela-wrap"><table id="docs-tabela"><thead></thead><tbody></tbody></table></div>
+      <p class="nota" id="docs-espaco"></p>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="docs-erro" role="alert"></p><button class="btn" type="button" data-fechar>Fechar</button></div>
+  </form>
+</dialog>
+
 <datalist id="dl-paises"></datalist>
 <datalist id="dl-clientes"></datalist>
 <datalist id="dl-fornecedores"></datalist>
@@ -664,6 +688,7 @@ const firebaseConfig = {
   authDomain: "dgt-frota.firebaseapp.com",
   projectId: "dgt-frota",
   storageBucket: "dgt-frota.firebasestorage.app",
+  databaseURL: "https://dgt-frota-default-rtdb.europe-west1.firebasedatabase.app",
   messagingSenderId: "209891125671",
   appId: "1:209891125671:web:4826115005c5bc4db26e82"
 };
@@ -1304,7 +1329,7 @@ function renderCargas(){
     <td>${fmtData(g.dataSaida)}</td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td><td>${esc(nomeCliente(g))}</td><td>${esc(destinoTxt(g))}</td>
     <td>${esc(g.mercadoria)}</td><td class="n">${g.km ? fmtInt.format(g.km) : ''}</td><td class="n">${fmtEur(g.valor)}</td>
     <td>${fmtData(g.dataRegresso)}</td><td>${esc(g.fatura)}</td>
-    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`; }).join('');
+    <td class="acoes no-print">${docsBotao('cargas', g.id)}<button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`; }).join('');
   const km = lista.reduce((s, g) => s + (+g.km || 0), 0), val = lista.reduce((s, g) => s + cent(g.valor), 0);
   $('#c-tabela tfoot').innerHTML = `<tr><td colspan="5">${lista.length} carga${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtInt.format(km)}</td><td class="n">${fmtC(val)}</td><td colspan="3"></td></tr>`;
 }
@@ -1869,6 +1894,7 @@ document.addEventListener('click', ev => {
   const id = b.dataset.id;
   switch (b.dataset.acao){
     case 'editar-carga': abrirCarga(id); break;
+    case 'docs': abrirDocs(b.dataset.pasta, id); break;
     case 'editar-despesa': abrirDespesa(id); break;
     case 'editar-camiao': abrirCamiao(id); break;
     case 'editar-motorista': abrirMotorista(id); break;
@@ -1877,6 +1903,7 @@ document.addEventListener('click', ev => {
     case 'pdf-motorista': pdfFichaMotorista(id); break;
     case 'pdf-camiao': pdfFichaCamiao(id); break;
     case 'apagar-carga': {
+      if (docsContar('cargas', id)){ toast('Esta carga tem documentos no dossier. Para a apagar, apague primeiro os documentos.', 'erro'); return; }
       const ligadas = store.despesas.filter(d => d.cargaId === id);
       if (!confirm('Apagar esta carga? Esta ação não pode ser desfeita.' + (ligadas.length ? `\n\n${ligadas.length} despesa(s) associada(s) ficam sem viagem, mas continuam a contar no camião.` : ''))) return;
       ligadas.forEach(d => gravar(DB.update('despesas', d.id, {cargaId:null})));
@@ -2630,6 +2657,171 @@ function subscrever(){
     pendentes[c] = snap.metadata.hasPendingWrites; estadoSync(); renderTudo();
   }, err => toast(`Erro ao ler dados (${c}): ` + (err.code === 'permission-denied' ? 'esta conta não tem acesso.' : err.message), 'erro')));
 }
+/* =========================================================
+   DOSSIERS DE DOCUMENTOS (permanentes) — Realtime Database
+   documentos/meta/{pasta}/{refId}/{docId}  -> dados leves (listar)
+   documentos/dados/{docId}                 -> conteúdo (base64)
+   pasta: cargas | camioes | motoristas | geral
+   ========================================================= */
+const DOC_MAX_BYTES = 5 * 1024 * 1024;
+const DOC_QUOTA_BYTES = 1024 * 1024 * 1024;
+const DOC_EXT = {
+  pdf:'application/pdf', xls:'application/vnd.ms-excel',
+  xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', csv:'text/csv',
+  doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp'
+};
+const PASTAS_DOC = {
+  cargas:     {titulo:'Dossier da carga', validade:false, cats:['CMR','Despacho','Documento de acompanhamento','Guia de transporte','Fatura','Comprovativo de entrega','Packing list','Outro']},
+  camioes:    {titulo:'Documentos do camião', validade:true, cats:['Livrete','Título de registo','Seguro','IUC','Inspeção periódica','Tacógrafo','Contrato de leasing','Outro']},
+  motoristas: {titulo:'Documentos do motorista', validade:true, cats:['Carta de condução','CAM','Cartão de condutor','Contrato de trabalho','Ficha de aptidão médica','Cartão de cidadão','Outro']},
+  geral:      {titulo:'Documentos da empresa', validade:false, cats:['Outro']}
+};
+let fbRtdb = null, metaDocs = {}, docsCtx = null, docsRef = null;
+
+function fmtBytes(b){ b = +b || 0; return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
+function docsLista(pasta, id){
+  const o = (((metaDocs || {})[pasta] || {})[id]) || {};
+  return Object.keys(o).map(k => ({id:k, ...o[k]})).sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+}
+function docsContar(pasta, id){ return Object.keys((((metaDocs || {})[pasta] || {})[id]) || {}).length; }
+function docsUsado(){
+  let soma = 0;
+  Object.values(metaDocs || {}).forEach(p => Object.values(p || {}).forEach(r => Object.values(r || {}).forEach(d => { soma += +d.tamanho || 0; })));
+  return soma * 1.37; /* base64 ocupa ~37% mais */
+}
+function docsBotao(pasta, id){
+  if (MODO_LOCAL) return '';
+  const n = docsContar(pasta, id);
+  return `<button class="btn btn-peq" type="button" data-acao="docs" data-pasta="${pasta}" data-id="${esc(id)}">Dossier${n ? ` (${n})` : ''}</button>`;
+}
+function docsSubscrever(){
+  docsParar();
+  if (!fbRtdb) return;
+  docsRef = fbRtdb.ref('documentos/meta');
+  docsRef.on('value', snap => {
+    metaDocs = snap.val() || {};
+    docsRefrescar();
+    if (typeof renderCargas === 'function') renderCargas();
+  }, err => toast('Documentos: sem acesso (' + (err.code || err.message) + '). Verifique as regras da Realtime Database.', 'erro'));
+}
+function docsParar(){ if (docsRef){ docsRef.off(); docsRef = null; } metaDocs = {}; docsCtx = null; }
+
+function abrirDocs(pasta, id){
+  if (MODO_LOCAL || !fbRtdb){ toast('Os dossiers só estão disponíveis com a ligação Firebase ativa.', 'erro'); return; }
+  const cfg = PASTAS_DOC[pasta]; if (!cfg) return;
+  let sub = '';
+  if (pasta === 'cargas'){ const g = store.cargas.find(x => x.id === id); if (!g) return; sub = [fmtData(g.dataSaida), nomeCamiao(g.camiaoId), nomeCliente(g), destinoTxt(g)].filter(Boolean).join(' · '); }
+  else if (pasta === 'camioes'){ sub = nomeCamiao(id); }
+  else if (pasta === 'motoristas'){ const m = motoristaPorId(id); sub = m ? m.nome : ''; }
+  docsCtx = {pasta, id};
+  const f = $('#f-docs'); f.reset(); $('#docs-erro').textContent = '';
+  $('#docs-tit').textContent = cfg.titulo;
+  $('#docs-sub').textContent = sub;
+  f.elements.categoria.innerHTML = cfg.cats.map(c => `<option>${esc(c)}</option>`).join('');
+  $('#docs-validade-wrap').hidden = !cfg.validade;
+  abrirDialogo('#dlg-docs');
+  docsRefrescar();
+}
+function docsRefrescar(){
+  const usado = docsUsado();
+  $('#docs-espaco').textContent = `Espaço utilizado: ${fmtBytes(usado)} de 1 GB gratuito (${(usado / DOC_QUOTA_BYTES * 100).toFixed(1).replace('.', ',')} %).` + (usado > DOC_QUOTA_BYTES * 0.8 ? ' ATENÇÃO: o espaço gratuito está a acabar.' : '');
+  const dlg = $('#dlg-docs');
+  if (!docsCtx || !dlg.hasAttribute('open')) return;
+  const cfg = PASTAS_DOC[docsCtx.pasta], lista = docsLista(docsCtx.pasta, docsCtx.id);
+  $('#docs-tabela thead').innerHTML = `<tr><th>Tipo</th><th>Ficheiro</th><th class="n">Tamanho</th>${cfg.validade ? '<th>Validade</th>' : ''}<th>Anexado em</th><th>Por</th><th></th></tr>`;
+  const cols = cfg.validade ? 7 : 6;
+  $('#docs-tabela tbody').innerHTML = lista.length ? lista.map(d => {
+    const ver = /^(application\/pdf|image\/)/.test(d.mime || '');
+    return `<tr><td>${esc(d.categoria)}</td><td>${esc(d.nome)}${d.obs ? `<span class="motorista-sub">${esc(d.obs)}</span>` : ''}</td><td class="n">${fmtBytes(d.tamanho)}</td>${cfg.validade ? `<td>${fmtData(d.validade)}</td>` : ''}<td>${fmtData((d.criadoEm || '').slice(0, 10))}</td><td>${esc(d.criadoPor || '')}</td>
+      <td class="acoes">${ver ? `<button class="btn btn-peq" type="button" data-doc="abrir" data-did="${esc(d.id)}">Abrir</button>` : ''}<button class="btn btn-peq" type="button" data-doc="descarregar" data-did="${esc(d.id)}">Descarregar</button><button class="btn btn-peq btn-perigo" type="button" data-doc="apagar" data-did="${esc(d.id)}">Apagar</button></td></tr>`;
+  }).join('') : `<tr><td colspan="${cols}" class="vazio">Ainda não há documentos neste dossier.</td></tr>`;
+}
+function lerDataURL(blob){
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('não foi possível ler o ficheiro')); r.readAsDataURL(blob); });
+}
+function comprimirImagem(file){
+  return new Promise(res => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 2000 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => { URL.revokeObjectURL(url); res(b || file); }, 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(file); };
+    img.src = url;
+  });
+}
+async function docsGuardar(pasta, refId, file, extra){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  let mime = DOC_EXT[ext];
+  if (!mime) throw new Error('tipo não permitido (use PDF, Excel, Word ou imagem)');
+  let blob = file, nome = file.name;
+  if (mime.startsWith('image/') && file.size > 800 * 1024){
+    const b = await comprimirImagem(file);
+    if (b && b.size < file.size){ blob = b; nome = nome.replace(/\.[^.]+$/, '') + '.jpg'; mime = 'image/jpeg'; }
+  }
+  if (!blob.size) throw new Error('o ficheiro está vazio');
+  if (blob.size > DOC_MAX_BYTES) throw new Error('excede o limite de 5 MB');
+  if (docsLista(pasta, refId).some(d => d.nome === nome && d.tamanho === blob.size)) throw new Error('já existe neste dossier');
+  if (docsUsado() + blob.size * 1.37 > DOC_QUOTA_BYTES * 0.98) throw new Error('espaço gratuito esgotado');
+  const url = await lerDataURL(blob), did = novoId();
+  await fbRtdb.ref('documentos/dados/' + did).set({d:url});
+  try {
+    await fbRtdb.ref(`documentos/meta/${pasta}/${refId}/${did}`).set({
+      nome, categoria:extra.categoria || 'Outro', mime, tamanho:blob.size, validade:extra.validade || '', obs:extra.obs || '',
+      criadoEm:new Date().toISOString(), criadoPor:email()
+    });
+  } catch (x) { fbRtdb.ref('documentos/dados/' + did).remove().catch(() => {}); throw x; }
+}
+function dataUrlParaBlob(u){
+  const i = u.indexOf(','), h = u.slice(0, i), b = atob(u.slice(i + 1));
+  const arr = new Uint8Array(b.length); for (let k = 0; k < b.length; k++) arr[k] = b.charCodeAt(k);
+  return new Blob([arr], {type:(h.match(/data:([^;]+)/) || [])[1] || 'application/octet-stream'});
+}
+$('#f-docs').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  if (!docsCtx) return;
+  const f = ev.target, e = f.elements, erro = $('#docs-erro'); erro.textContent = '';
+  const ficheiros = [...e.ficheiros.files];
+  if (!ficheiros.length){ erro.textContent = 'Escolha pelo menos um ficheiro.'; return; }
+  const {pasta, id} = docsCtx, cfg = PASTAS_DOC[pasta], btn = $('#docs-add'), txtBtn = btn.textContent;
+  const extra = {categoria:e.categoria.value, validade:cfg.validade ? e.validade.value : '', obs:e.obs.value.trim()};
+  btn.disabled = true;
+  let ok = 0; const falhas = [];
+  for (const orig of ficheiros){
+    btn.textContent = `A guardar ${ok + falhas.length + 1}/${ficheiros.length}…`;
+    try { await docsGuardar(pasta, id, orig, extra); ok++; }
+    catch (x) { falhas.push(`${orig.name}: ${x.message}`); }
+  }
+  btn.disabled = false; btn.textContent = txtBtn;
+  if (ok){ toast(`${ok} documento${ok === 1 ? '' : 's'} guardado${ok === 1 ? '' : 's'}.`); e.ficheiros.value = ''; }
+  erro.textContent = falhas.join(' · ');
+});
+$('#docs-tabela').addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-doc]'); if (!b || !docsCtx) return;
+  const did = b.dataset.did, d = docsLista(docsCtx.pasta, docsCtx.id).find(x => x.id === did); if (!d) return;
+  if (b.dataset.doc === 'apagar'){
+    if (!confirm('Apagar este documento do dossier?\n\n' + d.nome + '\n\nEsta ação não pode ser desfeita.')) return;
+    try {
+      await fbRtdb.ref(`documentos/meta/${docsCtx.pasta}/${docsCtx.id}/${did}`).remove();
+      fbRtdb.ref('documentos/dados/' + did).remove().catch(() => {});
+      toast('Documento apagado.');
+    } catch (x) { toast('Não foi possível apagar: ' + x.message, 'erro'); }
+    return;
+  }
+  const abrir = b.dataset.doc === 'abrir', w = abrir ? window.open('', '_blank') : null;
+  try {
+    const s = await fbRtdb.ref('documentos/dados/' + did).once('value'), v = s.val();
+    if (!v || !v.d) throw new Error('ficheiro não encontrado');
+    const url = URL.createObjectURL(dataUrlParaBlob(v.d));
+    if (abrir && w){ w.location.href = url; }
+    else { const a = document.createElement('a'); a.href = url; a.download = d.nome; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (x) { if (w) w.close(); toast('Não foi possível abrir o documento: ' + x.message, 'erro'); }
+});
+
 const ERROS_LOGIN = {
   'auth/invalid-credential':'Email ou palavra-passe incorretos.', 'auth/wrong-password':'Email ou palavra-passe incorretos.',
   'auth/user-not-found':'Email ou palavra-passe incorretos.', 'auth/invalid-email':'O email não é válido.',
@@ -2653,11 +2845,12 @@ function iniciar(){
   if (typeof firebase === 'undefined'){ document.body.innerHTML = '<p style="padding:24px">Não foi possível carregar o Firebase. Verifique a ligação à internet e recarregue a página.</p>'; return; }
   firebase.initializeApp(firebaseConfig);
   fbAuth = firebase.auth(); fbDb = firebase.firestore();
+  try { fbRtdb = firebase.database(); } catch (x) { fbRtdb = null; }
   fbDb.enablePersistence({synchronizeTabs:true}).catch(() => {});
   fbAuth.onAuthStateChanged(u => {
     utilizadorAtual = u;
-    if (u){ mostrarApp(u.email); subscrever(); }
-    else { unsubs.forEach(f => f()); unsubs = []; COLS.forEach(c => { store[c] = []; }); mostrarLogin(); }
+    if (u){ mostrarApp(u.email); subscrever(); docsSubscrever(); }
+    else { unsubs.forEach(f => f()); unsubs = []; docsParar(); COLS.forEach(c => { store[c] = []; }); mostrarLogin(); }
   });
   $('#f-login').addEventListener('submit', async ev => {
     ev.preventDefault(); const e = ev.target.elements, erro = $('#login-erro'); erro.textContent = '';
