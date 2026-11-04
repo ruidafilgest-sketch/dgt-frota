@@ -459,7 +459,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         <div class="grelha-3">
           <label class="campo">Camião *<select name="camiaoId" required></select></label>
           <label class="campo">Motorista<select name="motoristaId"></select></label>
-          <label class="campo">Partida de<input name="origem" autocomplete="off"></label>
+          <label class="campo">Partida de<span class="linha-sel"><input name="origem" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--linha);border-radius:4px;padding:8px 10px;min-height:40px"><select name="origemPais" style="max-width:130px"></select></span><span class="ajuda" id="v-origem-ajuda">Sede, ou a cidade onde terminou a viagem anterior.</span></label>
           <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
           <label class="campo">Período da saída<select name="periodoSaida"></select></label>
           <p class="ajuda" id="v-dias" style="align-self:end"></p>
@@ -479,7 +479,8 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="v-add-par">+ Paragem</button><button class="btn btn-peq btn-pri" type="button" id="v-km-auto">Calcular km automaticamente</button></div>
         <p class="nota" id="v-km-estado" style="margin-top:6px"></p>
         <div class="grelha-3" style="margin-top:12px">
-          <label class="campo">Km da última paragem até à sede<input type="number" name="kmRegresso" min="0" step="1"></label>
+          <label class="campo">Fim da viagem<select name="fimViagem"><option value="sede">Regressa à sede</option><option value="ultima">Termina na última paragem</option></select><span class="ajuda">Se o camião fica onde fez a última descarga (ex.: Aveiro, Lisboa), escolha «Termina na última paragem».</span></label>
+          <label class="campo" id="wrap-kmRegresso">Km da última paragem até à sede<input type="number" name="kmRegresso" min="0" step="1"></label>
           <label class="campo">Ajuste de km (+/−)<input type="number" name="ajusteKm" step="1"><span class="ajuda">Desvios, vias alternativas, abastecimentos. É repartido por todos os troços.</span></label>
         </div>
         <p class="nota" id="v-km-resumo" style="margin-top:8px"></p>
@@ -908,10 +909,10 @@ function diasDaViagem(g){
   return lista.map((d, i) => ({d, f: i === 0 ? fracSaida(g.periodoSaida) : (i === lista.length - 1 ? fracRegresso(g.periodoRegresso) : 1)}));
 }
 function percursoDe(g){
-  if (Array.isArray(g.paragens) && g.paragens.length) return {paragens:g.paragens, kmRegresso:num0(g.kmRegresso), ajuste:num0(g.ajusteKm), legado:false};
+  if (Array.isArray(g.paragens) && g.paragens.length){ const sede = g.fimViagem !== 'ultima'; return {paragens:g.paragens, kmRegresso:sede ? num0(g.kmRegresso) : 0, ajuste:num0(g.ajusteKm), legado:false, fimSede:sede}; }
   // Registo antigo: um destino; os km eram de ida e volta
   const km = num0(g.km), ida = Math.round(km / 2);
-  return {paragens:[{id:'p1', local:g.destinoCidade || '', pais:g.destinoPais || '', km:ida, op:'descarga'}], kmRegresso:km - ida, ajuste:0, legado:true};
+  return {paragens:[{id:'p1', local:g.destinoCidade || '', pais:g.destinoPais || '', km:ida, op:'descarga'}], kmRegresso:km - ida, ajuste:0, legado:true, fimSede:true};
 }
 function servicosDe(g){
   if (Array.isArray(g.servicos) && g.servicos.length) return g.servicos;
@@ -921,10 +922,10 @@ function nomeClienteServ(s){ const c = s.clienteId && clientePorId(s.clienteId);
 function clientesTxt(g){ return [...new Set(servicosDe(g).map(nomeClienteServ).filter(Boolean))].join(', '); }
 function nomePonto(g, id){
   if (id === 'p0') return g.origem || params().sedeLocal || 'Partida';
-  if (id === 'pf') return 'Chegada à sede';
+  if (id === 'pf') return g.fimViagem === 'ultima' ? 'Fim da viagem' : 'Chegada à sede';
   const p = percursoDe(g).paragens.find(x => x.id === id); return p ? [p.local, p.pais].filter(Boolean).join(', ') : '?';
 }
-function paisPonto(g, id){ if (id === 'p0' || id === 'pf') return params().sedePais || 'Portugal'; const p = percursoDe(g).paragens.find(x => x.id === id); return p ? p.pais : ''; }
+function paisPonto(g, id){ if (id === 'p0') return g.origemPais || params().sedePais || 'Portugal'; if (id === 'pf') return params().sedePais || 'Portugal'; const p = percursoDe(g).paragens.find(x => x.id === id); return p ? p.pais : ''; }
 function percursoTxt(g, max = 6){
   const ps = percursoDe(g).paragens.map(p => p.local || p.pais).filter(Boolean);
   const l = ps.length > max ? [...ps.slice(0, max - 1), `… (+${ps.length - max + 1})`] : ps;
@@ -1772,7 +1773,8 @@ function linhaParagem(p, n){
 function pontosDoForm(){
   const f = $('#f-carga');
   const par = $$('#v-paragens tbody tr').map((tr, i) => ({id:tr.dataset.pid, n:i + 1, local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value}));
-  return [{id:'p0', t:`Partida: ${f.elements.origem.value.trim() || 'sede'}`}, ...par.map(p => ({id:p.id, t:`${p.n}. ${p.local || '(sem nome)'}${p.pais ? ', ' + p.pais : ''}`})), {id:'pf', t:'Chegada à sede'}];
+  const fim = f.elements.fimViagem.value === 'ultima' ? [] : [{id:'pf', t:'Chegada à sede'}];
+  return [{id:'p0', t:`Partida: ${f.elements.origem.value.trim() || 'sede'}`}, ...par.map(p => ({id:p.id, t:`${p.n}. ${p.local || '(sem nome)'}${p.pais ? ', ' + p.pais : ''}`})), ...fim];
 }
 function opcoesPontos(sel, pontos, v){ return pontos.map(p => `<option value="${esc(p.id)}"${p.id === v ? ' selected' : ''}>${esc(p.t)}</option>`).join(''); }
 function blocoServico(s, pontos){
@@ -1797,7 +1799,8 @@ function atualizarPontosServicos(){
   const pontos = pontosDoForm();
   $$('#v-servicos .servico').forEach((b, i) => {
     $('.servico-tit', b).textContent = `Serviço ${i + 1}`;
-    ['de', 'ate'].forEach(k => { const sel = $(`[data-k="${k}"]`, b), v = sel.value; sel.innerHTML = opcoesPontos(null, pontos, v); if (![...sel.options].some(o => o.value === v)) sel.value = k === 'de' ? 'p0' : 'pf'; });
+    ['de', 'ate'].forEach(k => { const sel = $(`[data-k="${k}"]`, b), v = sel.value; sel.innerHTML = opcoesPontos(null, pontos, v); if (![...sel.options].some(o => o.value === v)) sel.value = k === 'de' ? 'p0' : pontos[pontos.length - 1].id; });
+  $('#wrap-kmRegresso').hidden = $('#f-carga').elements.fimViagem.value === 'ultima';
   });
   $$('#v-paragens tbody tr').forEach((tr, i) => { $('.v-num', tr).textContent = i + 1; });
 }
@@ -1813,7 +1816,8 @@ function lerViagem(){
   const mot = motoristaPorId(e.motoristaId.value);
   return {id:f.dataset.id || '', camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : '',
     origem:e.origem.value.trim(), dataSaida:e.dataSaida.value, periodoSaida:e.periodoSaida.value, dataRegresso:e.dataRegresso.value, periodoRegresso:e.periodoRegresso.value,
-    paragens, kmRegresso:numOuNull(e.kmRegresso.value), ajusteKm:numOuNull(e.ajusteKm.value), servicos, obs:e.obs.value.trim()};
+    origemPais:e.origemPais.value || 'Portugal', fimViagem:e.fimViagem.value,
+    paragens, kmRegresso:e.fimViagem.value === 'ultima' ? 0 : numOuNull(e.kmRegresso.value), ajusteKm:numOuNull(e.ajusteKm.value), servicos, obs:e.obs.value.trim()};
 }
 function atualizarPreviewViagem(){
   const v = lerViagem(), tmp = {...v, servicos:v.servicos.map(s => ({...s, valor:num0(s.valor)}))};
@@ -1849,8 +1853,14 @@ function abrirCarga(id){
   if (g){
     f.elements.camiaoId.value = g.camiaoId; f.elements.dataSaida.value = g.dataSaida || ''; f.elements.dataRegresso.value = g.dataRegresso || '';
     f.elements.origem.value = g.origem || params().sedeLocal || ''; f.elements.obs.value = g.obs || '';
-    f.elements.kmRegresso.value = P.kmRegresso ?? ''; f.elements.ajusteKm.value = P.ajuste || '';
-  } else { f.elements.dataSaida.value = hoje(); f.elements.origem.value = params().sedeLocal || 'Santa Eulália'; sugerirMotoristaCarga(); }
+    f.elements.kmRegresso.value = P.kmRegresso || (g.fimViagem === 'ultima' ? '' : (P.kmRegresso ?? '')); f.elements.ajusteKm.value = P.ajuste || '';
+    f.elements.origemPais.innerHTML = opcoesPaises(g.origemPais || params().sedePais || 'Portugal', {vazio:'País…'});
+    f.elements.fimViagem.value = g.fimViagem === 'ultima' ? 'ultima' : 'sede';
+  } else {
+    f.elements.dataSaida.value = hoje(); f.elements.origem.value = params().sedeLocal || 'Santa Eulália';
+    f.elements.origemPais.innerHTML = opcoesPaises(params().sedePais || 'Portugal', {vazio:'País…'}); f.elements.fimViagem.value = 'sede';
+    sugerirMotoristaCarga(); sugerirOrigem();
+  }
   const pontos = pontosDoForm();
   const S = g ? servicosDe(g) : [{id:novoIdCurto('s'), sentido:'ida', de:'p0', ate:P.paragens[0].id}];
   $('#v-servicos').innerHTML = S.map(s => blocoServico(s, pontos)).join('');
@@ -1858,6 +1868,18 @@ function abrirCarga(id){
   atualizarPontosServicos(); atualizarPreviewViagem();
   abrirDialogo('#dlg-carga');
 }
+// Nova viagem: se a última viagem do camião terminou fora da sede, a partida passa a ser essa cidade
+function sugerirOrigem(){
+  const f = $('#f-carga'); if (f.dataset.id) return;
+  const cid = f.elements.camiaoId.value, data = f.elements.dataSaida.value || hoje(), P = params();
+  const ant = store.cargas.filter(g => g.camiaoId === cid && g.dataSaida && g.dataSaida <= data).sort((a, b) => b.dataSaida.localeCompare(a.dataSaida))[0];
+  const ult = ant && ant.fimViagem === 'ultima' ? percursoDe(ant).paragens.slice(-1)[0] : null;
+  f.elements.origem.value = ult ? (ult.local || P.sedeLocal) : (P.sedeLocal || 'Santa Eulália');
+  f.elements.origemPais.value = ult ? (ult.pais || 'Portugal') : (P.sedePais || 'Portugal');
+  $('#v-origem-ajuda').textContent = ult ? `A viagem anterior deste camião (${fmtData(ant.dataSaida)}) terminou em ${ult.local}.` : 'Sede, ou a cidade onde terminou a viagem anterior.';
+  atualizarPontosServicos();
+}
+$('#f-carga').elements.camiaoId.addEventListener('change', sugerirOrigem);
 $('#f-carga').elements.camiaoId.addEventListener('change', sugerirMotoristaCarga);
 $('#f-carga').elements.dataSaida.addEventListener('change', sugerirMotoristaCarga);
 $('#v-add-par').addEventListener('click', () => {
@@ -1879,7 +1901,7 @@ $('#f-carga').addEventListener('click', ev => {
   if (nc){ const sel = $('[data-k="clienteId"]', nc.closest('.servico')); abrirEntidade('clientes', null, (id, nome) => { selecionarNovo(sel, id, nome); atualizarPreviewViagem(); }); }
 });
 $('#f-carga').addEventListener('input', ev => { if (ev.target.closest('#v-paragens') && ev.target.dataset.k === 'local'){ const tr = ev.target.closest('tr'); delete tr.dataset.lat; delete tr.dataset.lon; atualizarPontosServicos(); } atualizarPreviewViagem(); });
-$('#f-carga').addEventListener('change', ev => { if (ev.target.closest('#v-paragens') || ev.target.name === 'origem') atualizarPontosServicos(); atualizarPreviewViagem(); });
+$('#f-carga').addEventListener('change', ev => { if (ev.target.closest('#v-paragens') || ['origem', 'origemPais', 'fimViagem'].includes(ev.target.name)) atualizarPontosServicos(); atualizarPreviewViagem(); });
 $('#f-carga').addEventListener('submit', ev => {
   ev.preventDefault();
   const f = ev.target, erro = $('#carga-erro'), v = lerViagem(); erro.textContent = '';
@@ -1944,16 +1966,17 @@ async function calcularKmAutomatico(){
   const linhas = $$('#v-paragens tbody tr');
   const semLocal = linhas.findIndex(tr => !$('[data-k="local"]', tr).value.trim());
   if (semLocal >= 0){ est.textContent = `Escreva a localidade da paragem ${semLocal + 1} (por exemplo «Lyon»).`; est.className = 'nota neg'; return; }
-  const jaTem = linhas.some(tr => $('[data-k="km"]', tr).value) || f.elements.kmRegresso.value;
+  const fimSede = f.elements.fimViagem.value !== 'ultima';
+  const jaTem = linhas.some(tr => $('[data-k="km"]', tr).value) || (fimSede && f.elements.kmRegresso.value);
   if (jaTem && !confirm('Substituir os km já escritos pelos km calculados?')) return;
-  const P = params(), sede = {local:f.elements.origem.value.trim() || P.sedeLocal, pais:P.sedePais || 'Portugal'};
-  const lista = [sede, ...linhas.map(tr => ({local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value})), sede];
+  const P = params(), partida = {local:f.elements.origem.value.trim() || P.sedeLocal, pais:f.elements.origemPais.value || P.sedePais || 'Portugal'}, sede = {local:P.sedeLocal, pais:P.sedePais || 'Portugal'};
+  const lista = [partida, ...linhas.map(tr => ({local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value})), ...(fimSede ? [sede] : [])];
   btn.disabled = true; est.className = 'nota';
   try {
     const pts = [];
     for (let i = 0; i < lista.length; i++){
       const p = lista[i];
-      est.textContent = `A localizar ${i === 0 ? 'a partida' : i === lista.length - 1 ? 'o regresso' : 'a paragem ' + i} (${p.local})…`;
+      est.textContent = `A localizar ${i === 0 ? 'a partida' : (fimSede && i === lista.length - 1) ? 'a sede' : 'a paragem ' + i} (${p.local})…`;
       const g = await geocodificar(p.local, p.pais);
       if (!g) throw new Error(`não foi encontrado «${[p.local, p.pais].filter(Boolean).join(', ')}». Escreva a localidade de outra forma (por exemplo com a região ou o código postal).`);
       pts.push(g);
@@ -1961,7 +1984,7 @@ async function calcularKmAutomatico(){
     est.textContent = 'A calcular a distância por estrada…';
     const legs = await distanciasPorEstrada(pts);
     linhas.forEach((tr, i) => { $('[data-k="km"]', tr).value = Math.round(legs[i]); tr.dataset.lat = pts[i + 1].lat; tr.dataset.lon = pts[i + 1].lon; });
-    f.elements.kmRegresso.value = Math.round(legs[legs.length - 1]);
+    if (fimSede) f.elements.kmRegresso.value = Math.round(legs[legs.length - 1]); else f.elements.kmRegresso.value = '';
     const tot = legs.reduce((a, v) => a + v, 0);
     est.innerHTML = `Calculado: ${fmtInt.format(Math.round(tot))} km por estrada. Partida localizada em «${esc(pts[0].nome.split(',').slice(0, 3).join(','))}». ` +
       `Confirme cada local: ${linhas.map((tr, i) => `${i + 1}. ${esc(pts[i + 1].nome.split(',').slice(0, 2).join(','))}`).join(' · ')}. É uma estimativa para ligeiros; use o «Ajuste de km» para desvios e restrições de pesados.`;
@@ -2575,7 +2598,7 @@ function pdfViagem(id){
     ['Partida de', g.origem || params().sedeLocal], ['Duração', `${fmtDec.format(an.diasTot)} dias`], ['Km estimados', fmtInt.format(an.kmEst)], ['Ajuste de km', fmtInt.format(num0(an.P.ajuste))], ['Km da viagem', fmtInt.format(an.km)], ['Km em vazio', `${fmtInt.format(an.kmVazio)}${an.km ? ' (' + fmtPct.format(an.kmVazio / an.km) + ')' : ''}`]]);
   const pts = an.P.paragens;
   pdfSecao(R, 'Percurso', (pts.length + 3) * alturaLinha(8));
-  pdfTabela(R, {head:['#', 'Local', 'País', 'Operação', 'Km do troço'], body:[[pS('0'), pS(g.origem || params().sedeLocal || 'Partida'), pS(params().sedePais), pS('Partida'), pN(null, 'int')], ...pts.map((p, i) => [pS(String(i + 1)), pS(p.local), pS(p.pais), pS((OPERACOES.find(o => o[0] === p.op) || ['', ''])[1]), pN(num0(p.km), 'int')]), [pS(''), pS('Chegada à sede'), pS(''), pS('Regresso'), pN(an.P.kmRegresso, 'int')]],
+  pdfTabela(R, {head:['#', 'Local', 'País', 'Operação', 'Km do troço'], body:[[pS('0'), pS(g.origem || params().sedeLocal || 'Partida'), pS(g.origemPais || params().sedePais), pS('Partida'), pN(null, 'int')], ...pts.map((p, i) => [pS(String(i + 1)), pS(p.local), pS(p.pais), pS((OPERACOES.find(o => o[0] === p.op) || ['', ''])[1]), pN(num0(p.km), 'int')]), ...(an.P.fimSede !== false ? [[pS(''), pS('Chegada à sede'), pS(''), pS('Regresso'), pN(an.P.kmRegresso, 'int')]] : [[pS(''), pS('Fim da viagem na última paragem'), pS(''), pS(''), pN(null, 'int')]])],
     foot:[pS(''), pS('Total estimado'), pS(''), pS(''), pN(an.kmEst, 'int')], cols:[{w:10}, {}, {w:34}, {w:34}, {n:1, w:26}], fs:8});
   pdfSecao(R, 'Serviços', (an.S.length + 2) * alturaLinha(7.5) * 1.6);
   pdfTabela(R, {head:['Sentido', 'Cliente', 'Carga → descarga', 'Mercadoria / peso', 'Km', 'Valor', 'Resultado'], body:r.servicos.map(x => { const s = x.s; return [pS(s.sentido === 'regresso' ? 'Regresso' : 'Ida'), pS(nomeClienteServ(s)), pS(`${nomePonto(g, s.de)} → ${nomePonto(g, s.ate)}`), pS([s.mercadoria, s.pesoKg ? fmtInt.format(s.pesoKg) + ' kg' : ''].filter(Boolean).join('\n')), pN(x.km, 'int'), pN(x.prov / 100, 'eur'), pN(x.res / 100, 'eur')]; }),
