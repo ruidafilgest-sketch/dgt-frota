@@ -213,6 +213,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   <nav class="tabs" role="tablist" aria-label="Separadores">
     <button type="button" role="tab" data-tab="resultados" aria-selected="true">Resultados</button>
     <button type="button" role="tab" data-tab="cargas" aria-selected="false">Cargas</button>
+    <button type="button" role="tab" data-tab="documentos" aria-selected="false">Documentos</button>
     <button type="button" role="tab" data-tab="despesas" aria-selected="false">Despesas</button>
     <button type="button" role="tab" data-tab="motoristas" aria-selected="false">Motoristas</button>
     <button type="button" role="tab" data-tab="entidades" aria-selected="false">Clientes e fornecedores</button>
@@ -281,6 +282,24 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTOS -->
+    <section id="tab-documentos" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Documentos</h2>
+        <div class="barra no-print"><label class="campo">Pesquisar em todos os documentos<input type="search" id="doc-pesq" placeholder="Nome, tipo, matrícula, motorista…" autocomplete="off"></label></div>
+      </div>
+      <p class="nota" style="margin:0 0 12px">Arquivo permanente de documentos (PDF, Excel, Word e imagens, até 5 MB cada). Escolha abaixo a quem pertence o documento e clique em «Abrir documentos» para ver ou anexar.</p>
+      <div class="painel" id="doc-res-pn" hidden><h3>Resultados da pesquisa</h3><div class="tabela-wrap"><table id="doc-res"></table></div></div>
+      <div class="painel"><h3>Camiões (seguro, IUC pago, inspeção, livrete, tacógrafo…)</h3><div class="tabela-wrap"><table id="doc-cam"></table></div></div>
+      <div class="painel"><h3>Motoristas (carta, CAM, cartão de condutor, contrato…)</h3><div class="tabela-wrap"><table id="doc-mot"></table></div></div>
+      <div class="painel"><h3>Empresa (alvará, licenças, certidões…)</h3><div class="tabela-wrap"><table id="doc-emp"></table></div></div>
+      <div class="painel">
+        <h3>Cargas (CMR, despachos, documentos de acompanhamento…)</h3>
+        <div class="barra no-print" style="margin-bottom:12px"><label class="campo">Escolher carga<select id="doc-carga-sel"></select></label><button class="btn btn-pri" type="button" id="doc-carga-abrir">Abrir dossier da carga</button></div>
+        <div class="tabela-wrap"><table id="doc-car"></table></div>
       </div>
     </section>
 
@@ -457,7 +476,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo">Nº do CMR<input name="cmr" autocomplete="off"></label>
       <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
     </div>
-    <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar carga</button></div>
+    <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn" type="button" id="c-docs">Guardar e anexar documentos</button><button class="btn btn-pri" type="submit">Guardar carga</button></div>
   </form>
 </dialog>
 
@@ -1401,7 +1420,7 @@ function renderMotoristas(){
       <td>${cid ? placaHtml(cid) : '<span class="etiq">—</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${m.dataAdmissao ? fmtData(m.dataAdmissao) : '<span class="etiq prox">Por indicar</span>'}</td>
       <td class="n">${fmtEur(m.salarioBase)}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
       <td>${ativo ? '<span class="etiq ativo">Ativo</span>' : `<span class="etiq">Saiu em ${fmtData(m.dataSaida)}</span>`}</td>
-      <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-motorista" data-id="${esc(m.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-motorista" data-id="${esc(m.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-motorista" data-id="${esc(m.id)}">Apagar</button></td></tr>`;
+      <td class="acoes no-print">${docsBotao('motoristas', m.id, 'Documentos')}<button class="btn btn-peq" type="button" data-acao="pdf-motorista" data-id="${esc(m.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-motorista" data-id="${esc(m.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-motorista" data-id="${esc(m.id)}">Apagar</button></td></tr>`;
   }).join('');
   $('#mot-validades').innerHTML = tabelaValidades(validades('motoristas'));
 }
@@ -1448,7 +1467,7 @@ function renderFrota(){
     return `<tr><td>${placaHtml(c.id)}</td><td>${esc(c.marcaModelo)}${c.ano ? ` (${c.ano})` : ''}</td><td>${esc(motoristaAtualTxt(c)) || '—'}</td>
       <td class="n">${fmtEur(fixosMensaisTeoricos(c))}</td>
       <td>${c.ativo === false ? `<span class="etiq">Inativo${c.dataFim ? ' desde ' + fmtData(c.dataFim) : ''}</span>` : '<span class="etiq ativo">Ativo</span>'}</td><td class="n">${n}</td>
-      <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-camiao" data-id="${esc(c.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-camiao" data-id="${esc(c.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-camiao" data-id="${esc(c.id)}">Apagar</button></td></tr>`;
+      <td class="acoes no-print">${docsBotao('camioes', c.id, 'Documentos')}<button class="btn btn-peq" type="button" data-acao="pdf-camiao" data-id="${esc(c.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-camiao" data-id="${esc(c.id)}">Abrir ficha</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-camiao" data-id="${esc(c.id)}">Apagar</button></td></tr>`;
   }).join('');
   $('#cam-validades').innerHTML = tabelaValidades(validades('camioes'));
   const f = $('#f-param');
@@ -1461,7 +1480,7 @@ function renderTudo(){
   if (agendado) return; agendado = true;
   requestAnimationFrame(() => {
     agendado = false;
-    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderEntidades(); renderFolha(); renderFrota();
+    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderEntidades(); renderFolha(); renderFrota(); renderDocumentos();
   });
 }
 
@@ -1627,6 +1646,7 @@ $('#f-carga').elements.dataSaida.addEventListener('change', sugerirMotoristaCarg
 $('#f-carga').addEventListener('submit', ev => {
   ev.preventDefault();
   const f = ev.target, e = f.elements, erro = $('#carga-erro');
+  const anexar = f.dataset.anexar === '1'; f.dataset.anexar = '';
   const mot = motoristaPorId(e.motoristaId.value), anterior = f.dataset.id ? (store.cargas.find(x => x.id === f.dataset.id) || {}) : {};
   const d = {
     camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : (anterior.motoristaId ? '' : (anterior.motorista || '')),
@@ -1646,8 +1666,12 @@ $('#f-carga').addEventListener('submit', ev => {
   if (d.dataRegresso && diasEntre(d.dataSaida, d.dataRegresso) > 60) return erro.textContent = 'A viagem tem mais de 60 dias. Confirme as datas.';
   if ((d.km != null && (!isFinite(d.km) || d.km < 0)) || (d.pesoKg != null && (!isFinite(d.pesoKg) || d.pesoKg < 0))) return erro.textContent = 'Km e peso têm de ser números positivos.';
   const id = f.dataset.id;
-  gravar(id ? DB.update('cargas', id, d) : DB.add('cargas', d), 'Carga guardada.');
+  let idFinal = id;
+  if (id) gravar(DB.update('cargas', id, d), 'Carga guardada.');
+  else if (anexar){ const r = DB.addComId('cargas', d); idFinal = r.id; gravar(r.p, 'Carga guardada.'); }
+  else gravar(DB.add('cargas', d), 'Carga guardada.');
   fecharDialogo($('#dlg-carga'));
+  if (anexar && idFinal) abrirDocs('cargas', idFinal, [fmtData(d.dataSaida), nomeCamiao(d.camiaoId), d.cliente, destinoTxt(d)].filter(Boolean).join(' · '));
 });
 
 // ---- Despesa
@@ -2673,9 +2697,9 @@ const DOC_EXT = {
 };
 const PASTAS_DOC = {
   cargas:     {titulo:'Dossier da carga', validade:false, cats:['CMR','Despacho','Documento de acompanhamento','Guia de transporte','Fatura','Comprovativo de entrega','Packing list','Outro']},
-  camioes:    {titulo:'Documentos do camião', validade:true, cats:['Livrete','Título de registo','Seguro','IUC','Inspeção periódica','Tacógrafo','Contrato de leasing','Outro']},
-  motoristas: {titulo:'Documentos do motorista', validade:true, cats:['Carta de condução','CAM','Cartão de condutor','Contrato de trabalho','Ficha de aptidão médica','Cartão de cidadão','Outro']},
-  geral:      {titulo:'Documentos da empresa', validade:false, cats:['Outro']}
+  camioes:    {titulo:'Documentos do camião', validade:true, cats:['Livrete','Título de registo','Seguro (apólice)','Seguro (recibo de pagamento)','IUC (comprovativo de pagamento)','Inspeção periódica','Tacógrafo (aferição)','Licença comunitária / alvará','Contrato de leasing','Fatura de reparação / manutenção','Outro']},
+  motoristas: {titulo:'Documentos do motorista', validade:true, cats:['Carta de condução','CAM','Cartão de condutor (tacógrafo)','Contrato de trabalho','Ficha de aptidão médica','Cartão de cidadão','Declaração de atividade','Outro']},
+  geral:      {titulo:'Documentos da empresa', validade:true, cats:['Alvará / licença de transportador','Apólice de seguro da empresa','Certidão permanente','Certidão de não dívida (AT)','Certidão de não dívida (Segurança Social)','Contrato','Outro']}
 };
 let fbRtdb = null, metaDocs = {}, docsCtx = null, docsRef = null;
 
@@ -2690,10 +2714,16 @@ function docsUsado(){
   Object.values(metaDocs || {}).forEach(p => Object.values(p || {}).forEach(r => Object.values(r || {}).forEach(d => { soma += +d.tamanho || 0; })));
   return soma * 1.37; /* base64 ocupa ~37% mais */
 }
-function docsBotao(pasta, id){
+function docsBotao(pasta, id, rotulo = 'Dossier'){
   if (MODO_LOCAL) return '';
   const n = docsContar(pasta, id);
-  return `<button class="btn btn-peq" type="button" data-acao="docs" data-pasta="${pasta}" data-id="${esc(id)}">Dossier${n ? ` (${n})` : ''}</button>`;
+  return `<button class="btn btn-peq" type="button" data-acao="docs" data-pasta="${pasta}" data-id="${esc(id)}">${rotulo}${n ? ` (${n})` : ''}</button>`;
+}
+function docsRefTxt(pasta, id){
+  if (pasta === 'cargas'){ const g = store.cargas.find(x => x.id === id); return g ? [fmtData(g.dataSaida), nomeCamiao(g.camiaoId), nomeCliente(g), destinoTxt(g)].filter(Boolean).join(' · ') : ''; }
+  if (pasta === 'camioes') return nomeCamiao(id);
+  if (pasta === 'motoristas'){ const m = motoristaPorId(id); return m ? m.nome : ''; }
+  return 'Empresa';
 }
 function docsSubscrever(){
   docsParar();
@@ -2702,18 +2732,15 @@ function docsSubscrever(){
   docsRef.on('value', snap => {
     metaDocs = snap.val() || {};
     docsRefrescar();
-    if (typeof renderCargas === 'function') renderCargas();
+    if (typeof renderTudo === 'function') renderTudo();
   }, err => toast('Documentos: sem acesso (' + (err.code || err.message) + '). Verifique as regras da Realtime Database.', 'erro'));
 }
 function docsParar(){ if (docsRef){ docsRef.off(); docsRef = null; } metaDocs = {}; docsCtx = null; }
 
-function abrirDocs(pasta, id){
+function abrirDocs(pasta, id, subFallback){
   if (MODO_LOCAL || !fbRtdb){ toast('Os dossiers só estão disponíveis com a ligação Firebase ativa.', 'erro'); return; }
   const cfg = PASTAS_DOC[pasta]; if (!cfg) return;
-  let sub = '';
-  if (pasta === 'cargas'){ const g = store.cargas.find(x => x.id === id); if (!g) return; sub = [fmtData(g.dataSaida), nomeCamiao(g.camiaoId), nomeCliente(g), destinoTxt(g)].filter(Boolean).join(' · '); }
-  else if (pasta === 'camioes'){ sub = nomeCamiao(id); }
-  else if (pasta === 'motoristas'){ const m = motoristaPorId(id); sub = m ? m.nome : ''; }
+  const sub = docsRefTxt(pasta, id) || subFallback || '';
   docsCtx = {pasta, id};
   const f = $('#f-docs'); f.reset(); $('#docs-erro').textContent = '';
   $('#docs-tit').textContent = cfg.titulo;
@@ -2820,6 +2847,46 @@ $('#docs-tabela').addEventListener('click', async ev => {
     else { const a = document.createElement('a'); a.href = url; a.download = d.nome; document.body.appendChild(a); a.click(); a.remove(); }
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   } catch (x) { if (w) w.close(); toast('Não foi possível abrir o documento: ' + x.message, 'erro'); }
+});
+
+/* ---------- Separador «Documentos» ---------- */
+function renderDocumentos(){
+  if (!$('#doc-cam')) return;
+  const linha = (pasta, id, c1, c2) => {
+    const l = docsLista(pasta, id);
+    return `<tr><td>${c1}</td><td>${c2}</td><td class="n">${l.length}</td><td>${l[0] ? fmtData((l[0].criadoEm || '').slice(0, 10)) : '<span class="etiq">—</span>'}</td><td class="acoes no-print">${docsBotao(pasta, id, 'Abrir documentos')}</td></tr>`;
+  };
+  const tab = (cab, corpo, vazio, cols) => `<thead><tr>${cab}<th class="n">Documentos</th><th>Último anexado</th><th class="no-print"></th></tr></thead><tbody>${corpo || `<tr><td colspan="${cols}" class="vazio">${vazio}</td></tr>`}</tbody>`;
+  $('#doc-cam').innerHTML = tab('<th>Matrícula</th><th>Marca e modelo</th>', camioesOrdenados().map(c => linha('camioes', c.id, placaHtml(c.id), esc(c.marcaModelo || ''))).join(''), 'Ainda não há camiões. Adicione-os em «Frota e dados».', 5);
+  $('#doc-mot').innerHTML = tab('<th>Nome</th><th>Categoria</th>', motoristasOrdenados().map(m => linha('motoristas', m.id, `<strong>${esc(m.nome)}</strong>`, esc(m.categoria || ''))).join(''), 'Ainda não há motoristas. Adicione-os em «Motoristas».', 5);
+  $('#doc-emp').innerHTML = tab('<th>Pasta</th><th>Exemplos</th>', linha('geral', 'empresa', '<strong>Documentos da empresa</strong>', 'Alvará, licenças, apólices, certidões, contratos'), '', 5);
+  /* cargas com documentos + escolher uma carga */
+  const sel = $('#doc-carga-sel'), v = sel.value;
+  const cargas = [...store.cargas].sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || ''));
+  sel.innerHTML = cargas.length ? cargas.map(g => `<option value="${esc(g.id)}">${esc(docsRefTxt('cargas', g.id))}</option>`).join('') : '<option value="">(ainda não há cargas)</option>';
+  if (v) sel.value = v;
+  const comDocs = Object.keys((metaDocs || {}).cargas || {}).filter(id => docsContar('cargas', id));
+  comDocs.sort((a, b) => ((store.cargas.find(x => x.id === b) || {}).dataSaida || '').localeCompare((store.cargas.find(x => x.id === a) || {}).dataSaida || ''));
+  $('#doc-car').innerHTML = tab('<th>Carga</th><th></th>', comDocs.map(id => linha('cargas', id, esc(docsRefTxt('cargas', id) || '(carga removida)'), '')).join(''), 'Ainda não há documentos anexados a cargas.', 5);
+  /* pesquisa em todos os documentos */
+  const q = $('#doc-pesq').value.trim().toLowerCase(), pn = $('#doc-res-pn');
+  pn.hidden = q.length < 2;
+  if (q.length < 2) return;
+  const res = [];
+  Object.keys(metaDocs || {}).forEach(pasta => Object.keys(metaDocs[pasta] || {}).forEach(ref => Object.keys(metaDocs[pasta][ref] || {}).forEach(did => {
+    const d = metaDocs[pasta][ref][did], refTxt = docsRefTxt(pasta, ref);
+    if ([d.nome, d.categoria, d.obs, refTxt].join(' ').toLowerCase().includes(q)) res.push({pasta, ref, d, refTxt});
+  })));
+  res.sort((a, b) => (b.d.criadoEm || '').localeCompare(a.d.criadoEm || ''));
+  $('#doc-res').innerHTML = '<thead><tr><th>Pasta</th><th>Referência</th><th>Tipo</th><th>Ficheiro</th><th>Validade</th><th>Anexado</th><th class="no-print"></th></tr></thead><tbody>' +
+    (res.slice(0, 100).map(r => `<tr><td>${esc((PASTAS_DOC[r.pasta] || {}).titulo || r.pasta)}</td><td>${esc(r.refTxt)}</td><td>${esc(r.d.categoria)}</td><td>${esc(r.d.nome)}</td><td>${fmtData(r.d.validade)}</td><td>${fmtData((r.d.criadoEm || '').slice(0, 10))}</td><td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="docs" data-pasta="${esc(r.pasta)}" data-id="${esc(r.ref)}">Abrir dossier</button></td></tr>`).join('') || '<tr><td colspan="7" class="vazio">Nenhum documento encontrado.</td></tr>') + '</tbody>';
+}
+$('#doc-pesq').addEventListener('input', renderDocumentos);
+$('#doc-carga-abrir').addEventListener('click', () => { const id = $('#doc-carga-sel').value; if (id) abrirDocs('cargas', id); else toast('Ainda não há cargas. Crie primeiro uma carga.', 'erro'); });
+if (MODO_LOCAL){ $('#c-docs').hidden = true; }
+$('#c-docs').addEventListener('click', () => {
+  const f = $('#f-carga'); f.dataset.anexar = '1';
+  if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', {cancelable:true}));
 });
 
 const ERROS_LOGIN = {
