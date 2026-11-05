@@ -217,6 +217,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
     <button type="button" role="tab" data-tab="cargas" aria-selected="false">Viagens</button>
     <button type="button" role="tab" data-tab="despesas" aria-selected="false">Despesas</button>
     <button type="button" role="tab" data-tab="motoristas" aria-selected="false">Motoristas</button>
+    <button type="button" role="tab" data-tab="cv" aria-selected="false">Compra e venda</button>
     <button type="button" role="tab" data-tab="entidades" aria-selected="false">Clientes e fornecedores</button>
     <button type="button" role="tab" data-tab="folha" aria-selected="false">Folha de viagens</button>
     <button type="button" role="tab" data-tab="frota" aria-selected="false">Frota e dados</button>
@@ -343,6 +344,31 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         </div>
       </div>
       <div class="painel"><h3>Documentos a renovar</h3><div class="tabela-wrap"><table id="mot-validades"></table></div></div>
+    </section>
+
+    <!-- COMPRA E VENDA DE CARGAS (isolado da frota) -->
+    <section id="tab-cv" class="tab" role="tabpanel" hidden>
+      <div class="cab-sec">
+        <h2>Compra e venda de cargas</h2>
+        <div class="barra no-print">
+          <label class="campo">Ano<select id="cv-ano"></select></label>
+          <label class="campo">Mês<select id="cv-mes" data-meses="todos"></select></label>
+          <label class="campo">Cliente<select id="cv-cli"></select></label>
+          <button class="btn" type="button" id="cv-pdf">PDF</button>
+          <button class="btn" type="button" id="cv-xls">Excel</button>
+          <button class="btn btn-pri" type="button" id="cv-novo">Nova operação</button>
+        </div>
+      </div>
+      <div class="kpis" id="cv-kpis"></div>
+      <div class="painel">
+        <div class="tabela-wrap">
+          <table id="cv-tabela">
+            <thead><tr><th>Data</th><th>Origem → destino</th><th>Cliente</th><th>Fornecedor</th><th>Mercadoria</th><th class="n">Compra sem IVA</th><th class="n">Venda sem IVA</th><th class="n">Margem</th><th class="n">Margem %</th><th class="n">IVA a entregar</th><th>Faturas</th><th class="no-print"></th></tr></thead>
+            <tbody></tbody><tfoot></tfoot>
+          </table>
+        </div>
+        <p class="nota">Cargas compradas a um fornecedor e vendidas a um cliente, sem custos de motorista, camião ou despesas. O ganho é a diferença entre a venda e a compra; o IVA a entregar é o IVA da venda menos o IVA da compra. Estas operações não entram nos resultados da frota.</p>
+      </div>
     </section>
 
     <!-- CLIENTES E FORNECEDORES -->
@@ -513,6 +539,50 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
     </div>
     <div class="dlg-rod"><p class="erro" id="despesa-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar despesa</button></div>
+  </form>
+</dialog>
+
+<!-- Diálogo: compra e venda -->
+<dialog id="dlg-cv" class="largo">
+  <form id="f-cv" novalidate>
+    <div class="dlg-cab"><h3 id="dlg-cv-tit">Nova operação de compra e venda</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-corpo">
+      <fieldset><legend>Carga</legend>
+        <div class="grelha-3">
+          <label class="campo">Data *<input type="date" name="data" required></label>
+          <label class="campo">Mercadoria<input name="mercadoria" autocomplete="off"></label>
+          <label class="campo">Peso (kg)<input type="number" name="pesoKg" min="0" step="1"></label>
+          <label class="campo">Cidade de origem *<input name="origemLocal" autocomplete="off" placeholder="Ex.: Aveiro"></label>
+          <label class="campo">País de origem *<select name="origemPais"></select></label>
+          <label class="campo">Nº do CMR<input name="cmr" autocomplete="off"></label>
+          <label class="campo">Cidade de destino *<input name="destinoLocal" autocomplete="off" placeholder="Ex.: Lyon"></label>
+          <label class="campo">País de destino *<select name="destinoPais"></select></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Compra ao fornecedor</legend>
+        <div class="grelha-3">
+          <label class="campo inteiro">Fornecedor *<span class="linha-sel"><select name="fornecedorId"></select><button class="btn btn-peq" type="button" id="cv-novo-forn">+ Novo</button></span></label>
+          <label class="campo">Valor sem IVA (€) *<input type="number" name="valorCompra" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="campo">Taxa de IVA<select name="taxaCompra"></select></label>
+          <span></span>
+          <label class="campo">Nº da fatura do fornecedor<input name="faturaCompra" autocomplete="off"></label>
+          <label class="campo">Data da fatura<input type="date" name="dataFaturaCompra"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Venda ao cliente</legend>
+        <div class="grelha-3">
+          <label class="campo inteiro">Cliente *<span class="linha-sel"><select name="clienteId"></select><button class="btn btn-peq" type="button" id="cv-novo-cli">+ Novo</button></span></label>
+          <label class="campo">Valor sem IVA (€) *<input type="number" name="valorVenda" step="0.01" min="0" inputmode="decimal"></label>
+          <label class="campo">Taxa de IVA<select name="taxaVenda"></select></label>
+          <span></span>
+          <label class="campo">Nº da fatura ao cliente<input name="faturaVenda" autocomplete="off"></label>
+          <label class="campo">Data da fatura<input type="date" name="dataFaturaVenda"></label>
+        </div>
+      </fieldset>
+      <label class="campo">Observações<textarea name="obs"></textarea></label>
+      <div class="previsao" id="cv-preview" style="margin-top:14px"></div>
+    </div>
+    <div class="dlg-rod"><p class="erro" id="cv-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar operação</button></div>
   </form>
 </dialog>
 
@@ -786,14 +856,14 @@ function opcoesPaises(valor, {todos = false, mundo = true, extra = [], vazio = '
 }
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_C = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const COLS = ['camioes','motoristas','cargas','despesas','mensal','config','clientes','fornecedores'];
+const COLS = ['camioes','motoristas','cargas','despesas','mensal','config','clientes','fornecedores','compravenda'];
 const GERAL = '_geral';
 const CHAVE_LOCAL = 'dgt-frota-dados-v1';
 const PARAM_DEF = {sedeLocal:'Santa Eulália', sedePais:'Portugal', taxaTSU:23.75, taxaFCT:0, diasUteis:22, limiteSubAlimDinheiro:null, limiteSubAlimCartao:null, alertaDesvio:15, avisoValidadeDias:60, inicioRegisto:null};
 const PARAM_DATAS = ['inicioRegisto', 'sedeLocal', 'sedePais'];
 
 /* ---------- Estado ---------- */
-const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[], clientes:[], fornecedores:[]};
+const store = {camioes:[], motoristas:[], cargas:[], despesas:[], mensal:[], config:[], clientes:[], fornecedores:[], compravenda:[]};
 const pendentes = Object.fromEntries(COLS.map(c => [c, false]));
 let fbDb = null, fbAuth = null, utilizadorAtual = null, unsubs = [];
 
@@ -1356,6 +1426,7 @@ function anosDisponiveis(){
   store.cargas.forEach(g => { if (g.dataSaida) a.add(+g.dataSaida.slice(0, 4)); });
   store.despesas.forEach(d => { if (d.data){ const y = +d.data.slice(0, 4); a.add(y); if (d.diluir && d.data.slice(5, 7) !== '01') a.add(y + 1); } });
   store.mensal.forEach(x => { if (x.ym) a.add(+x.ym.slice(0, 4)); });
+  store.compravenda.forEach(x => { if (x.data) a.add(+x.data.slice(0, 4)); });
   return [...a].filter(Boolean).sort((x, y) => y - x);
 }
 function preencherAnos(sel){
@@ -1383,7 +1454,7 @@ function preencherSelMotorista(sel, manter){
   sel.value = [...sel.options].some(o => o.value === manter) ? manter : '';
 }
 function preencherFiltros(){
-  ['#r-ano','#c-ano','#d-ano','#p-ano'].forEach(s => preencherAnos($(s)));
+  ['#r-ano','#c-ano','#d-ano','#p-ano','#cv-ano'].forEach(s => preencherAnos($(s)));
   preencherSelCamiao($('#c-cam'), {todos:true});
   preencherSelCamiao($('#d-cam'), {todos:true, geral:true});
   preencherSelCamiao($('#f-cam'), {todos:true});
@@ -1618,7 +1689,7 @@ function renderTudo(){
   if (agendado) return; agendado = true;
   requestAnimationFrame(() => {
     agendado = false;
-    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderEntidades(); renderFolha(); renderFrota();
+    preencherFiltros(); renderResultados(); renderCargas(); renderDespesas(); renderMotoristas(); renderEntidades(); renderCV(); renderFolha(); renderFrota();
   });
 }
 
@@ -1637,8 +1708,12 @@ function preencherSelEntidade(sel, col, manter, textoAntigo, vazio){
   sel.value = manter && [...sel.options].some(o => o.value === manter) ? manter : (textoAntigo ? '__texto__' : '');
 }
 function usoEntidade(col, id){
-  if (col === 'clientes'){ const l = store.cargas.flatMap(g => servicosDe(g)).filter(sv => sv.clienteId === id); return {n:l.length, total:l.reduce((a, sv) => a + cent(sv.valor), 0)}; }
-  const l = store.despesas.filter(d => d.fornecedorId === id); return {n:l.length, total:l.reduce((a, d) => a + cent(d.valor), 0)};
+  if (col === 'clientes'){
+    const l = store.cargas.flatMap(g => servicosDe(g)).filter(sv => sv.clienteId === id), cv = store.compravenda.filter(o => o.clienteId === id);
+    return {n:l.length + cv.length, total:l.reduce((a, sv) => a + cent(sv.valor), 0) + cv.reduce((a, o) => a + cent(o.valorVenda), 0)};
+  }
+  const l = store.despesas.filter(d => d.fornecedorId === id), cv = store.compravenda.filter(o => o.fornecedorId === id);
+  return {n:l.length + cv.length, total:l.reduce((a, d) => a + cent(d.valor), 0) + cv.reduce((a, o) => a + cent(o.valorCompra), 0)};
 }
 function moradaTxt(x){ return [x.morada, [x.codPostal, x.localidade].filter(Boolean).join(' '), x.regiao, x.pais].filter(Boolean).join(', '); }
 function filtrarEntidades(col){
@@ -1707,7 +1782,7 @@ $('#f-entidade').addEventListener('submit', ev => {
 function apagarEntidade(col, id){
   const x = store[col].find(o => o.id === id); if (!x) return;
   const u = usoEntidade(col, id);
-  if (u.n){ toast(`${x.nome} tem ${u.n} ${col === 'clientes' ? 'serviço(s)' : 'despesa(s)'} registado(s). Marque como inativo em vez de eliminar.`, 'erro'); return; }
+  if (u.n){ toast(`${x.nome} tem ${u.n} movimento(s) registado(s). Marque como inativo em vez de eliminar.`, 'erro'); return; }
   if (!confirm(`Eliminar a ficha de ${x.nome}? Esta ação não pode ser desfeita.`)) return;
   gravar(DB.remove(col, id), 'Ficha eliminada.');
 }
@@ -2246,6 +2321,9 @@ document.addEventListener('click', ev => {
     case 'editar-motorista': abrirMotorista(id); break;
     case 'editar-ent': abrirEntidade(b.dataset.col, id); break;
     case 'pdf-viagem': pdfViagem(id); break;
+    case 'pdf-cv': pdfCV(id); break;
+    case 'editar-cv': abrirCV(id); break;
+    case 'apagar-cv': if (confirm('Apagar esta operação de compra e venda? Esta ação não pode ser desfeita.')) gravar(DB.remove('compravenda', id), 'Operação apagada.'); break;
     case 'apagar-ent': apagarEntidade(b.dataset.col, id); break;
     case 'pdf-motorista': pdfFichaMotorista(id); break;
     case 'pdf-camiao': pdfFichaCamiao(id); break;
@@ -2454,6 +2532,7 @@ function exportarTudo(){
     ...[...store.mensal].sort((a, b) => (a.id || '').localeCompare(b.id || '')).map(x => [X(x.ym), X((motoristaPorId(x.motoristaId) || {}).nome || ''), X(x.diasTrabalho ?? '', 'int'), X(x.diasDeslocacao ?? '', 'int'), X(x.ajudasMes ?? '', 'eur'), X(x.extras ?? '', 'eur'), X(x.extrasSemTSU ? 'Sim' : ''), X(x.faltas ?? '', 'eur')])], [9, 24, 12, 10, 14, 14, 12, 10]), 'Processamento mensal');
   XLSX.utils.book_append_sheet(wb, folhaEntidades('clientes'), 'Clientes');
   XLSX.utils.book_append_sheet(wb, folhaEntidades('fornecedores'), 'Fornecedores');
+  XLSX.utils.book_append_sheet(wb, folhaCV('Compra e venda de cargas (todas)', [...store.compravenda].sort((a, b) => (a.data || '').localeCompare(b.data || ''))), 'Compra e venda');
   XLSX.writeFile(wb, `frota-dados-completos-${hoje()}.xlsx`);
 }
 function exportarJSON(){
@@ -2648,7 +2727,7 @@ function pdfFinalizar(R, nome){
     for (let x = m; x < W - m; x += 11) doc.rect(x, 21.8, Math.min(7, W - m - x), 1.1, 'F');
     doc.setDrawColor(...PC.linha); doc.setLineWidth(0.2); doc.line(m, H - 10.5, W - m, H - 10.5);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...PC.suave);
-    doc.text(pt(`Gerado em ${fmtData(hoje())}. Valores sem IVA.`), m, H - 6.5);
+    doc.text(pt(`Gerado em ${fmtData(hoje())}. ${R.rodape || 'Valores sem IVA.'}`), m, H - 6.5);
     doc.text(`Página ${i} de ${n}`, W - m, H - 6.5, {align:'right'});
   }
   doc.save(nome);
@@ -2972,6 +3051,162 @@ function pdfTodasFichas(){
   pdfFinalizar(R, `fichas-frota-${hoje()}.pdf`);
 }
 
+/* ---------- Compra e venda de cargas (separador isolado) ----------
+   Operações de intermediação: compra a um fornecedor e venda a um cliente.
+   Não entram nos resultados da frota (sem custos de motorista, camião ou despesas). */
+const TAXAS_IVA = [[23, '23%'], [13, '13%'], [6, '6%'], [0, '0% (isento ou autoliquidação)']];
+function contasCV(o){
+  const vc = cent(o.valorCompra), vv = cent(o.valorVenda);
+  const tc = o.taxaCompra ?? 23, tv = o.taxaVenda ?? 23;
+  const ic = Math.round(vc * tc / 100), iv = Math.round(vv * tv / 100);
+  return {vc, vv, ic, iv, tc, tv, totC:vc + ic, totV:vv + iv, margem:vv - vc, ivaEntregar:iv - ic, saldo:(vv + iv) - (vc + ic)};
+}
+function filtrarCV(){
+  const ano = $('#cv-ano').value, mes = $('#cv-mes').value, cli = $('#cv-cli').value;
+  return store.compravenda.filter(o => noPeriodo(o.data, ano, mes) && (!cli || o.clienteId === cli)).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+}
+function trajetoCV(o){ return `${[o.origemLocal, o.origemPais].filter(Boolean).join(', ')} → ${[o.destinoLocal, o.destinoPais].filter(Boolean).join(', ')}`; }
+const nomeCliCV = o => ((o.clienteId && clientePorId(o.clienteId)) || {}).nome || o.cliente || '';
+const nomeFornCV = o => ((o.fornecedorId && fornecedorPorId(o.fornecedorId)) || {}).nome || o.fornecedor || '';
+function totaisCV(lista){
+  return lista.reduce((t, o) => { const c = contasCV(o); ['vc','vv','ic','iv','margem','ivaEntregar','saldo'].forEach(k => { t[k] += c[k]; }); t.n++; return t; }, {n:0, vc:0, vv:0, ic:0, iv:0, margem:0, ivaEntregar:0, saldo:0});
+}
+function renderCV(){
+  const sel = $('#cv-cli'), v = sel.value;
+  sel.innerHTML = '<option value="">Todos os clientes</option>' + entidadesOrdenadas('clientes').filter(c => store.compravenda.some(o => o.clienteId === c.id)).map(c => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === v)) sel.value = v;
+  const lista = filtrarCV(), t = totaisCV(lista), tb = $('#cv-tabela tbody');
+  $('#cv-kpis').innerHTML = `
+    <div class="kpi"><span>Operações</span><strong>${t.n}</strong></div>
+    <div class="kpi"><span>Vendas sem IVA</span><strong>${fmtC(t.vv)}</strong></div>
+    <div class="kpi"><span>Compras sem IVA</span><strong>${fmtC(t.vc)}</strong></div>
+    <div class="kpi ${t.margem >= 0 ? 'res-pos' : 'res-neg'}"><span>Margem</span><strong class="${clsSinal(t.margem)}">${fmtC(t.margem)}</strong></div>
+    <div class="kpi"><span>Margem %</span><strong class="${clsSinal(t.margem)}">${fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}</strong></div>
+    <div class="kpi"><span>IVA a entregar (− = a recuperar)</span><strong>${fmtC(t.ivaEntregar)}</strong></div>`;
+  if (!lista.length){ tb.innerHTML = '<tr><td colspan="12" class="vazio">Não há operações neste período. Registe uma com «Nova operação».</td></tr>'; $('#cv-tabela tfoot').innerHTML = ''; return; }
+  tb.innerHTML = lista.map(o => { const c = contasCV(o); return `<tr>
+    <td>${fmtData(o.data)}</td><td>${esc(trajetoCV(o))}</td><td>${esc(nomeCliCV(o))}</td><td>${esc(nomeFornCV(o))}</td><td>${esc(o.mercadoria)}</td>
+    <td class="n">${fmtC(c.vc)}<span class="motorista-sub">IVA ${c.tc}%: ${fmtC(c.ic)}</span></td>
+    <td class="n">${fmtC(c.vv)}<span class="motorista-sub">IVA ${c.tv}%: ${fmtC(c.iv)}</span></td>
+    <td class="n ${clsSinal(c.margem)}"><strong>${fmtC(c.margem)}</strong></td><td class="n">${fmtVal(c.vv ? c.margem / c.vv : null, 'pct')}</td>
+    <td class="n">${fmtC(c.ivaEntregar)}</td><td>${esc([o.faturaVenda ? 'V: ' + o.faturaVenda : '', o.faturaCompra ? 'C: ' + o.faturaCompra : ''].filter(Boolean).join(' · '))}</td>
+    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-cv" data-id="${esc(o.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-cv" data-id="${esc(o.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-cv" data-id="${esc(o.id)}">Apagar</button></td></tr>`; }).join('');
+  $('#cv-tabela tfoot').innerHTML = `<tr><td colspan="5">${t.n} operaç${t.n === 1 ? 'ão' : 'ões'}</td><td class="n">${fmtC(t.vc)}</td><td class="n">${fmtC(t.vv)}</td><td class="n ${clsSinal(t.margem)}">${fmtC(t.margem)}</td><td class="n">${fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}</td><td class="n">${fmtC(t.ivaEntregar)}</td><td colspan="2"></td></tr>`;
+}
+function opcoesTaxa(v){ return TAXAS_IVA.map(([k, n]) => `<option value="${k}"${+v === k ? ' selected' : ''}>${n}</option>`).join(''); }
+function lerCV(){
+  const e = $('#f-cv').elements, cli = e.clienteId.value, forn = e.fornecedorId.value;
+  return {data:e.data.value, mercadoria:txt(e.mercadoria), pesoKg:numOuNull(e.pesoKg.value), cmr:txt(e.cmr),
+    origemLocal:txt(e.origemLocal), origemPais:e.origemPais.value, destinoLocal:txt(e.destinoLocal), destinoPais:e.destinoPais.value,
+    fornecedorId:forn || null, fornecedor:(fornecedorPorId(forn) || {}).nome || (forn ? e.fornecedorId.selectedOptions[0]?.textContent : '') || '',
+    valorCompra:numOuNull(e.valorCompra.value), taxaCompra:+e.taxaCompra.value, faturaCompra:txt(e.faturaCompra), dataFaturaCompra:e.dataFaturaCompra.value,
+    clienteId:cli || null, cliente:(clientePorId(cli) || {}).nome || (cli ? e.clienteId.selectedOptions[0]?.textContent : '') || '',
+    valorVenda:numOuNull(e.valorVenda.value), taxaVenda:+e.taxaVenda.value, faturaVenda:txt(e.faturaVenda), dataFaturaVenda:e.dataFaturaVenda.value, obs:txt(e.obs)};
+}
+function atualizarPreviewCV(){
+  const o = lerCV(), c = contasCV({...o, valorCompra:num0(o.valorCompra), valorVenda:num0(o.valorVenda)});
+  $('#cv-preview').innerHTML = `<strong>Apuramento da operação</strong><table>
+    <tr><td></td><td class="n"><strong>Sem IVA</strong></td><td class="n"><strong>IVA</strong></td><td class="n"><strong>Com IVA</strong></td></tr>
+    <tr><td>Venda ao cliente (${c.tv}%)</td><td class="n">${fmtC(c.vv)}</td><td class="n">${fmtC(c.iv)}</td><td class="n">${fmtC(c.totV)}</td></tr>
+    <tr><td>Compra ao fornecedor (${c.tc}%)</td><td class="n">${fmtC(c.vc)}</td><td class="n">${fmtC(c.ic)}</td><td class="n">${fmtC(c.totC)}</td></tr>
+    <tr class="tot"><td>Diferença</td><td class="n ${clsSinal(c.margem)}">${fmtC(c.margem)}</td><td class="n">${fmtC(c.ivaEntregar)}</td><td class="n">${fmtC(c.saldo)}</td></tr></table>
+    <p class="ajuda" style="margin:6px 0 0">Ganho da operação: <strong class="${clsSinal(c.margem)}">${fmtC(c.margem)}</strong>${c.vv ? ` (${fmtPct.format(c.margem / c.vv)} da venda)` : ''}. IVA a entregar ao Estado: ${fmtC(c.ivaEntregar)} (IVA liquidado na venda menos IVA dedutível na compra).</p>`;
+}
+function abrirCV(id){
+  const f = $('#f-cv'); f.reset(); $('#cv-erro').textContent = '';
+  const o = id ? store.compravenda.find(x => x.id === id) : null;
+  f.dataset.id = o ? o.id : '';
+  $('#dlg-cv-tit').textContent = o ? `Operação de ${fmtData(o.data)}` : 'Nova operação de compra e venda';
+  preencherSelEntidade(f.elements.clienteId, 'clientes', o ? (o.clienteId || '') : '', o && !o.clienteId ? o.cliente : '');
+  preencherSelEntidade(f.elements.fornecedorId, 'fornecedores', o ? (o.fornecedorId || '') : '', o && !o.fornecedorId ? o.fornecedor : '');
+  f.elements.origemPais.innerHTML = opcoesPaises(o ? o.origemPais : 'Portugal', {vazio:'País…'});
+  f.elements.destinoPais.innerHTML = opcoesPaises(o ? o.destinoPais : '', {vazio:'País…'});
+  f.elements.taxaCompra.innerHTML = opcoesTaxa(o ? (o.taxaCompra ?? 23) : 23);
+  f.elements.taxaVenda.innerHTML = opcoesTaxa(o ? (o.taxaVenda ?? 23) : 23);
+  if (o) ['data','mercadoria','pesoKg','cmr','origemLocal','destinoLocal','valorCompra','faturaCompra','dataFaturaCompra','valorVenda','faturaVenda','dataFaturaVenda','obs'].forEach(k => { f.elements[k].value = o[k] ?? ''; });
+  else f.elements.data.value = hoje();
+  atualizarPreviewCV();
+  abrirDialogo('#dlg-cv');
+}
+$('#f-cv').addEventListener('input', atualizarPreviewCV);
+$('#f-cv').addEventListener('change', atualizarPreviewCV);
+$('#cv-novo-cli').addEventListener('click', () => abrirEntidade('clientes', null, (id, nome) => selecionarNovo($('#f-cv').elements.clienteId, id, nome)));
+$('#cv-novo-forn').addEventListener('click', () => abrirEntidade('fornecedores', null, (id, nome) => selecionarNovo($('#f-cv').elements.fornecedorId, id, nome)));
+$('#f-cv').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, erro = $('#cv-erro'), d = lerCV(); erro.textContent = '';
+  if (!d.data) return erro.textContent = 'Indique a data.';
+  if (!d.origemLocal || !d.origemPais) return erro.textContent = 'Indique a cidade e o país de origem.';
+  if (!d.destinoLocal || !d.destinoPais) return erro.textContent = 'Indique a cidade e o país de destino.';
+  if (!d.fornecedorId && !d.fornecedor) return erro.textContent = 'Escolha o fornecedor a quem foi comprada a carga (ou crie-o com «+ Novo»).';
+  if (!d.clienteId && !d.cliente) return erro.textContent = 'Escolha o cliente a quem foi vendida a carga (ou crie-o com «+ Novo»).';
+  if (d.valorCompra == null || !isFinite(d.valorCompra) || d.valorCompra < 0) return erro.textContent = 'Indique o valor de compra sem IVA.';
+  if (d.valorVenda == null || !isFinite(d.valorVenda) || d.valorVenda < 0) return erro.textContent = 'Indique o valor de venda sem IVA.';
+  if (d.pesoKg != null && (!isFinite(d.pesoKg) || d.pesoKg < 0)) return erro.textContent = 'O peso tem de ser um número positivo.';
+  d.valorCompra = r2(d.valorCompra); d.valorVenda = r2(d.valorVenda);
+  const id = f.dataset.id;
+  gravar(id ? DB.update('compravenda', id, d) : DB.add('compravenda', d), 'Operação guardada.');
+  fecharDialogo($('#dlg-cv'));
+});
+function folhaCV(titulo, lista){
+  const L = cabecalhoFolha(titulo);
+  L.push(['Data','Origem','País origem','Destino','País destino','Mercadoria','Peso (kg)','CMR','Fornecedor','Fatura compra','Compra sem IVA','Taxa IVA compra','IVA compra','Compra com IVA','Cliente','Fatura venda','Venda sem IVA','Taxa IVA venda','IVA venda','Venda com IVA','Margem','Margem %','IVA a entregar','Observações'].map(c => X(c, null, 'cab')));
+  const ini = L.length + 1;
+  lista.forEach(o => { const c = contasCV(o), row = L.length + 1;
+    L.push([X(fmtData(o.data)), X(o.origemLocal), X(o.origemPais), X(o.destinoLocal), X(o.destinoPais), X(o.mercadoria), X(o.pesoKg ?? '', 'int'), X(o.cmr), X(nomeFornCV(o)), X(o.faturaCompra),
+      X(c.vc / 100, 'eur'), X(c.tc / 100, 'pct'), X(c.ic / 100, 'eur'), X(c.totC / 100, 'eur'), X(nomeCliCV(o)), X(o.faturaVenda),
+      X(c.vv / 100, 'eur'), X(c.tv / 100, 'pct'), X(c.iv / 100, 'eur'), X(c.totV / 100, 'eur'),
+      X(c.margem / 100, 'eur', 'sub', `Q${row}-K${row}`), X(c.vv ? c.margem / c.vv : '', 'pct', null, `IF(Q${row}=0,"",U${row}/Q${row})`), X(c.ivaEntregar / 100, 'eur', null, `S${row}-M${row}`), X(o.obs)]); });
+  const fim = L.length;
+  if (lista.length){
+    const t = totaisCV(lista), S = (col, v) => X(v, 'eur', 'tot', `SUM(${col}${ini}:${col}${fim})`), V = X('', null, 'tot');
+    L.push([X('Total', null, 'tot'), V, V, V, V, V, V, V, V, V, S('K', t.vc / 100), V, S('M', t.ic / 100), S('N', (t.vc + t.ic) / 100), V, V, S('Q', t.vv / 100), V, S('S', t.iv / 100), S('T', (t.vv + t.iv) / 100), S('U', t.margem / 100),
+      X(t.vv ? t.margem / t.vv : '', 'pct', 'tot', `IF(Q${fim + 1}=0,"",U${fim + 1}/Q${fim + 1})`), S('W', t.ivaEntregar / 100), V]);
+  }
+  return criarFolha(L, [11, 16, 12, 16, 12, 18, 9, 12, 24, 14, 13, 9, 11, 13, 24, 14, 13, 9, 11, 13, 13, 9, 13, 30]);
+}
+function periodoCVTxt(){ const ano = $('#cv-ano').value, mes = $('#cv-mes').value; return mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`; }
+function exportarCVxls(){
+  if (!xlsxDisponivel()) return;
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, folhaCV(`Compra e venda de cargas: ${periodoCVTxt()}`, [...filtrarCV()].reverse()), 'Compra e venda');
+  XLSX.writeFile(wb, `compra-venda-cargas-${$('#cv-ano').value}${$('#cv-mes').value ? '-' + $('#cv-mes').value : ''}.xlsx`);
+}
+function pdfCVlista(){
+  if (!pdfDisponivel()) return;
+  const lista = [...filtrarCV()].reverse(), R = novoPDF('Compra e venda de cargas', periodoCVTxt()); R.rodape = 'Valores em euros, com o IVA discriminado.';
+  if (!lista.length){ pdfNota(R, 'Não há operações neste período.'); pdfFinalizar(R, 'compra-venda-cargas.pdf'); return; }
+  const t = totaisCV(lista);
+  pdfKpis(R, [{rot:'Operações', val:String(t.n)}, {rot:'Vendas sem IVA', val:fmtC(t.vv)}, {rot:'Compras sem IVA', val:fmtC(t.vc)}, {rot:'Margem', val:fmtC(t.margem), cor:t.margem >= 0 ? PC.ganho : PC.perda, corTxt:t.margem >= 0 ? PC.ganho : PC.perda}, {rot:'Margem %', val:fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}, {rot:'IVA a entregar', val:fmtC(t.ivaEntregar)}]);
+  const body = lista.map(o => { const c = contasCV(o); return [pS(fmtData(o.data)), pS(trajetoCV(o)), pS(nomeFornCV(o) + (o.faturaCompra ? '\nFat. ' + o.faturaCompra : '')), pN(c.vc / 100, 'eur'), pN(c.ic / 100, 'eur'),
+    pS(nomeCliCV(o) + (o.faturaVenda ? '\nFat. ' + o.faturaVenda : '')), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.margem / 100, 'eur', {fontStyle:'bold'}), pN(c.vv ? c.margem / c.vv : null, 'pct'), pN(c.ivaEntregar / 100, 'eur')]; });
+  pdfSecao(R, `Operações (${lista.length})`, (body.length + 3) * alturaLinha(7.5) * 1.5);
+  pdfTabela(R, {head:['Data', 'Origem > destino', 'Fornecedor', 'Compra', 'IVA compra', 'Cliente', 'Venda', 'IVA venda', 'Margem', 'Margem %', 'IVA a entregar'], body,
+    foot:[pS('Total'), pS(''), pS(''), pN(t.vc / 100, 'eur'), pN(t.ic / 100, 'eur'), pS(''), pN(t.vv / 100, 'eur'), pN(t.iv / 100, 'eur'), pN(t.margem / 100, 'eur'), pN(t.vv ? t.margem / t.vv : null, 'pct'), pN(t.ivaEntregar / 100, 'eur')],
+    cols:[{w:17}, {}, {w:40}, {n:1, w:20}, {n:1, w:18}, {w:40}, {n:1, w:20}, {n:1, w:18}, {n:1, w:20}, {n:1, w:15}, {n:1, w:20}], fs:7.5});
+  pdfNota(R, 'Operações de compra e venda de cargas, sem custos de motorista, camião ou despesas. Não entram nos resultados da frota. IVA a entregar = IVA liquidado nas vendas − IVA dedutível nas compras (valor negativo = IVA a recuperar).');
+  pdfFecho(R, [['Vendas sem IVA', fmtC(t.vv)], ['Compras sem IVA', fmtC(t.vc)], ['Margem', fmtC(t.margem)], ['IVA a entregar', fmtC(t.ivaEntregar)]]);
+  pdfFinalizar(R, `compra-venda-cargas-${$('#cv-ano').value}${$('#cv-mes').value ? '-' + $('#cv-mes').value : ''}.pdf`);
+}
+function pdfCV(id){
+  if (!pdfDisponivel()) return;
+  const o = store.compravenda.find(x => x.id === id); if (!o) return;
+  const c = contasCV(o), R = novoPDF('Compra e venda de carga', fmtData(o.data), 'portrait'); R.rodape = 'Valores em euros, com o IVA discriminado.';
+  pdfKV(R, 'Carga', [['Data', fmtData(o.data)], ['CMR', o.cmr], ['Origem', [o.origemLocal, o.origemPais].filter(Boolean).join(', ')], ['Destino', [o.destinoLocal, o.destinoPais].filter(Boolean).join(', ')], ['Mercadoria', o.mercadoria], ['Peso', o.pesoKg ? fmtInt.format(o.pesoKg) + ' kg' : '']]);
+  pdfKV(R, 'Compra ao fornecedor', [['Fornecedor', nomeFornCV(o)], ['Fatura', [o.faturaCompra, o.dataFaturaCompra ? fmtData(o.dataFaturaCompra) : ''].filter(Boolean).join(' de ')], ['Valor sem IVA', fmtC(c.vc)], [`IVA (${c.tc}%)`, fmtC(c.ic)], ['Total com IVA', fmtC(c.totC)], ['', '']]);
+  pdfKV(R, 'Venda ao cliente', [['Cliente', nomeCliCV(o)], ['Fatura', [o.faturaVenda, o.dataFaturaVenda ? fmtData(o.dataFaturaVenda) : ''].filter(Boolean).join(' de ')], ['Valor sem IVA', fmtC(c.vv)], [`IVA (${c.tv}%)`, fmtC(c.iv)], ['Total com IVA', fmtC(c.totV)], ['', '']]);
+  pdfSecao(R, 'Apuramento', 5 * alturaLinha(9));
+  pdfTabela(R, {head:['', 'Sem IVA', 'IVA', 'Com IVA'], body:[[pS('Venda'), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.totV / 100, 'eur')], [pS('Compra'), pN(c.vc / 100, 'eur'), pN(c.ic / 100, 'eur'), pN(c.totC / 100, 'eur')]],
+    foot:[pS('Diferença'), pN(c.margem / 100, 'eur'), pN(c.ivaEntregar / 100, 'eur'), pN(c.saldo / 100, 'eur')], cols:[{w:50}, {n:1}, {n:1}, {n:1}], fs:9});
+  pdfKV(R, 'Resultado', [['Ganho da operação', fmtC(c.margem)], ['Margem sobre a venda', fmtVal(c.vv ? c.margem / c.vv : null, 'pct')], ['IVA a entregar ao Estado', fmtC(c.ivaEntregar)], ['', '']]);
+  if (o.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, o.obs); }
+  pdfAssinaturas(R);
+  pdfFinalizar(R, `compra-venda-${o.data}.pdf`);
+}
+['#cv-ano', '#cv-mes', '#cv-cli'].forEach(s => $(s).addEventListener('change', renderCV));
+$('#cv-novo').addEventListener('click', () => abrirCV());
+$('#cv-pdf').addEventListener('click', pdfCVlista);
+$('#cv-xls').addEventListener('click', exportarCVxls);
+
 /* ---------- Diversos ---------- */
 let toastT = null;
 function toast(msg, tipo){
@@ -3071,7 +3306,7 @@ function iniciar(){
     s.innerHTML = (s.dataset.meses === 'todos' ? '<option value="">Todos</option>' : '') + MESES.map((m, i) => `<option value="${pad2(i + 1)}">${m}</option>`).join('');
   });
   const agora = new Date(), mesAtual = pad2(agora.getMonth() + 1), anoAtual = agora.getFullYear();
-  ['#r-mes','#c-mes','#d-mes','#p-mes'].forEach(s => { $(s).value = mesAtual; });
+  ['#r-mes','#c-mes','#d-mes','#p-mes','#cv-mes'].forEach(s => { $(s).value = mesAtual; });
   $('#f-de').value = `${anoAtual}-01-01`; $('#f-ate').value = `${anoAtual}-12-31`;
   preencherTiposSelect($('#d-tipo'), true);
   preencherTiposSelect($('#f-despesa').elements.tipo, false);
