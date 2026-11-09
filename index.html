@@ -363,11 +363,11 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel">
         <div class="tabela-wrap">
           <table id="cv-tabela">
-            <thead><tr><th>Data</th><th>Origem → destino</th><th>Cliente</th><th>Fornecedor</th><th>Mercadoria</th><th class="n">Compra sem IVA</th><th class="n">Venda sem IVA</th><th class="n">Margem</th><th class="n">Margem %</th><th class="n">IVA a entregar</th><th>Faturas</th><th class="no-print"></th></tr></thead>
+            <thead><tr><th>Data</th><th>Origem → destino</th><th>Cliente</th><th>Fornecedor</th><th>Mercadoria</th><th class="n">Compra sem IVA</th><th class="n">Venda sem IVA</th><th class="n">Margem sem IVA</th><th class="n">IVA a entregar</th><th class="n">Lucro</th><th class="n">Lucro %</th><th>Faturas</th><th class="no-print"></th></tr></thead>
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
-        <p class="nota">Cargas compradas a um fornecedor e vendidas a um cliente, sem custos de motorista, camião ou despesas. O ganho é a diferença entre a venda e a compra; o IVA a entregar é o IVA da venda menos o IVA da compra. Estas operações não entram nos resultados da frota.</p>
+        <p class="nota">Cargas compradas a um fornecedor e vendidas a um cliente, sem custos de motorista, camião ou despesas. Lucro = margem sem IVA (venda − compra) − IVA a entregar (IVA da venda − IVA da compra). Estas operações não entram nos resultados da frota.</p>
       </div>
     </section>
 
@@ -3059,7 +3059,9 @@ function contasCV(o){
   const vc = cent(o.valorCompra), vv = cent(o.valorVenda);
   const tc = o.taxaCompra ?? 23, tv = o.taxaVenda ?? 23;
   const ic = Math.round(vc * tc / 100), iv = Math.round(vv * tv / 100);
-  return {vc, vv, ic, iv, tc, tv, totC:vc + ic, totV:vv + iv, margem:vv - vc, ivaEntregar:iv - ic, saldo:(vv + iv) - (vc + ic)};
+  const margem = vv - vc, ivaEntregar = iv - ic;
+  // Lucro da operação, como definido pela empresa: margem sem IVA menos o IVA a entregar ao Estado
+  return {vc, vv, ic, iv, tc, tv, totC:vc + ic, totV:vv + iv, margem, ivaEntregar, lucro:margem - ivaEntregar, saldo:(vv + iv) - (vc + ic)};
 }
 function filtrarCV(){
   const ano = $('#cv-ano').value, mes = $('#cv-mes').value, cli = $('#cv-cli').value;
@@ -3069,7 +3071,7 @@ function trajetoCV(o){ return `${[o.origemLocal, o.origemPais].filter(Boolean).j
 const nomeCliCV = o => ((o.clienteId && clientePorId(o.clienteId)) || {}).nome || o.cliente || '';
 const nomeFornCV = o => ((o.fornecedorId && fornecedorPorId(o.fornecedorId)) || {}).nome || o.fornecedor || '';
 function totaisCV(lista){
-  return lista.reduce((t, o) => { const c = contasCV(o); ['vc','vv','ic','iv','margem','ivaEntregar','saldo'].forEach(k => { t[k] += c[k]; }); t.n++; return t; }, {n:0, vc:0, vv:0, ic:0, iv:0, margem:0, ivaEntregar:0, saldo:0});
+  return lista.reduce((t, o) => { const c = contasCV(o); ['vc','vv','ic','iv','margem','ivaEntregar','lucro','saldo'].forEach(k => { t[k] += c[k]; }); t.n++; return t; }, {n:0, vc:0, vv:0, ic:0, iv:0, margem:0, ivaEntregar:0, lucro:0, saldo:0});
 }
 function renderCV(){
   const sel = $('#cv-cli'), v = sel.value;
@@ -3080,18 +3082,19 @@ function renderCV(){
     <div class="kpi"><span>Operações</span><strong>${t.n}</strong></div>
     <div class="kpi"><span>Vendas sem IVA</span><strong>${fmtC(t.vv)}</strong></div>
     <div class="kpi"><span>Compras sem IVA</span><strong>${fmtC(t.vc)}</strong></div>
-    <div class="kpi ${t.margem >= 0 ? 'res-pos' : 'res-neg'}"><span>Margem</span><strong class="${clsSinal(t.margem)}">${fmtC(t.margem)}</strong></div>
-    <div class="kpi"><span>Margem %</span><strong class="${clsSinal(t.margem)}">${fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}</strong></div>
-    <div class="kpi"><span>IVA a entregar (− = a recuperar)</span><strong>${fmtC(t.ivaEntregar)}</strong></div>`;
-  if (!lista.length){ tb.innerHTML = '<tr><td colspan="12" class="vazio">Não há operações neste período. Registe uma com «Nova operação».</td></tr>'; $('#cv-tabela tfoot').innerHTML = ''; return; }
+    <div class="kpi"><span>Margem sem IVA</span><strong class="${clsSinal(t.margem)}">${fmtC(t.margem)}</strong></div>
+    <div class="kpi"><span>IVA a entregar</span><strong>${fmtC(t.ivaEntregar)}</strong></div>
+    <div class="kpi ${t.lucro >= 0 ? 'res-pos' : 'res-neg'}"><span>Lucro (margem − IVA)</span><strong class="${clsSinal(t.lucro)}">${fmtC(t.lucro)}</strong></div>
+    <div class="kpi"><span>Lucro %</span><strong class="${clsSinal(t.lucro)}">${fmtVal(t.vv ? t.lucro / t.vv : null, 'pct')}</strong></div>`;
+  if (!lista.length){ tb.innerHTML = '<tr><td colspan="13" class="vazio">Não há operações neste período. Registe uma com «Nova operação».</td></tr>'; $('#cv-tabela tfoot').innerHTML = ''; return; }
   tb.innerHTML = lista.map(o => { const c = contasCV(o); return `<tr>
     <td>${fmtData(o.data)}</td><td>${esc(trajetoCV(o))}</td><td>${esc(nomeCliCV(o))}</td><td>${esc(nomeFornCV(o))}</td><td>${esc(o.mercadoria)}</td>
     <td class="n">${fmtC(c.vc)}<span class="motorista-sub">IVA ${c.tc}%: ${fmtC(c.ic)}</span></td>
     <td class="n">${fmtC(c.vv)}<span class="motorista-sub">IVA ${c.tv}%: ${fmtC(c.iv)}</span></td>
-    <td class="n ${clsSinal(c.margem)}"><strong>${fmtC(c.margem)}</strong></td><td class="n">${fmtVal(c.vv ? c.margem / c.vv : null, 'pct')}</td>
-    <td class="n">${fmtC(c.ivaEntregar)}</td><td>${esc([o.faturaVenda ? 'V: ' + o.faturaVenda : '', o.faturaCompra ? 'C: ' + o.faturaCompra : ''].filter(Boolean).join(' · '))}</td>
+    <td class="n">${fmtC(c.margem)}</td><td class="n">${fmtC(c.ivaEntregar)}</td>
+    <td class="n ${clsSinal(c.lucro)}"><strong>${fmtC(c.lucro)}</strong></td><td class="n">${fmtVal(c.vv ? c.lucro / c.vv : null, 'pct')}</td><td>${esc([o.faturaVenda ? 'V: ' + o.faturaVenda : '', o.faturaCompra ? 'C: ' + o.faturaCompra : ''].filter(Boolean).join(' · '))}</td>
     <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-cv" data-id="${esc(o.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-cv" data-id="${esc(o.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-cv" data-id="${esc(o.id)}">Apagar</button></td></tr>`; }).join('');
-  $('#cv-tabela tfoot').innerHTML = `<tr><td colspan="5">${t.n} operaç${t.n === 1 ? 'ão' : 'ões'}</td><td class="n">${fmtC(t.vc)}</td><td class="n">${fmtC(t.vv)}</td><td class="n ${clsSinal(t.margem)}">${fmtC(t.margem)}</td><td class="n">${fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}</td><td class="n">${fmtC(t.ivaEntregar)}</td><td colspan="2"></td></tr>`;
+  $('#cv-tabela tfoot').innerHTML = `<tr><td colspan="5">${t.n} operaç${t.n === 1 ? 'ão' : 'ões'}</td><td class="n">${fmtC(t.vc)}</td><td class="n">${fmtC(t.vv)}</td><td class="n">${fmtC(t.margem)}</td><td class="n">${fmtC(t.ivaEntregar)}</td><td class="n ${clsSinal(t.lucro)}">${fmtC(t.lucro)}</td><td class="n">${fmtVal(t.vv ? t.lucro / t.vv : null, 'pct')}</td><td colspan="2"></td></tr>`;
 }
 function opcoesTaxa(v){ return TAXAS_IVA.map(([k, n]) => `<option value="${k}"${+v === k ? ' selected' : ''}>${n}</option>`).join(''); }
 function lerCV(){
@@ -3110,7 +3113,10 @@ function atualizarPreviewCV(){
     <tr><td>Venda ao cliente (${c.tv}%)</td><td class="n">${fmtC(c.vv)}</td><td class="n">${fmtC(c.iv)}</td><td class="n">${fmtC(c.totV)}</td></tr>
     <tr><td>Compra ao fornecedor (${c.tc}%)</td><td class="n">${fmtC(c.vc)}</td><td class="n">${fmtC(c.ic)}</td><td class="n">${fmtC(c.totC)}</td></tr>
     <tr class="tot"><td>Diferença</td><td class="n ${clsSinal(c.margem)}">${fmtC(c.margem)}</td><td class="n">${fmtC(c.ivaEntregar)}</td><td class="n">${fmtC(c.saldo)}</td></tr></table>
-    <p class="ajuda" style="margin:6px 0 0">Ganho da operação: <strong class="${clsSinal(c.margem)}">${fmtC(c.margem)}</strong>${c.vv ? ` (${fmtPct.format(c.margem / c.vv)} da venda)` : ''}. IVA a entregar ao Estado: ${fmtC(c.ivaEntregar)} (IVA liquidado na venda menos IVA dedutível na compra).</p>`;
+    <strong style="display:block;margin-top:10px">Lucro da operação</strong><table>
+    <tr><td>Margem sem IVA (venda − compra)</td><td class="n">${fmtC(c.margem)}</td></tr>
+    <tr><td>IVA a entregar ao Estado (${fmtC(c.iv)} − ${fmtC(c.ic)})</td><td class="n">${c.ivaEntregar >= 0 ? '−' : '+'} ${fmtC(Math.abs(c.ivaEntregar))}</td></tr>
+    <tr class="tot"><td>Lucro</td><td class="n ${clsSinal(c.lucro)}">${fmtC(c.lucro)}${c.vv ? ` (${fmtPct.format(c.lucro / c.vv)})` : ''}</td></tr></table>`;
 }
 function abrirCV(id){
   const f = $('#f-cv'); f.reset(); $('#cv-erro').textContent = '';
@@ -3150,20 +3156,20 @@ $('#f-cv').addEventListener('submit', ev => {
 });
 function folhaCV(titulo, lista){
   const L = cabecalhoFolha(titulo);
-  L.push(['Data','Origem','País origem','Destino','País destino','Mercadoria','Peso (kg)','CMR','Fornecedor','Fatura compra','Compra sem IVA','Taxa IVA compra','IVA compra','Compra com IVA','Cliente','Fatura venda','Venda sem IVA','Taxa IVA venda','IVA venda','Venda com IVA','Margem','Margem %','IVA a entregar','Observações'].map(c => X(c, null, 'cab')));
+  L.push(['Data','Origem','País origem','Destino','País destino','Mercadoria','Peso (kg)','CMR','Fornecedor','Fatura compra','Compra sem IVA','Taxa IVA compra','IVA compra','Compra com IVA','Cliente','Fatura venda','Venda sem IVA','Taxa IVA venda','IVA venda','Venda com IVA','Margem sem IVA','Margem %','IVA a entregar','Lucro','Lucro %','Observações'].map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
   lista.forEach(o => { const c = contasCV(o), row = L.length + 1;
     L.push([X(fmtData(o.data)), X(o.origemLocal), X(o.origemPais), X(o.destinoLocal), X(o.destinoPais), X(o.mercadoria), X(o.pesoKg ?? '', 'int'), X(o.cmr), X(nomeFornCV(o)), X(o.faturaCompra),
       X(c.vc / 100, 'eur'), X(c.tc / 100, 'pct'), X(c.ic / 100, 'eur'), X(c.totC / 100, 'eur'), X(nomeCliCV(o)), X(o.faturaVenda),
       X(c.vv / 100, 'eur'), X(c.tv / 100, 'pct'), X(c.iv / 100, 'eur'), X(c.totV / 100, 'eur'),
-      X(c.margem / 100, 'eur', 'sub', `Q${row}-K${row}`), X(c.vv ? c.margem / c.vv : '', 'pct', null, `IF(Q${row}=0,"",U${row}/Q${row})`), X(c.ivaEntregar / 100, 'eur', null, `S${row}-M${row}`), X(o.obs)]); });
+      X(c.margem / 100, 'eur', 'sub', `Q${row}-K${row}`), X(c.vv ? c.margem / c.vv : '', 'pct', null, `IF(Q${row}=0,"",U${row}/Q${row})`), X(c.ivaEntregar / 100, 'eur', null, `S${row}-M${row}`), X(c.lucro / 100, 'eur', 'sub', `U${row}-W${row}`), X(c.vv ? c.lucro / c.vv : '', 'pct', null, `IF(Q${row}=0,"",X${row}/Q${row})`), X(o.obs)]); });
   const fim = L.length;
   if (lista.length){
     const t = totaisCV(lista), S = (col, v) => X(v, 'eur', 'tot', `SUM(${col}${ini}:${col}${fim})`), V = X('', null, 'tot');
     L.push([X('Total', null, 'tot'), V, V, V, V, V, V, V, V, V, S('K', t.vc / 100), V, S('M', t.ic / 100), S('N', (t.vc + t.ic) / 100), V, V, S('Q', t.vv / 100), V, S('S', t.iv / 100), S('T', (t.vv + t.iv) / 100), S('U', t.margem / 100),
-      X(t.vv ? t.margem / t.vv : '', 'pct', 'tot', `IF(Q${fim + 1}=0,"",U${fim + 1}/Q${fim + 1})`), S('W', t.ivaEntregar / 100), V]);
+      X(t.vv ? t.margem / t.vv : '', 'pct', 'tot', `IF(Q${fim + 1}=0,"",U${fim + 1}/Q${fim + 1})`), S('W', t.ivaEntregar / 100), S('X', t.lucro / 100), X(t.vv ? t.lucro / t.vv : '', 'pct', 'tot', `IF(Q${fim + 1}=0,"",X${fim + 1}/Q${fim + 1})`), V]);
   }
-  return criarFolha(L, [11, 16, 12, 16, 12, 18, 9, 12, 24, 14, 13, 9, 11, 13, 24, 14, 13, 9, 11, 13, 13, 9, 13, 30]);
+  return criarFolha(L, [11, 16, 12, 16, 12, 18, 9, 12, 24, 14, 13, 9, 11, 13, 24, 14, 13, 9, 11, 13, 13, 9, 13, 13, 9, 30]);
 }
 function periodoCVTxt(){ const ano = $('#cv-ano').value, mes = $('#cv-mes').value; return mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`; }
 function exportarCVxls(){
@@ -3176,15 +3182,15 @@ function pdfCVlista(){
   const lista = [...filtrarCV()].reverse(), R = novoPDF('Compra e venda de cargas', periodoCVTxt()); R.rodape = 'Valores em euros, com o IVA discriminado.';
   if (!lista.length){ pdfNota(R, 'Não há operações neste período.'); pdfFinalizar(R, 'compra-venda-cargas.pdf'); return; }
   const t = totaisCV(lista);
-  pdfKpis(R, [{rot:'Operações', val:String(t.n)}, {rot:'Vendas sem IVA', val:fmtC(t.vv)}, {rot:'Compras sem IVA', val:fmtC(t.vc)}, {rot:'Margem', val:fmtC(t.margem), cor:t.margem >= 0 ? PC.ganho : PC.perda, corTxt:t.margem >= 0 ? PC.ganho : PC.perda}, {rot:'Margem %', val:fmtVal(t.vv ? t.margem / t.vv : null, 'pct')}, {rot:'IVA a entregar', val:fmtC(t.ivaEntregar)}]);
+  pdfKpis(R, [{rot:'Operações', val:String(t.n)}, {rot:'Vendas sem IVA', val:fmtC(t.vv)}, {rot:'Compras sem IVA', val:fmtC(t.vc)}, {rot:'Margem sem IVA', val:fmtC(t.margem)}, {rot:'IVA a entregar', val:fmtC(t.ivaEntregar)}, {rot:'Lucro', val:fmtC(t.lucro), cor:t.lucro >= 0 ? PC.ganho : PC.perda, corTxt:t.lucro >= 0 ? PC.ganho : PC.perda}]);
   const body = lista.map(o => { const c = contasCV(o); return [pS(fmtData(o.data)), pS(trajetoCV(o)), pS(nomeFornCV(o) + (o.faturaCompra ? '\nFat. ' + o.faturaCompra : '')), pN(c.vc / 100, 'eur'), pN(c.ic / 100, 'eur'),
-    pS(nomeCliCV(o) + (o.faturaVenda ? '\nFat. ' + o.faturaVenda : '')), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.margem / 100, 'eur', {fontStyle:'bold'}), pN(c.vv ? c.margem / c.vv : null, 'pct'), pN(c.ivaEntregar / 100, 'eur')]; });
+    pS(nomeCliCV(o) + (o.faturaVenda ? '\nFat. ' + o.faturaVenda : '')), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.margem / 100, 'eur'), pN(c.ivaEntregar / 100, 'eur'), pN(c.lucro / 100, 'eur', {fontStyle:'bold'}), pN(c.vv ? c.lucro / c.vv : null, 'pct')]; });
   pdfSecao(R, `Operações (${lista.length})`, (body.length + 3) * alturaLinha(7.5) * 1.5);
-  pdfTabela(R, {head:['Data', 'Origem > destino', 'Fornecedor', 'Compra', 'IVA compra', 'Cliente', 'Venda', 'IVA venda', 'Margem', 'Margem %', 'IVA a entregar'], body,
-    foot:[pS('Total'), pS(''), pS(''), pN(t.vc / 100, 'eur'), pN(t.ic / 100, 'eur'), pS(''), pN(t.vv / 100, 'eur'), pN(t.iv / 100, 'eur'), pN(t.margem / 100, 'eur'), pN(t.vv ? t.margem / t.vv : null, 'pct'), pN(t.ivaEntregar / 100, 'eur')],
-    cols:[{w:17}, {}, {w:40}, {n:1, w:20}, {n:1, w:18}, {w:40}, {n:1, w:20}, {n:1, w:18}, {n:1, w:20}, {n:1, w:15}, {n:1, w:20}], fs:7.5});
-  pdfNota(R, 'Operações de compra e venda de cargas, sem custos de motorista, camião ou despesas. Não entram nos resultados da frota. IVA a entregar = IVA liquidado nas vendas − IVA dedutível nas compras (valor negativo = IVA a recuperar).');
-  pdfFecho(R, [['Vendas sem IVA', fmtC(t.vv)], ['Compras sem IVA', fmtC(t.vc)], ['Margem', fmtC(t.margem)], ['IVA a entregar', fmtC(t.ivaEntregar)]]);
+  pdfTabela(R, {head:['Data', 'Origem > destino', 'Fornecedor', 'Compra', 'IVA compra', 'Cliente', 'Venda', 'IVA venda', 'Margem sem IVA', 'IVA a entregar', 'Lucro', 'Lucro %'], body,
+    foot:[pS('Total'), pS(''), pS(''), pN(t.vc / 100, 'eur'), pN(t.ic / 100, 'eur'), pS(''), pN(t.vv / 100, 'eur'), pN(t.iv / 100, 'eur'), pN(t.margem / 100, 'eur'), pN(t.ivaEntregar / 100, 'eur'), pN(t.lucro / 100, 'eur'), pN(t.vv ? t.lucro / t.vv : null, 'pct')],
+    cols:[{w:16}, {}, {w:36}, {n:1, w:19}, {n:1, w:17}, {w:36}, {n:1, w:19}, {n:1, w:17}, {n:1, w:19}, {n:1, w:18}, {n:1, w:19}, {n:1, w:13}], fs:7.2});
+  pdfNota(R, 'Operações de compra e venda de cargas, sem custos de motorista, camião ou despesas. Não entram nos resultados da frota. IVA a entregar = IVA liquidado nas vendas − IVA dedutível nas compras. Lucro = margem sem IVA − IVA a entregar.');
+  pdfFecho(R, [['Margem sem IVA', fmtC(t.margem)], ['IVA a entregar', fmtC(t.ivaEntregar)], ['Lucro', fmtC(t.lucro)], ['Lucro %', fmtVal(t.vv ? t.lucro / t.vv : null, 'pct')]]);
   pdfFinalizar(R, `compra-venda-cargas-${$('#cv-ano').value}${$('#cv-mes').value ? '-' + $('#cv-mes').value : ''}.pdf`);
 }
 function pdfCV(id){
@@ -3197,7 +3203,10 @@ function pdfCV(id){
   pdfSecao(R, 'Apuramento', 5 * alturaLinha(9));
   pdfTabela(R, {head:['', 'Sem IVA', 'IVA', 'Com IVA'], body:[[pS('Venda'), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.totV / 100, 'eur')], [pS('Compra'), pN(c.vc / 100, 'eur'), pN(c.ic / 100, 'eur'), pN(c.totC / 100, 'eur')]],
     foot:[pS('Diferença'), pN(c.margem / 100, 'eur'), pN(c.ivaEntregar / 100, 'eur'), pN(c.saldo / 100, 'eur')], cols:[{w:50}, {n:1}, {n:1}, {n:1}], fs:9});
-  pdfKV(R, 'Resultado', [['Ganho da operação', fmtC(c.margem)], ['Margem sobre a venda', fmtVal(c.vv ? c.margem / c.vv : null, 'pct')], ['IVA a entregar ao Estado', fmtC(c.ivaEntregar)], ['', '']]);
+  pdfSecao(R, 'Lucro da operação', 5 * alturaLinha(9));
+  pdfTabela(R, {body:[[pS('Margem sem IVA (venda - compra)'), pN(c.margem / 100, 'eur')], [pS(`IVA a entregar ao Estado (${fmtC(c.iv)} - ${fmtC(c.ic)})`), pN(-c.ivaEntregar / 100, 'eur')]],
+    foot:[pS('Lucro'), pN(c.lucro / 100, 'eur')], cols:[{}, {n:1, w:40}], fs:9, largura:150});
+  pdfKV(R, 'Resultado', [['Lucro da operação', fmtC(c.lucro)], ['Lucro sobre a venda', fmtVal(c.vv ? c.lucro / c.vv : null, 'pct')], ['Margem sem IVA', fmtC(c.margem)], ['IVA a entregar', fmtC(c.ivaEntregar)]]);
   if (o.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, o.obs); }
   pdfAssinaturas(R);
   pdfFinalizar(R, `compra-venda-${o.data}.pdf`);
