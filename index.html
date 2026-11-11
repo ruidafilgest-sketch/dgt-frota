@@ -207,6 +207,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   <header class="topo">
     <div class="marca"><strong>DIGNIDADE GARRIDA TRANSPORTES LDA</strong><span>NIF 518242226 · Gestão de frota</span></div>
     <div class="topo-dir">
+      <span class="sync" title="Versão do programa">Versão 2026-11-11</span>
       <span id="estado-sync" class="sync"></span>
       <span id="utilizador"></span>
       <button class="btn btn-peq" id="btn-sair" type="button">Sair</button>
@@ -214,12 +215,12 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   </header>
   <nav class="tabs" role="tablist" aria-label="Separadores">
     <button type="button" role="tab" data-tab="resultados" aria-selected="true">Resultados</button>
-    <button type="button" role="tab" data-tab="cargas" aria-selected="false">Viagens</button>
+    <button type="button" role="tab" data-tab="cargas" aria-selected="false">Cargas</button>
     <button type="button" role="tab" data-tab="despesas" aria-selected="false">Despesas</button>
     <button type="button" role="tab" data-tab="motoristas" aria-selected="false">Motoristas</button>
     <button type="button" role="tab" data-tab="cv" aria-selected="false">Compra e venda</button>
     <button type="button" role="tab" data-tab="entidades" aria-selected="false">Clientes e fornecedores</button>
-    <button type="button" role="tab" data-tab="folha" aria-selected="false">Folha de viagens</button>
+    <button type="button" role="tab" data-tab="folha" aria-selected="false">Folha de cargas</button>
     <button type="button" role="tab" data-tab="frota" aria-selected="false">Frota e dados</button>
   </nav>
   <div id="aviso-local" class="aviso" hidden>Modo de teste: os dados ficam guardados apenas neste navegador. Preencha a configuração do Firebase no ficheiro para guardar na nuvem.</div>
@@ -268,13 +269,13 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
     <!-- CARGAS -->
     <section id="tab-cargas" class="tab" role="tabpanel" hidden>
       <div class="cab-sec">
-        <h2>Viagens</h2>
+        <h2>Cargas</h2>
         <div class="barra no-print">
           <label class="campo">Ano<select id="c-ano"></select></label>
           <label class="campo">Mês<select id="c-mes" data-meses="todos"></select></label>
           <label class="campo">Camião<select id="c-cam"></select></label>
           <button class="btn" type="button" id="c-pdf">PDF da lista</button>
-          <button class="btn btn-pri" type="button" id="c-nova">Nova viagem</button>
+          <button class="btn btn-pri" type="button" id="c-nova">Nova carga</button>
         </div>
       </div>
       <div class="painel">
@@ -303,7 +304,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel">
         <div class="tabela-wrap">
           <table id="d-tabela">
-            <thead><tr><th>Data</th><th>Camião</th><th>Tipo</th><th>Fornecedor</th><th>Documento</th><th class="n">Litros</th><th class="n">Valor</th><th>Imputação</th><th>Viagem</th><th class="no-print"></th></tr></thead>
+            <thead><tr><th>Data</th><th>Camião</th><th>Tipo</th><th>Fornecedor</th><th>Documento</th><th class="n">Litros</th><th class="n">Valor</th><th>Imputação</th><th>Carga</th><th class="no-print"></th></tr></thead>
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
@@ -342,6 +343,11 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <tbody></tbody>
           </table>
         </div>
+      </div>
+      <div class="painel">
+        <h3>Modelos de remuneração</h3>
+        <p class="nota" style="margin:0 0 10px">Um modelo guarda o salário, as cláusulas e os encargos de uma categoria (por exemplo «Motorista internacional CCTV»). Para admitir um novo motorista com as mesmas condições, carregue em «Novo trabalhador com este modelo».</p>
+        <div class="tabela-wrap"><table id="mod-lista"></table></div>
       </div>
       <div class="painel"><h3>Documentos a renovar</h3><div class="tabela-wrap"><table id="mot-validades"></table></div></div>
     </section>
@@ -390,7 +396,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
     <!-- FOLHA DE CARGAS -->
     <section id="tab-folha" class="tab" role="tabpanel" hidden>
       <div class="cab-sec">
-        <h2>Folha de viagens</h2>
+        <h2>Folha de cargas</h2>
         <div class="barra no-print">
           <label class="campo">De<input type="date" id="f-de"></label>
           <label class="campo">Até<input type="date" id="f-ate"></label>
@@ -404,11 +410,11 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel">
         <div class="tabela-wrap">
           <table id="f-tabela">
-            <thead><tr><th>Saída</th><th>Regresso</th><th class="n">Dias</th><th>Camião</th><th>Motorista</th><th>Percurso</th><th>Clientes</th><th class="n">Km</th><th class="n">Vazio</th><th class="n">Proveitos</th><th class="n">Despesas da viagem</th><th class="n">Custo motorista</th><th class="n">Custo camião</th><th class="n">Resultado</th><th class="n">Margem</th><th class="n">€/km</th></tr></thead>
+            <thead><tr><th>Saída</th><th>Regresso</th><th class="n">Dias</th><th>Camião</th><th>Motorista</th><th>Percurso</th><th>Clientes</th><th class="n">Km</th><th class="n">Vazio</th><th class="n">Proveitos</th><th class="n">Despesas da carga</th><th class="n">Custo motorista</th><th class="n">Custo camião</th><th class="n">Resultado</th><th class="n">Margem</th><th class="n">€/km</th></tr></thead>
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
-        <p class="nota">Dias com frações conforme o período da saída e do regresso. O custo do motorista e do camião é o custo diário (custo do mês a dividir pelos dias do mês) multiplicado pelos dias da viagem. Os dias em que o camião não viaja aparecem no resultado mensal como «Custo dos dias sem viagem».</p>
+        <p class="nota">Dias com frações conforme o período da saída e do regresso. O custo do motorista e do camião é o custo diário (custo do mês a dividir pelos dias do mês) multiplicado pelos dias da carga. Os dias em que o camião não viaja aparecem no resultado mensal como «Custo dos dias sem carga».</p>
       </div>
       <div class="painel">
         <h3>Serviços (por cliente)</h3>
@@ -418,7 +424,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <tbody></tbody>
           </table>
         </div>
-        <p class="nota">Os km de cada troço são repartidos pelos serviços que vão no camião nesse troço, na proporção do valor do frete. Os km em vazio e os custos da viagem são distribuídos pelos serviços na proporção dos km atribuídos.</p>
+        <p class="nota">Os km de cada troço são repartidos pelos serviços que vão no camião nesse troço, na proporção do valor do frete. Os km em vazio e os custos da carga são distribuídos pelos serviços na proporção dos km atribuídos.</p>
       </div>
     </section>
 
@@ -431,7 +437,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <div class="painel">
         <div class="tabela-wrap">
           <table id="cam-tabela">
-            <thead><tr><th>Matrícula</th><th>Marca e modelo</th><th>Último motorista</th><th class="n">Custos fixos por mês</th><th>Estado</th><th class="n">Viagens</th><th class="no-print"></th></tr></thead>
+            <thead><tr><th>Matrícula</th><th>Marca e modelo</th><th>Último motorista</th><th class="n">Custos fixos por mês</th><th>Estado</th><th class="n">Cargas</th><th class="no-print"></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -476,16 +482,16 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   </main>
 </div>
 
-<!-- Diálogo: viagem -->
+<!-- Diálogo: carga -->
 <dialog id="dlg-carga" class="largo">
   <form id="f-carga" novalidate>
-    <div class="dlg-cab"><h3 id="dlg-carga-tit">Nova viagem</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
+    <div class="dlg-cab"><h3 id="dlg-carga-tit">Nova carga</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
     <div class="dlg-corpo">
-      <fieldset><legend>Viagem</legend>
+      <fieldset><legend>Carga</legend>
         <div class="grelha-3">
           <label class="campo">Camião *<select name="camiaoId" required></select></label>
           <label class="campo">Motorista<select name="motoristaId"></select></label>
-          <label class="campo">Partida de<span class="linha-sel"><input name="origem" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--linha);border-radius:4px;padding:8px 10px;min-height:40px"><select name="origemPais" style="max-width:130px"></select></span><span class="ajuda" id="v-origem-ajuda">Sede, ou a cidade onde terminou a viagem anterior.</span></label>
+          <label class="campo">Partida de<span class="linha-sel"><input name="origem" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--linha);border-radius:4px;padding:8px 10px;min-height:40px"><select name="origemPais" style="max-width:130px"></select></span><span class="ajuda" id="v-origem-ajuda">Sede, ou a cidade onde terminou a carga anterior.</span></label>
           <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
           <label class="campo">Período da saída<select name="periodoSaida"></select></label>
           <p class="ajuda" id="v-dias" style="align-self:end"></p>
@@ -505,7 +511,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
         <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="v-add-par">+ Paragem</button><button class="btn btn-peq btn-pri" type="button" id="v-km-auto">Calcular km automaticamente</button></div>
         <p class="nota" id="v-km-estado" style="margin-top:6px"></p>
         <div class="grelha-3" style="margin-top:12px">
-          <label class="campo">Fim da viagem<select name="fimViagem"><option value="sede">Regressa à sede</option><option value="ultima">Termina na última paragem</option></select><span class="ajuda">Se o camião fica onde fez a última descarga (ex.: Aveiro, Lisboa), escolha «Termina na última paragem».</span></label>
+          <label class="campo">Fim da carga<select name="fimViagem"><option value="sede">Regressa à sede</option><option value="ultima">Termina na última paragem</option></select><span class="ajuda">Se o camião fica onde fez a última descarga (ex.: Aveiro, Lisboa), escolha «Termina na última paragem».</span></label>
           <label class="campo" id="wrap-kmRegresso">Km da última paragem até à sede<input type="number" name="kmRegresso" min="0" step="1"></label>
           <label class="campo">Ajuste de km (+/−)<input type="number" name="ajusteKm" step="1"><span class="ajuda">Desvios, vias alternativas, abastecimentos. É repartido por todos os troços.</span></label>
         </div>
@@ -518,7 +524,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo">Observações<textarea name="obs"></textarea></label>
       <div class="previsao" id="v-preview" style="margin-top:14px"></div>
     </div>
-    <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar viagem</button></div>
+    <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar carga</button></div>
   </form>
 </dialog>
 
@@ -533,7 +539,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
       <label class="campo">Valor sem IVA (€) *<input type="number" name="valor" step="0.01" inputmode="decimal" required></label>
       <label class="campo" id="wrap-litros">Litros<input type="number" name="litros" min="0" step="0.01" inputmode="decimal"></label>
       <label class="campo-check inteiro"><input type="checkbox" name="diluir"> Diluir por 12 meses a partir desta data</label>
-      <label class="campo inteiro" id="wrap-cargaId">Viagem associada<select name="cargaId"></select><span class="ajuda">Opcional. Permite ver na Folha de cargas quanto custou cada viagem.</span></label>
+      <label class="campo inteiro" id="wrap-cargaId">Carga associada<select name="cargaId"></select><span class="ajuda">Opcional. Permite ver na Folha de cargas quanto custou cada carga.</span></label>
       <label class="campo">Fornecedor<span class="linha-sel"><select name="fornecedorId"></select><button class="btn btn-peq" type="button" id="d-novo-forn">+ Novo</button></span></label>
       <label class="campo">Nº do documento<input name="documento" autocomplete="off"></label>
       <label class="campo inteiro">Observações<textarea name="obs"></textarea></label>
@@ -703,6 +709,15 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <label class="campo inteiro">Convenção coletiva e notas do contrato<input name="cct" autocomplete="off"></label>
         </div>
       </fieldset>
+      <div class="previsao" style="margin-bottom:14px">
+        <strong>Preenchimento rápido</strong>
+        <p class="ajuda" style="margin:4px 0 8px">Copie o salário, as cláusulas e os encargos de um modelo ou de outro trabalhador com as mesmas condições. Depois só tem de preencher o nome, o NIF, o NISS e as datas.</p>
+        <div class="barra">
+          <label class="campo" style="flex:1;min-width:240px">Preencher a partir de<select id="m-origem"></select></label>
+          <button class="btn btn-pri" type="button" id="m-aplicar">Aplicar</button>
+          <button class="btn" type="button" id="m-guardar-modelo">Guardar esta remuneração como modelo</button>
+        </div>
+      </div>
       <fieldset><legend>Remuneração</legend>
         <div class="grelha-3">
           <label class="campo">Salário base (€/mês) *<input type="number" name="salarioBase" step="0.01" min="0" required></label>
@@ -723,7 +738,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <label class="campo">Acrescentar<select id="m-preset"></select></label>
           <button class="btn btn-peq" type="button" id="m-add-clausula">Acrescentar cláusula</button>
         </div>
-        <p class="ajuda" style="margin-top:8px">«Conta por» define como o valor se multiplica: por mês, por dia de trabalho, por dia fora (contado das cargas), por viagem ou por ano. «Entra nos subsídios» só se aplica a valores mensais fixos.</p>
+        <p class="ajuda" style="margin-top:8px">«Conta por» define como o valor se multiplica: por mês, por dia de trabalho, por dia fora (contado das cargas), por carga ou por ano. «Entra nos subsídios» só se aplica a valores mensais fixos.</p>
       </fieldset>
       <fieldset><legend>Encargos da empresa</legend>
         <div class="grelha-3">
@@ -742,10 +757,10 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           </table>
         </div>
         <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="m-add-atrib">Acrescentar camião habitual</button></div>
-        <p class="ajuda" style="margin-top:8px">Os custos de cada motorista são repartidos pelos camiões que conduziu no mês, conforme as cargas registadas (dias em viagem com cada camião). O mesmo camião pode ser conduzido por vários motoristas. O camião habitual só serve para os meses em que o motorista não tem cargas registadas e para sugerir o motorista ao criar uma carga. Para trabalhadores que não conduzem (por exemplo, comerciais), escolha «Sem camião (estrutura)».</p>
+        <p class="ajuda" style="margin-top:8px">Os custos de cada motorista são repartidos pelos camiões que conduziu no mês, conforme as cargas registadas (dias em serviço com cada camião). O mesmo camião pode ser conduzido por vários motoristas. O camião habitual só serve para os meses em que o motorista não tem cargas registadas e para sugerir o motorista ao criar uma carga. Para trabalhadores que não conduzem (por exemplo, comerciais), escolha «Sem camião (estrutura)».</p>
       </fieldset>
       <label class="campo">Observações<textarea name="obs"></textarea></label>
-      <div class="previsao" style="margin-top:14px"><div class="barra" style="margin-bottom:8px"><strong style="margin-right:auto">Custo mensal estimado para a empresa</strong><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Simular com<input id="m-sim-desl" type="number" min="0" max="31" step="1" value="20" style="width:70px;min-height:32px">dias fora e 2 viagens</label></div><div id="m-preview"></div></div>
+      <div class="previsao" style="margin-top:14px"><div class="barra" style="margin-bottom:8px"><strong style="margin-right:auto">Custo mensal estimado para a empresa</strong><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Simular com<input id="m-sim-desl" type="number" min="0" max="31" step="1" value="20" style="width:70px;min-height:32px">dias fora e 2 cargas</label></div><div id="m-preview"></div></div>
     </div>
     <div class="dlg-rod"><p class="erro" id="motorista-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar motorista</button></div>
   </form>
@@ -831,10 +846,10 @@ const PRESETS = [
   {descricao:'Trabalho noturno',                       base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
   {descricao:'Ajudas de custo internacionais (por dia fora)', base:'dia_deslocacao', grupo:'ajudas', incideTSU:false, incideSubsidios:false},
   {descricao:'Ajudas de custo nacionais (por dia)',    base:'dia_trabalho',   grupo:'ajudas', incideTSU:false, incideSubsidios:false},
-  {descricao:'Prémio por viagem',                      base:'viagem',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
+  {descricao:'Prémio por carga',                      base:'viagem',         grupo:'rem',    incideTSU:true,  incideSubsidios:false},
   {descricao:'Outra cláusula',                         base:'mensal',         grupo:'rem',    incideTSU:true,  incideSubsidios:false}
 ];
-const BASES = [['mensal','Mês'],['dia_trabalho','Dia de trabalho'],['dia_deslocacao','Dia fora'],['viagem','Viagem'],['anual','Ano']];
+const BASES = [['mensal','Mês'],['dia_trabalho','Dia de trabalho'],['dia_deslocacao','Dia fora'],['viagem','Carga'],['anual','Ano']];
 const CONTRATOS = {sem_termo:'Sem termo', termo_certo:'Termo certo', termo_incerto:'Termo incerto', outro:'Outro'};
 const PAISES_EUROPA = ['Albânia','Alemanha','Andorra','Arménia','Áustria','Azerbaijão','Bélgica','Bielorrússia','Bósnia e Herzegovina','Bulgária','Cazaquistão','Chéquia','Chipre','Croácia','Dinamarca','Eslováquia','Eslovénia','Espanha','Estónia','Finlândia','França','Geórgia','Gibraltar','Grécia','Hungria','Irlanda','Islândia','Itália','Kosovo','Letónia','Liechtenstein','Lituânia','Luxemburgo','Macedónia do Norte','Malta','Moldávia','Mónaco','Montenegro','Noruega','Países Baixos','Polónia','Portugal','Reino Unido','Roménia','Rússia','São Marinho','Sérvia','Suécia','Suíça','Turquia','Ucrânia','Vaticano'];
 // Resto do mundo: nomes em português dados pelo navegador a partir dos códigos ISO (sem os europeus acima)
@@ -928,7 +943,7 @@ function camiaoDoMotoristaEm(m, d){
   (m.atribuicoes || []).forEach(a => { if (a && a.camiaoId && a.desde && a.desde <= d && a.desde >= desde){ desde = a.desde; res = a.camiaoId; } });
   return res;
 }
-// Dias em viagem de um motorista com cada camião, no mês
+// Dias em serviço de um motorista com cada camião, no mês
 function diasViagemPorCamiao(motId, ym){
   const out = {};
   [...new Set(store.cargas.filter(g => g.motoristaId === motId && g.camiaoId).map(g => g.camiaoId))].forEach(c => {
@@ -945,7 +960,7 @@ function motoristaDoCamiaoEm(cid, d){
 }
 function motoristaAtualTxt(c){ const g = ultimaCarga(x => x.camiaoId === c.id); const m = g && g.motoristaId ? motoristaPorId(g.motoristaId) : motoristaDoCamiaoEm(c.id, hoje()); return m ? m.nome : (g && g.motorista) || c.motorista || ''; }
 function ultimoCamiaoDoMotorista(m){ const g = ultimaCarga(x => x.motoristaId === m.id); return g ? g.camiaoId : camiaoDoMotoristaEm(m, hoje()); }
-// Dias (dentro do mês) em que houve viagens que cumprem o filtro; cada dia conta uma vez.
+// Dias (dentro do mês) em que houve cargas que cumprem o filtro; cada dia conta uma vez.
 function diasViagem(filtro, ym){
   const ini = ym + '-01', fim = `${ym}-${pad2(diasNoMes(ym))}`, s = new Set();
   store.cargas.forEach(g => {
@@ -957,8 +972,8 @@ function diasViagem(filtro, ym){
   return s.size;
 }
 
-/* ---------- Viagens: percurso, serviços, frações de dia ---------- */
-// Uma viagem (registo da coleção «cargas») tem: saída e regresso com período do dia, um percurso
+/* ---------- Cargas: percurso, serviços, frações de dia ---------- */
+// Uma carga (registo da coleção «cargas») tem: saída e regresso com período do dia, um percurso
 // com paragens (km de cada troço, contados uma só vez) e vários serviços (clientes) na ida e no regresso.
 const PERIODOS = [['manha','Manhã'],['tarde','Tarde'],['noite','Noite']];
 const NOME_PERIODO = Object.fromEntries(PERIODOS);
@@ -967,7 +982,7 @@ const OPERACOES = [['descarga','Descarga'],['carga','Carga'],['carga_descarga','
 const fracSaida = p => FRAC_SAIDA[p] ?? 1, fracRegresso = p => FRAC_REGRESSO[p] ?? 1;
 let cacheAn = new WeakMap(), mapaViagens = null;
 function viagemPorId(id){ if (!mapaViagens) mapaViagens = new Map(store.cargas.map(g => [g.id, g])); return mapaViagens.get(id); }
-// Dias da viagem, data a data, com a fração de cada dia
+// Dias da carga, data a data, com a fração de cada dia
 function diasDaViagem(g){
   if (!g.dataSaida) return [];
   const temReg = g.dataRegresso && g.dataRegresso >= g.dataSaida;
@@ -992,7 +1007,7 @@ function nomeClienteServ(s){ const c = s.clienteId && clientePorId(s.clienteId);
 function clientesTxt(g){ return [...new Set(servicosDe(g).map(nomeClienteServ).filter(Boolean))].join(', '); }
 function nomePonto(g, id){
   if (id === 'p0') return g.origem || params().sedeLocal || 'Partida';
-  if (id === 'pf') return g.fimViagem === 'ultima' ? 'Fim da viagem' : 'Chegada à sede';
+  if (id === 'pf') return g.fimViagem === 'ultima' ? 'Fim da carga' : 'Chegada à sede';
   const p = percursoDe(g).paragens.find(x => x.id === id); return p ? [p.local, p.pais].filter(Boolean).join(', ') : '?';
 }
 function paisPonto(g, id){ if (id === 'p0') return g.origemPais || params().sedePais || 'Portugal'; if (id === 'pf') return params().sedePais || 'Portugal'; const p = percursoDe(g).paragens.find(x => x.id === id); return p ? p.pais : ''; }
@@ -1022,13 +1037,13 @@ function analisarViagem(g){
   cacheAn.set(g, r); return r;
 }
 function fracNoMes(an, ym){ return an.diasTot ? an.dias.filter(o => o.d.slice(0, 7) === ym).reduce((a, o) => a + o.f, 0) / an.diasTot : 0; }
-// Dias em viagem (fracionados) no mês, cada data no máximo 1 dia
+// Dias em serviço (fracionados) no mês, cada data no máximo 1 dia
 function diasViagemFrac(filtro, ym){
   const porData = {};
   store.cargas.forEach(g => { if (!g.dataSaida || !filtro(g)) return; analisarViagem(g).dias.forEach(o => { if (o.d.slice(0, 7) === ym) porData[o.d] = (porData[o.d] || 0) + o.f; }); });
   return Object.values(porData).reduce((a, v) => a + Math.min(1, v), 0);
 }
-// Resultado de uma viagem: proveitos − despesas associadas − custo diário do motorista e do camião × dias
+// Resultado de uma carga: proveitos − despesas associadas − custo diário do motorista e do camião × dias
 function resultadoViagem(g){
   const an = analisarViagem(g), porMes = {};
   an.dias.forEach(o => { const ym = o.d.slice(0, 7); porMes[ym] = (porMes[ym] || 0) + o.f; });
@@ -1214,7 +1229,7 @@ function custoMotorista(m, ym, opts = {}){
   const compE = {rem, subalim, ajudas, subsidios, ss:tsu + fct, segpes, outpes};
   const comp = {}; let total = 0;
   CATS_PES.forEach(k => { comp[k] = Math.round((compE[k] || 0) * 100); total += comp[k]; });
-  // Repartição pelos camiões: 1) dias em viagem com cada camião (cargas do mês);
+  // Repartição pelos camiões: 1) dias em serviço com cada camião (cargas do mês);
   // 2) sem cargas no mês, camião habitual da ficha; 3) sem nenhum dos dois, Estrutura.
   let porCam = diasViagemPorCamiao(m.id, ym), criterio = 'viagens', diasSemAtrib = 0;
   if (!Object.keys(porCam).length){
@@ -1245,7 +1260,7 @@ function fecharBloco(b){
   GRUPOS.forEach(gr => { b[gr.tot] = CATS.filter(c => c.grupo === gr.id).reduce((s, c) => s + b.custos[c.id], 0); });
   b.totCustos = b.totVar + b.totPes + b.totFix; b.res = b.prov - b.totCustos;
   if (!b.somado){
-    // Estrutura: tudo é custo de estrutura. Camião: custos das viagens vs. dias sem viagem
+    // Estrutura: tudo é custo de estrutura. Camião: custos das cargas vs. dias sem carga
     if (b.estrutura){ b.custoEstrutura = b.totCustos; b.custoViagens = 0; b.custoParado = 0; }
     else { b.custoViagens = b.totVar + Math.min(b.pesViagens, b.totPes) + Math.min(b.fixViagens, b.totFix); b.custoParado = b.totCustos - b.custoViagens; b.custoEstrutura = 0; }
   }
@@ -1273,7 +1288,7 @@ function calcularMes(ym){
     const fx = custosFixosCamiao(c, ym); if (!fx) return;
     const b = g(c.id); b.diasDisp = fx.dias; b.custos.segcam += fx.segcam; b.custos.leasing += fx.leasing; b.custos.outfix += fx.outfix;
   });
-  // Viagens: proveitos e km repartidos pelos meses conforme os dias da viagem
+  // Cargas: proveitos e km repartidos pelos meses conforme os dias da carga
   store.cargas.forEach(x => {
     const an = analisarViagem(x), saiu = (x.dataSaida || '').slice(0, 7) === ym, f = fracNoMes(an, ym);
     if (!f && !saiu) return;
@@ -1301,7 +1316,7 @@ function calcularMes(ym){
     });
     ids.forEach(id => {
       g(id).motoristas.add(cm.m.nome);
-      // parte do custo do motorista que corresponde aos dias em viagem com este camião
+      // parte do custo do motorista que corresponde aos dias em serviço com este camião
       if (cm.criterio === 'viagens' && id !== GERAL && cm.diasEmp) g(id).pesViagens += Math.round(cm.total * Math.min(1, cm.porCam[id] / cm.diasEmp));
     });
   });
@@ -1332,12 +1347,12 @@ function colunasDe(r){
 // Linhas do mapa de resultados (usadas no ecrã e nas folhas de cálculo)
 function linhasResultado(){
   const L = [
-    {rot:'Nº de viagens (saída no mês)', v:b => b.nCargas, t:'int', soma:true},
+    {rot:'Nº de cargas (saída no mês)', v:b => b.nCargas, t:'int', soma:true},
     {rot:'Nº de serviços (clientes)',  v:b => b.nServ, t:'int', soma:true},
     {rot:'Km percorridos',            v:b => b.km, t:'int', soma:true},
     {rot:'Km em vazio',               v:b => b.km ? b.kmVazio / b.km : null, t:'pct'},
-    {rot:'Dias em viagem',            v:b => b.diasViagem, t:'dec', soma:true},
-    {rot:'Ocupação (dias em viagem)', v:b => b.diasDisp ? b.diasViagem / b.diasDisp : null, t:'pct'},
+    {rot:'Dias em serviço',            v:b => b.diasViagem, t:'dec', soma:true},
+    {rot:'Ocupação (dias em serviço)', v:b => b.diasDisp ? b.diasViagem / b.diasDisp : null, t:'pct'},
     {rot:'Proveitos (fretes)',        v:b => b.prov / 100, t:'eur', cls:'sub', soma:true}
   ];
   GRUPOS.forEach(gr => {
@@ -1348,15 +1363,15 @@ function linhasResultado(){
   });
   L.push(
     {rot:'Total de custos',             v:b => b.totCustos / 100, t:'eur', cls:'sub', soma:true},
-    {rot:'Resultado das viagens',       v:b => b.resViagens / 100, t:'eur', cls:'sub', soma:true, sinal:true},
-    {rot:'Custo dos dias sem viagem',   v:b => -b.custoParado / 100, t:'eur', soma:true, sinal:true},
+    {rot:'Resultado das cargas',       v:b => b.resViagens / 100, t:'eur', cls:'sub', soma:true, sinal:true},
+    {rot:'Custo dos dias sem carga',   v:b => -b.custoParado / 100, t:'eur', soma:true, sinal:true},
     {rot:'Custos de estrutura',         v:b => -b.custoEstrutura / 100, t:'eur', soma:true, sinal:true},
     {rot:'Resultado',                   v:b => b.res / 100, t:'eur', cls:'destaque', soma:true, sinal:true},
     {rot:'Margem',                      v:b => b.prov ? b.res / b.prov : null, t:'pct', sinal:true},
     {rot:'Proveito por km',             v:b => b.km ? b.prov / 100 / b.km : null, t:'eur'},
     {rot:'Custo por km',                v:b => b.km ? b.totCustos / 100 / b.km : null, t:'eur'},
     {rot:'Custo variável por km',       v:b => b.km ? b.totVar / 100 / b.km : null, t:'eur'},
-    {rot:'Proveito por dia em viagem',  v:b => b.diasViagem ? b.prov / 100 / b.diasViagem : null, t:'eur'},
+    {rot:'Proveito por dia em serviço',  v:b => b.diasViagem ? b.prov / 100 / b.diasViagem : null, t:'eur'},
     {rot:'Consumo (L/100 km)',          v:b => (b.km && b.litros) ? b.litros / b.km * 100 : null, t:'dec'}
   );
   return L;
@@ -1373,26 +1388,26 @@ function pontosAtencao(ym){
   const mCons = kmL ? lT / kmL * 100 : null;
   ids.forEach(id => {
     const b = r[id], nm = nomeCamiao(id);
-    if (b.nCargas === 0 && !b.diasViagem && b.totCustos > 0) out.push({n:'alerta', t:`${nm} não fez viagens e teve ${fmtC(b.totCustos)} de custos.`});
-    else if (b.resViagens < 0) out.push({n:'alerta', t:`${nm}: as viagens deram prejuízo de ${fmtC(-b.resViagens)} (proveitos ${fmtC(b.prov)}, custos das viagens ${fmtC(b.custoViagens)}). O problema é o preço ou o custo das viagens.`});
-    else if (b.res < 0) out.push({n:'aviso', t:`${nm}: as viagens deram ${fmtC(b.resViagens)}, mas os dias sem viagem custaram ${fmtC(b.custoParado)}. O problema é a ocupação do camião, não o preço.`});
+    if (b.nCargas === 0 && !b.diasViagem && b.totCustos > 0) out.push({n:'alerta', t:`${nm} não fez cargas e teve ${fmtC(b.totCustos)} de custos.`});
+    else if (b.resViagens < 0) out.push({n:'alerta', t:`${nm}: as cargas deram prejuízo de ${fmtC(-b.resViagens)} (proveitos ${fmtC(b.prov)}, custos das cargas ${fmtC(b.custoViagens)}). O problema é o preço ou o custo das cargas.`});
+    else if (b.res < 0) out.push({n:'aviso', t:`${nm}: as cargas deram ${fmtC(b.resViagens)}, mas os dias sem carga custaram ${fmtC(b.custoParado)}. O problema é a ocupação do camião, não o preço.`});
     if (mCkm && b.km > 0 && comKm.length > 1){ const ck = b.totCustos / 100 / b.km; if (ck > mCkm * (1 + d)) out.push({n:'aviso', t:`${nm}: custo por km de ${fmtEur(ck)}, ${fmtPct.format(ck / mCkm - 1)} acima da média da frota (${fmtEur(mCkm)}).`}); }
     if (mCons && b.litros > 0 && comLit.length > 1){ const c = b.litros / b.km * 100; if (c > mCons * (1 + d)) out.push({n:'aviso', t:`${nm}: consumo de ${fmtDec.format(c)} L/100 km, acima da média da frota (${fmtDec.format(mCons)} L/100 km).`}); }
-    if (b.diasDisp > 0 && b.diasViagem / b.diasDisp < 0.5) out.push({n:'aviso', t:`${nm} esteve em viagem ${fmtDec.format(b.diasViagem)} de ${b.diasDisp} dias (${fmtPct.format(b.diasViagem / b.diasDisp)}).`});
+    if (b.diasDisp > 0 && b.diasViagem / b.diasDisp < 0.5) out.push({n:'aviso', t:`${nm} esteve em serviço ${fmtDec.format(b.diasViagem)} de ${b.diasDisp} dias (${fmtPct.format(b.diasViagem / b.diasDisp)}).`});
     if (b.km > 0 && b.kmVazio / b.km > 0.35) out.push({n:'aviso', t:`${nm}: ${fmtPct.format(b.kmVazio / b.km)} dos km foram feitos em vazio.`});
   });
   const semAt = pessoalMes(ym).filter(cm => cm.diasSemAtrib > 0);
-  if (semAt.length) out.push({n:'aviso', t:`Sem viagens registadas neste mês nem camião habitual: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura. Registe as viagens com o motorista ou indique um camião habitual na ficha (ou «Sem camião» se não for motorista).`});
+  if (semAt.length) out.push({n:'aviso', t:`Sem cargas registadas neste mês nem camião habitual: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura. Registe as cargas com o motorista ou indique um camião habitual na ficha (ou «Sem camião» se não for motorista).`});
   const cm = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym);
   const semKm = cm.filter(g => !g.km).length, semReg = cm.filter(g => !g.dataRegresso).length, semMot = cm.filter(g => !g.motoristaId).length;
-  if (semKm) out.push({n:'info', t:`${semKm} viagem(ns) sem km: não entram nos indicadores por km.`});
-  if (semReg) out.push({n:'info', t:`${semReg} viagem(ns) sem data de regresso: os dias em viagem e os custos das viagens ficam abaixo do real.`});
-  if (semMot && store.motoristas.length) out.push({n:'info', t:`${semMot} viagem(ns) sem motorista indicado: o custo do motorista não entra no resultado dessas viagens.`});
+  if (semKm) out.push({n:'info', t:`${semKm} carga(s) sem km: não entram nos indicadores por km.`});
+  if (semReg) out.push({n:'info', t:`${semReg} carga(s) sem data de regresso: os dias em serviço e os custos das cargas ficam abaixo do real.`});
+  if (semMot && store.motoristas.length) out.push({n:'info', t:`${semMot} carga(s) sem motorista indicado: o custo do motorista não entra no resultado dessas cargas.`});
   const negativas = cm.map(g => ({g, r:resultadoViagem(g)})).filter(x => x.r.res < 0);
-  if (negativas.length) out.push({n:'aviso', t:`Viagens com prejuízo: ${negativas.slice(0, 5).map(x => `${fmtData(x.g.dataSaida)} ${nomeCamiao(x.g.camiaoId)} (${fmtC(x.r.res)})`).join('; ')}${negativas.length > 5 ? ` e mais ${negativas.length - 5}` : ''}.`});
+  if (negativas.length) out.push({n:'aviso', t:`Cargas com prejuízo: ${negativas.slice(0, 5).map(x => `${fmtData(x.g.dataSaida)} ${nomeCamiao(x.g.camiaoId)} (${fmtC(x.r.res)})`).join('; ')}${negativas.length > 5 ? ` e mais ${negativas.length - 5}` : ''}.`});
   const tM = somarBlocos(Object.values(r)), tA = somarBlocos(Object.values(calcularMes(addMes(ym, -1))));
   if (tA.prov || tA.totCustos){ const dlt = tM.res - tA.res; out.push({n:'info', t:`O resultado da frota ${dlt >= 0 ? 'subiu' : 'desceu'} ${fmtC(Math.abs(dlt))} face a ${nomeMesAno(addMes(ym, -1))}.`}); }
-  if (tM.custoParado > 0 && tM.totCustos > 0) out.push({n:'info', t:`Os dias sem viagem custaram ${fmtC(tM.custoParado)} (${fmtPct.format(tM.custoParado / tM.totCustos)} dos custos). As viagens, sozinhas, deram ${fmtC(tM.resViagens)}.`});
+  if (tM.custoParado > 0 && tM.totCustos > 0) out.push({n:'info', t:`Os dias sem carga custaram ${fmtC(tM.custoParado)} (${fmtPct.format(tM.custoParado / tM.totCustos)} dos custos). As cargas, sozinhas, deram ${fmtC(tM.resViagens)}.`});
   if (tM.totCustos > 0) out.push({n:'info', t:`Peso de cada grupo nos custos: variáveis ${fmtPct.format(tM.totVar / tM.totCustos)}, pessoal ${fmtPct.format(tM.totPes / tM.totCustos)}, fixos ${fmtPct.format(tM.totFix / tM.totCustos)}.`});
   if (!out.some(x => x.n === 'alerta' || x.n === 'aviso')) out.unshift({n:'ok', t:'Sem alertas neste mês.'});
   return out;
@@ -1477,7 +1492,7 @@ function cabCamiao(id, b){
   return `${placaHtml(id)}${nomes ? `<span class="motorista-sub">${esc(nomes)}</span>` : ''}`;
 }
 function tabelaAgregado(lista, rotulo){
-  if (!lista.length) return '<tbody><tr><td class="vazio">Sem viagens neste mês.</td></tr></tbody>';
+  if (!lista.length) return '<tbody><tr><td class="vazio">Sem cargas neste mês.</td></tr></tbody>';
   return `<thead><tr><th>${rotulo}</th><th class="n">Serviços</th><th class="n">Proveitos</th><th class="n">Km</th><th class="n">€/km</th><th class="n">Resultado</th><th class="n">Margem</th></tr></thead><tbody>` +
     lista.map(a => `<tr><td>${esc(a.k)}</td><td class="n">${a.n}</td><td class="n">${fmtC(a.prov)}</td><td class="n">${a.km ? fmtInt.format(a.km) : ''}</td><td class="n">${a.km ? fmtEur(a.prov / 100 / a.km) : '—'}</td><td class="n ${clsSinal(a.res)}">${fmtC(a.res)}</td><td class="n">${a.prov ? fmtPct.format(a.res / a.prov) : '—'}</td></tr>`).join('') + '</tbody>';
 }
@@ -1543,13 +1558,13 @@ function renderAnual(){
   ta.innerHTML = `<thead><tr><th>Camião</th>${MESES_C.map(m => `<th class="n">${m}</th>`).join('')}<th class="n">Ano</th></tr></thead><tbody>${linhas}</tbody><tfoot><tr><td>Total frota</td>${totMes.map(b => cel(val(b))).join('')}<td class="n">${fmtVal(val(totAno), t)}</td></tr></tfoot>`;
 }
 
-/* ---------- Render: Viagens ---------- */
+/* ---------- Render: Cargas ---------- */
 function renderCargas(){
   const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value;
   const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam))
     .sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || ''));
   const tb = $('#c-tabela tbody');
-  if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há viagens neste período. Registe uma com «Nova viagem».</td></tr>'; $('#c-tabela tfoot').innerHTML = ''; return; }
+  if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há cargas neste período. Registe uma com «Nova carga».</td></tr>'; $('#c-tabela tfoot').innerHTML = ''; return; }
   let tp = 0, tk = 0, tr = 0;
   tb.innerHTML = lista.map(g => {
     const r = resultadoViagem(g), an = r.an, mt = nomeMotoristaCarga(g); tp += an.prov; tk += an.km; tr += r.res;
@@ -1559,9 +1574,9 @@ function renderCargas(){
     <td class="n">${an.km ? fmtInt.format(an.km) : ''}${an.km ? `<span class="motorista-sub">${fmtPct.format(an.kmVazio / an.km)} vazio</span>` : ''}</td>
     <td class="n">${fmtC(an.prov)}</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td>
     <td>${fmtData(g.dataRegresso)}<span class="motorista-sub">${g.dataRegresso ? (NOME_PERIODO[g.periodoRegresso] || '') : 'por indicar'}</span></td><td class="n">${fmtDec.format(an.diasTot)}</td>
-    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-viagem" data-id="${esc(g.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`;
+    <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="pdf-carga" data-id="${esc(g.id)}">PDF</button><button class="btn btn-peq" type="button" data-acao="editar-carga" data-id="${esc(g.id)}">Editar</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-carga" data-id="${esc(g.id)}">Apagar</button></td></tr>`;
   }).join('');
-  $('#c-tabela tfoot').innerHTML = `<tr><td colspan="4">${lista.length} viage${lista.length === 1 ? 'm' : 'ns'}</td><td class="n">${fmtInt.format(tk)}</td><td class="n">${fmtC(tp)}</td><td class="n ${clsSinal(tr)}">${fmtC(tr)}</td><td colspan="3"></td></tr>`;
+  $('#c-tabela tfoot').innerHTML = `<tr><td colspan="4">${lista.length} carga${lista.length === 1 ? '' : 's'}</td><td class="n">${fmtInt.format(tk)}</td><td class="n">${fmtC(tp)}</td><td class="n ${clsSinal(tr)}">${fmtC(tr)}</td><td colspan="3"></td></tr>`;
 }
 
 
@@ -1607,7 +1622,7 @@ function renderPessoal(){
   const inp = (id, k, v, ph, step) => `<input type="number" step="${step}" min="0" data-mot="${esc(id)}" data-k="${k}" value="${v == null || v === '' ? '' : esc(v)}" placeholder="${esc(ph)}" aria-label="${k}">`;
   tb.innerHTML = lista.map(cm => {
     const m = cm.m, p = proc(m.id), c = cm.comp;
-    const cams = Object.keys(cm.porCam).map(id => placaHtml(id)).join(' ') + `<span class="motorista-sub">${cm.criterio === 'viagens' ? 'pelas viagens do mês' : (cm.diasSemAtrib ? 'sem viagens nem camião habitual' : (Object.keys(cm.porCam).every(k => k === GERAL) ? 'não conduz' : 'camião habitual'))}</span>`;
+    const cams = Object.keys(cm.porCam).map(id => placaHtml(id)).join(' ') + `<span class="motorista-sub">${cm.criterio === 'viagens' ? 'pelas cargas do mês' : (cm.diasSemAtrib ? 'sem cargas nem camião habitual' : (Object.keys(cm.porCam).every(k => k === GERAL) ? 'não conduz' : 'camião habitual'))}</span>`;
     return `<tr><td><strong>${esc(m.nome)}</strong>${cm.frac < 1 ? `<span class="motorista-sub">${cm.diasEmp} dias de contrato no mês</span>` : ''}</td><td>${cams}</td>
       <td class="n">${inp(m.id, 'diasTrabalho', p.diasTrabalho, Math.round(cm.diasUteis * cm.frac), 1)}</td>
       <td class="n">${inp(m.id, 'diasDeslocacao', p.diasDeslocacao, cm.autoDesl, 1)}</td>
@@ -1623,7 +1638,7 @@ function renderPessoal(){
   if (foco && foco.mot){ const el = $(`#p-tabela [data-mot="${CSS.escape(foco.mot)}"][data-k="${foco.k}"]`); if (el) el.focus(); }
 }
 function renderMotoristas(){
-  renderPessoal();
+  renderPessoal(); renderModelos();
   const h = hoje(), ymH = h.slice(0, 7), tb = $('#mot-tabela tbody'), lista = motoristasOrdenados();
   if (!lista.length) tb.innerHTML = '<tr><td colspan="8" class="vazio">Ainda não há motoristas. Comece por «Adicionar motorista».</td></tr>';
   else tb.innerHTML = lista.map(m => {
@@ -1637,7 +1652,7 @@ function renderMotoristas(){
   $('#mot-validades').innerHTML = tabelaValidades(validades('motoristas'));
 }
 
-/* ---------- Render: Folha de viagens ---------- */
+/* ---------- Render: Folha de cargas ---------- */
 function dadosFolha(){
   const de = $('#f-de').value, ate = $('#f-ate').value, cam = $('#f-cam').value, pais = $('#f-pais').value;
   return store.cargas.filter(g => g.dataSaida && (!de || g.dataSaida >= de) && (!ate || g.dataSaida <= ate) && (!cam || g.camiaoId === cam) && (!pais || paisesDaViagem(g).includes(pais)))
@@ -1648,7 +1663,7 @@ function renderFolha(){
   const de = $('#f-de').value, ate = $('#f-ate').value;
   $('#f-print-tit').textContent = `Período: ${de ? fmtData(de) : 'início'} a ${ate ? fmtData(ate) : 'hoje'}${$('#f-cam').value ? ' · Camião ' + nomeCamiao($('#f-cam').value) : ''}${$('#f-pais').value ? ' · Destino ' + $('#f-pais').value : ''}`;
   const linhas = dadosFolha(), tb = $('#f-tabela tbody'), ts = $('#f-serv tbody');
-  if (!linhas.length){ tb.innerHTML = '<tr><td colspan="16" class="vazio">Não há viagens com estes filtros.</td></tr>'; $('#f-tabela tfoot').innerHTML = ''; ts.innerHTML = '<tr><td colspan="14" class="vazio">—</td></tr>'; return; }
+  if (!linhas.length){ tb.innerHTML = '<tr><td colspan="16" class="vazio">Não há cargas com estes filtros.</td></tr>'; $('#f-tabela tfoot').innerHTML = ''; ts.innerHTML = '<tr><td colspan="14" class="vazio">—</td></tr>'; return; }
   const T = {prov:0, km:0, vaz:0, dir:0, mot:0, cam:0, res:0, dias:0};
   tb.innerHTML = linhas.map(({g, r}) => { const an = r.an; T.prov += an.prov; T.km += an.km; T.vaz += an.kmVazio; T.dir += r.dir; T.mot += r.cMot; T.cam += r.cCam; T.res += r.res; T.dias += an.diasTot;
     return `<tr><td>${fmtData(g.dataSaida)}<span class="motorista-sub">${NOME_PERIODO[g.periodoSaida] || ''}</span></td><td>${fmtData(g.dataRegresso)}<span class="motorista-sub">${g.dataRegresso ? NOME_PERIODO[g.periodoRegresso] || '' : ''}</span></td><td class="n">${fmtDec.format(an.diasTot)}</td>
@@ -1656,7 +1671,7 @@ function renderFolha(){
     <td class="n">${fmtInt.format(an.km)}</td><td class="n">${an.km ? fmtPct.format(an.kmVazio / an.km) : ''}</td><td class="n">${fmtC(an.prov)}</td>
     <td class="n">${r.dir ? fmtC(r.dir) : ''}</td><td class="n">${fmtC(r.cMot)}</td><td class="n">${fmtC(r.cCam)}</td><td class="n ${clsSinal(r.res)}"><strong>${fmtC(r.res)}</strong></td>
     <td class="n">${an.prov ? fmtPct.format(r.res / an.prov) : ''}</td><td class="n">${an.km ? fmtEur(an.prov / 100 / an.km) : ''}</td></tr>`; }).join('');
-  $('#f-tabela tfoot').innerHTML = `<tr><td colspan="2">${linhas.length} viage${linhas.length === 1 ? 'm' : 'ns'}</td><td class="n">${fmtDec.format(T.dias)}</td><td colspan="4"></td><td class="n">${fmtInt.format(T.km)}</td><td class="n">${T.km ? fmtPct.format(T.vaz / T.km) : ''}</td><td class="n">${fmtC(T.prov)}</td><td class="n">${fmtC(T.dir)}</td><td class="n">${fmtC(T.mot)}</td><td class="n">${fmtC(T.cam)}</td><td class="n ${clsSinal(T.res)}">${fmtC(T.res)}</td><td class="n">${T.prov ? fmtPct.format(T.res / T.prov) : ''}</td><td class="n">${T.km ? fmtEur(T.prov / 100 / T.km) : ''}</td></tr>`;
+  $('#f-tabela tfoot').innerHTML = `<tr><td colspan="2">${linhas.length} carga${linhas.length === 1 ? '' : 's'}</td><td class="n">${fmtDec.format(T.dias)}</td><td colspan="4"></td><td class="n">${fmtInt.format(T.km)}</td><td class="n">${T.km ? fmtPct.format(T.vaz / T.km) : ''}</td><td class="n">${fmtC(T.prov)}</td><td class="n">${fmtC(T.dir)}</td><td class="n">${fmtC(T.mot)}</td><td class="n">${fmtC(T.cam)}</td><td class="n ${clsSinal(T.res)}">${fmtC(T.res)}</td><td class="n">${T.prov ? fmtPct.format(T.res / T.prov) : ''}</td><td class="n">${T.km ? fmtEur(T.prov / 100 / T.km) : ''}</td></tr>`;
   ts.innerHTML = linhas.flatMap(({g, r}) => r.servicos.map(x => { const s = x.s; return `<tr><td>${fmtData(g.dataSaida)}</td><td>${placaHtml(g.camiaoId)}</td><td>${s.sentido === 'regresso' ? 'Regresso' : 'Ida'}</td><td>${esc(nomeClienteServ(s))}</td>
     <td>${esc(nomePonto(g, s.de))} → ${esc(nomePonto(g, s.ate))}</td><td>${esc(s.mercadoria)}</td><td class="n">${s.pesoKg ? fmtInt.format(s.pesoKg) : ''}</td><td class="n">${fmtInt.format(x.km)}</td>
     <td class="n">${fmtC(x.prov)}</td><td class="n">${x.km ? fmtEur(x.prov / 100 / x.km) : ''}</td><td class="n">${fmtC(x.custo)}</td><td class="n ${clsSinal(x.res)}">${fmtC(x.res)}</td>
@@ -1834,7 +1849,7 @@ function abrirDialogo(id){ const d = $(id); if (typeof d.showModal === 'function
 function fecharDialogo(d){ if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); }
 const txt = el => el.value.trim();
 
-// ---- Viagem (formulário)
+// ---- Carga (formulário)
 const novoIdCurto = p => p + Math.random().toString(36).slice(2, 8);
 function opcoesPeriodo(v){ return PERIODOS.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join(''); }
 function linhaParagem(p, n){
@@ -1898,16 +1913,16 @@ function atualizarPreviewViagem(){
   const v = lerViagem(), tmp = {...v, servicos:v.servicos.map(s => ({...s, valor:num0(s.valor)}))};
   if (!tmp.servicos.length || !tmp.paragens.length){ $('#v-km-resumo').textContent = ''; $('#v-preview').innerHTML = ''; return; }
   const r = resultadoViagem(tmp), an = r.an;
-  $('#v-km-resumo').textContent = `Km estimados ${fmtInt.format(an.kmEst)}${num0(v.ajusteKm) ? ` · ajuste ${num0(v.ajusteKm) > 0 ? '+' : ''}${fmtInt.format(num0(v.ajusteKm))}` : ''} · km da viagem ${fmtInt.format(an.km)} · em vazio ${fmtInt.format(an.kmVazio)}${an.km ? ` (${fmtPct.format(an.kmVazio / an.km)})` : ''}`;
+  $('#v-km-resumo').textContent = `Km estimados ${fmtInt.format(an.kmEst)}${num0(v.ajusteKm) ? ` · ajuste ${num0(v.ajusteKm) > 0 ? '+' : ''}${fmtInt.format(num0(v.ajusteKm))}` : ''} · km da carga ${fmtInt.format(an.km)} · em vazio ${fmtInt.format(an.kmVazio)}${an.km ? ` (${fmtPct.format(an.kmVazio / an.km)})` : ''}`;
   $('#v-dias').textContent = v.dataSaida ? `Duração: ${fmtDec.format(an.diasTot)} dias` : '';
-  $('#v-preview').innerHTML = `<strong>Resultado estimado da viagem</strong><table>
+  $('#v-preview').innerHTML = `<strong>Resultado estimado da carga</strong><table>
     <tr><td>Proveitos (${an.S.length} serviço${an.S.length === 1 ? '' : 's'})</td><td class="n">${fmtC(an.prov)}</td></tr>
     <tr><td>Despesas associadas (gasóleo, portagens…)</td><td class="n">${fmtC(r.dir)}</td></tr>
     <tr><td>Custo do motorista (${fmtDec.format(an.diasTot)} dias)</td><td class="n">${fmtC(r.cMot)}</td></tr>
     <tr><td>Custos fixos do camião (${fmtDec.format(an.diasTot)} dias)</td><td class="n">${fmtC(r.cCam)}</td></tr>
-    <tr class="tot"><td>Resultado da viagem</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td></tr>
+    <tr class="tot"><td>Resultado da carga</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td></tr>
     <tr><td>Proveito por km</td><td class="n">${an.km ? fmtEur(an.prov / 100 / an.km) : '—'}</td></tr></table>
-    <p class="ajuda" style="margin:6px 0 0">As despesas associadas entram depois de lançadas em Despesas com esta viagem. O custo diário vem das fichas do motorista e do camião.</p>`;
+    <p class="ajuda" style="margin:6px 0 0">As despesas associadas entram depois de lançadas em Despesas com esta carga. O custo diário vem das fichas do motorista e do camião.</p>`;
 }
 function sugerirMotoristaCarga(){
   const f = $('#f-carga'), m = motoristaDoCamiaoEm(f.elements.camiaoId.value, f.elements.dataSaida.value || hoje());
@@ -1918,7 +1933,7 @@ function abrirCarga(id){
   const f = $('#f-carga'); f.reset(); $('#carga-erro').textContent = '';
   const g = id ? store.cargas.find(x => x.id === id) : null;
   f.dataset.id = g ? g.id : '';
-  $('#dlg-carga-tit').textContent = g ? `Viagem de ${fmtData(g.dataSaida)}` : 'Nova viagem';
+  $('#dlg-carga-tit').textContent = g ? `Carga de ${fmtData(g.dataSaida)}` : 'Nova carga';
   preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, manter: g ? g.camiaoId : ($('#c-cam').value || '')});
   preencherSelMotorista(f.elements.motoristaId, g ? (g.motoristaId || '') : '');
   f.elements.periodoSaida.innerHTML = opcoesPeriodo(g ? (g.periodoSaida || 'manha') : 'manha');
@@ -1943,7 +1958,7 @@ function abrirCarga(id){
   atualizarPontosServicos(); atualizarPreviewViagem();
   abrirDialogo('#dlg-carga');
 }
-// Nova viagem: se a última viagem do camião terminou fora da sede, a partida passa a ser essa cidade
+// Nova carga: se a última carga do camião terminou fora da sede, a partida passa a ser essa cidade
 function sugerirOrigem(){
   const f = $('#f-carga'); if (f.dataset.id) return;
   const cid = f.elements.camiaoId.value, data = f.elements.dataSaida.value || hoje(), P = params();
@@ -1951,7 +1966,7 @@ function sugerirOrigem(){
   const ult = ant && ant.fimViagem === 'ultima' ? percursoDe(ant).paragens.slice(-1)[0] : null;
   f.elements.origem.value = ult ? (ult.local || P.sedeLocal) : (P.sedeLocal || 'Santa Eulália');
   f.elements.origemPais.value = ult ? (ult.pais || 'Portugal') : (P.sedePais || 'Portugal');
-  $('#v-origem-ajuda').textContent = ult ? `A viagem anterior deste camião (${fmtData(ant.dataSaida)}) terminou em ${ult.local}.` : 'Sede, ou a cidade onde terminou a viagem anterior.';
+  $('#v-origem-ajuda').textContent = ult ? `A carga anterior deste camião (${fmtData(ant.dataSaida)}) terminou em ${ult.local}.` : 'Sede, ou a cidade onde terminou a carga anterior.';
   atualizarPontosServicos();
 }
 $('#f-carga').elements.camiaoId.addEventListener('change', sugerirOrigem);
@@ -1969,9 +1984,9 @@ $('#v-add-serv').addEventListener('click', () => {
 });
 $('#f-carga').addEventListener('click', ev => {
   const rp = ev.target.closest('[data-rem-paragem]');
-  if (rp){ if ($$('#v-paragens tbody tr').length === 1){ toast('A viagem precisa de pelo menos uma paragem.', 'erro'); return; } rp.closest('tr').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
+  if (rp){ if ($$('#v-paragens tbody tr').length === 1){ toast('A carga precisa de pelo menos uma paragem.', 'erro'); return; } rp.closest('tr').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
   const rs = ev.target.closest('[data-rem-servico]');
-  if (rs){ if ($$('#v-servicos .servico').length === 1){ toast('A viagem precisa de pelo menos um serviço.', 'erro'); return; } rs.closest('.servico').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
+  if (rs){ if ($$('#v-servicos .servico').length === 1){ toast('A carga precisa de pelo menos um serviço.', 'erro'); return; } rs.closest('.servico').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
   const nc = ev.target.closest('[data-novo-cli]');
   if (nc){ const sel = $('[data-k="clienteId"]', nc.closest('.servico')); abrirEntidade('clientes', null, (id, nome) => { selecionarNovo(sel, id, nome); atualizarPreviewViagem(); }); }
 });
@@ -1983,7 +1998,7 @@ $('#f-carga').addEventListener('submit', ev => {
   if (!v.camiaoId) return erro.textContent = 'Escolha o camião.';
   if (!v.dataSaida) return erro.textContent = 'Indique a data de saída.';
   if (v.dataRegresso && v.dataRegresso < v.dataSaida) return erro.textContent = 'A data de regresso é anterior à data de saída.';
-  if (v.dataRegresso && diasEntre(v.dataSaida, v.dataRegresso) > 60) return erro.textContent = 'A viagem tem mais de 60 dias. Confirme as datas.';
+  if (v.dataRegresso && diasEntre(v.dataSaida, v.dataRegresso) > 60) return erro.textContent = 'A carga tem mais de 60 dias. Confirme as datas.';
   if (v.dataRegresso === v.dataSaida && PERIODOS.findIndex(p => p[0] === v.periodoRegresso) < PERIODOS.findIndex(p => p[0] === v.periodoSaida)) return erro.textContent = 'No mesmo dia, o regresso não pode ser antes da saída.';
   const pi = v.paragens.findIndex(p => !p.local && !p.pais);
   if (pi >= 0) return erro.textContent = `Indique o local ou o país da paragem ${pi + 1}.`;
@@ -2010,7 +2025,7 @@ $('#f-carga').addEventListener('submit', ev => {
     cmr:v.servicos.map(s => s.cmr).filter(Boolean).join(', '), fatura:v.servicos.map(s => s.fatura).filter(Boolean).join(', ')
   });
   const id = f.dataset.id;
-  gravar(id ? DB.update('cargas', id, d) : DB.add('cargas', d), 'Viagem guardada.');
+  gravar(id ? DB.update('cargas', id, d) : DB.add('cargas', d), 'Carga guardada.');
   fecharDialogo($('#dlg-carga'));
 });
 
@@ -2150,7 +2165,7 @@ function atualizarPreviewCamiao(){
   const mens = num0(c.leasingMensal) + num0(c.amortizacaoMensal) + num0(c.outrosFixosMensais);
   $('#cam-preview').innerHTML = `<table><tr><td>Custos anuais repartidos (${fmtEur(anual)} ÷ 12)</td><td class="n">${fmtEur(anual / 12)}</td></tr>
     <tr><td>Leasing, amortização e outros</td><td class="n">${fmtEur(mens)}</td></tr>
-    <tr class="tot"><td>Custos fixos por mês, antes de qualquer viagem</td><td class="n">${fmtEur(anual / 12 + mens)}</td></tr>
+    <tr class="tot"><td>Custos fixos por mês, antes de qualquer carga</td><td class="n">${fmtEur(anual / 12 + mens)}</td></tr>
     <tr><td>Custos fixos por ano</td><td class="n">${fmtEur(anual + mens * 12)}</td></tr></table>`;
 }
 function abrirCamiao(id){
@@ -2245,9 +2260,54 @@ function abrirMotorista(id){
   else { f.elements.provisaoSubsidios.checked = true; f.elements.tipoContrato.value = 'sem_termo'; f.elements.subAlimModo.value = 'cartao'; }
   $('#m-clausulas tbody').innerHTML = (m && m.clausulas || []).map(linhaClausula).join('');
   $('#m-atribuicoes tbody').innerHTML = (m && m.atribuicoes && m.atribuicoes.length ? m.atribuicoes : [{desde:m ? (m.dataAdmissao || '') : '', camiaoId:''}]).map(linhaAtribuicao).join('');
+  preencherOrigemRemun();
   atualizarPreviewMotorista();
   abrirDialogo('#dlg-motorista');
 }
+// ---- Modelos de remuneração: preencher uma ficha nova copiando de um modelo ou de outro trabalhador
+const CAMPOS_REMUN = ['categoria','cct','tipoContrato','salarioBase','subAlimDia','subAlimModo','diasUteis','taxaTSU','seguroATAnual','medicinaAnual','formacaoAnual','outrosEncargosMensais'];
+function modelosRemun(){ const c = store.config.find(x => x.id === 'modelosRemuneracao'); return (c && Array.isArray(c.lista)) ? c.lista : []; }
+function preencherOrigemRemun(){
+  const sel = $('#m-origem'), id = $('#f-motorista').dataset.id;
+  const ms = modelosRemun(), ts = motoristasOrdenados().filter(m => m.id !== id);
+  sel.innerHTML = '<option value="">Escolha um modelo ou um trabalhador…</option>'
+    + (ms.length ? '<optgroup label="Modelos de remuneração">' + ms.map(x => `<option value="mod:${esc(x.id)}">${esc(x.nome)}</option>`).join('') + '</optgroup>' : '')
+    + (ts.length ? '<optgroup label="Copiar de um trabalhador">' + ts.map(x => `<option value="mot:${esc(x.id)}">${esc(x.nome)}${x.categoria ? ' (' + esc(x.categoria) + ')' : ''}</option>`).join('') + '</optgroup>' : '');
+}
+function remunDaFicha(){ const d = lerMotorista($('#f-motorista')); const o = {}; CAMPOS_REMUN.forEach(k => { o[k] = d[k] ?? null; }); o.semProvisaoSubsidios = d.semProvisaoSubsidios; o.clausulas = d.clausulas; return o; }
+$('#m-aplicar').addEventListener('click', () => {
+  const v = $('#m-origem').value; if (!v){ toast('Escolha primeiro um modelo ou um trabalhador.', 'erro'); return; }
+  const [tipo, id] = [v.slice(0, 3), v.slice(4)];
+  const fonte = tipo === 'mod' ? modelosRemun().find(x => x.id === id) : motoristaPorId(id);
+  if (!fonte) return;
+  const f = $('#f-motorista'), temClaus = $$('#m-clausulas tbody tr').length;
+  if ((temClaus || f.elements.salarioBase.value) && !confirm(`Substituir a remuneração, as cláusulas e os encargos desta ficha pelos de «${fonte.nome}»?\n\nNome, NIF, datas e camião habitual não são alterados.`)) return;
+  CAMPOS_REMUN.forEach(k => { if (f.elements[k]) f.elements[k].value = fonte[k] ?? ''; });
+  if (!f.elements.tipoContrato.value) f.elements.tipoContrato.value = fonte.tipoContrato || '';
+  f.elements.provisaoSubsidios.checked = !fonte.semProvisaoSubsidios;
+  $('#m-clausulas tbody').innerHTML = (fonte.clausulas || []).map(linhaClausula).join('');
+  atualizarPreviewMotorista();
+  toast(`Remuneração copiada de «${fonte.nome}». Confirme os valores e guarde a ficha.`);
+});
+$('#m-guardar-modelo').addEventListener('click', () => {
+  const r = remunDaFicha();
+  if (r.salarioBase == null){ toast('Preencha primeiro o salário base e as cláusulas.', 'erro'); return; }
+  const nome = (prompt('Nome do modelo (por exemplo «Motorista internacional CCTV»):', r.categoria || '') || '').trim();
+  if (!nome) return;
+  const lista = modelosRemun().filter(x => x.nome.toLowerCase() !== nome.toLowerCase());
+  lista.push({id:novoIdCurto('mod'), nome, ...r});
+  gravar(DB.set('config', 'modelosRemuneracao', {lista}), `Modelo «${nome}» guardado.`);
+  setTimeout(preencherOrigemRemun, 300);
+});
+function renderModelos(){
+  const ms = modelosRemun(), el = $('#mod-lista');
+  el.innerHTML = ms.length ? '<thead><tr><th>Modelo</th><th class="n">Salário base</th><th class="n">Cláusulas</th><th class="n">Custo mensal estimado</th><th class="no-print"></th></tr></thead><tbody>' + ms.map(x => {
+    const cm = custoMotorista({...x, id:'_modelo', dataAdmissao:'', dataSaida:'', atribuicoes:[]}, hoje().slice(0, 7), {semProc:true, diasDesl:20, nViag:2});
+    return `<tr><td><strong>${esc(x.nome)}</strong>${x.categoria ? `<span class="motorista-sub">${esc(x.categoria)}</span>` : ''}</td><td class="n">${fmtEur(x.salarioBase)}</td><td class="n">${(x.clausulas || []).length}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
+      <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="novo-de-modelo" data-id="${esc(x.id)}">Novo trabalhador com este modelo</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-modelo" data-id="${esc(x.id)}">Apagar</button></td></tr>`;
+  }).join('') + '</tbody>' : '<tbody><tr><td class="vazio">Ainda não há modelos. Abra a ficha de um motorista (por exemplo o Angelo) e carregue em «Guardar como modelo».</td></tr></tbody>';
+}
+
 $('#m-preset').innerHTML = PRESETS.map((p, i) => `<option value="${i}">${esc(p.descricao)}</option>`).join('');
 $('#m-add-clausula').addEventListener('click', () => {
   const p = PRESETS[+$('#m-preset').value] || PRESETS[PRESETS.length - 1];
@@ -2319,8 +2379,10 @@ document.addEventListener('click', ev => {
     case 'editar-despesa': abrirDespesa(id); break;
     case 'editar-camiao': abrirCamiao(id); break;
     case 'editar-motorista': abrirMotorista(id); break;
+    case 'novo-de-modelo': abrirMotorista(); $('#m-origem').value = 'mod:' + id; { const fonte = modelosRemun().find(x => x.id === id); if (fonte){ const f = $('#f-motorista'); CAMPOS_REMUN.forEach(k => { if (f.elements[k]) f.elements[k].value = fonte[k] ?? ''; }); f.elements.provisaoSubsidios.checked = !fonte.semProvisaoSubsidios; $('#m-clausulas tbody').innerHTML = (fonte.clausulas || []).map(linhaClausula).join(''); atualizarPreviewMotorista(); setTimeout(() => $('#f-motorista').elements.nome.focus(), 60); } } break;
+    case 'apagar-modelo': { const ms = modelosRemun(), x = ms.find(o => o.id === id); if (x && confirm(`Apagar o modelo «${x.nome}»? As fichas dos trabalhadores não são alteradas.`)) gravar(DB.set('config', 'modelosRemuneracao', {lista:ms.filter(o => o.id !== id)}), 'Modelo apagado.'); } break;
     case 'editar-ent': abrirEntidade(b.dataset.col, id); break;
-    case 'pdf-viagem': pdfViagem(id); break;
+    case 'pdf-carga': pdfViagem(id); break;
     case 'pdf-cv': pdfCV(id); break;
     case 'editar-cv': abrirCV(id); break;
     case 'apagar-cv': if (confirm('Apagar esta operação de compra e venda? Esta ação não pode ser desfeita.')) gravar(DB.remove('compravenda', id), 'Operação apagada.'); break;
@@ -2329,9 +2391,9 @@ document.addEventListener('click', ev => {
     case 'pdf-camiao': pdfFichaCamiao(id); break;
     case 'apagar-carga': {
       const ligadas = store.despesas.filter(d => d.cargaId === id);
-      if (!confirm('Apagar esta viagem? Esta ação não pode ser desfeita.' + (ligadas.length ? `\n\n${ligadas.length} despesa(s) associada(s) ficam sem viagem, mas continuam a contar no camião.` : ''))) return;
+      if (!confirm('Apagar esta carga? Esta ação não pode ser desfeita.' + (ligadas.length ? `\n\n${ligadas.length} despesa(s) associada(s) ficam sem carga, mas continuam a contar no camião.` : ''))) return;
       ligadas.forEach(d => gravar(DB.update('despesas', d.id, {cargaId:null})));
-      gravar(DB.remove('cargas', id), 'Viagem apagada.'); break;
+      gravar(DB.remove('cargas', id), 'Carga apagada.'); break;
     }
     case 'apagar-despesa':
       if (!confirm('Apagar esta despesa? Esta ação não pode ser desfeita.')) return;
@@ -2412,7 +2474,7 @@ function folhaMapa(titulo, r){
 }
 function folhaCamioes(titulo, r){
   const ids = colunasDe(r);
-  const cab = ['Camião','Motoristas','Viagens','Km','Dias em viagem','Ocupação','Proveitos','Custos variáveis','Custos com pessoal','Custos fixos','Total de custos','Resultado','Margem','Proveito por km','Custo por km','Consumo (L/100 km)','Resultado das viagens','Custo dos dias sem viagem','Custos de estrutura'];
+  const cab = ['Camião','Motoristas','Cargas','Km','Dias em serviço','Ocupação','Proveitos','Custos variáveis','Custos com pessoal','Custos fixos','Total de custos','Resultado','Margem','Proveito por km','Custo por km','Consumo (L/100 km)','Resultado das cargas','Custo dos dias sem carga','Custos de estrutura'];
   const L = cabecalhoFolha(titulo); L.push(cab.map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
   ids.forEach(id => { const b = r[id]; L.push([X(nomeCamiao(id)), X([...b.motoristas].join(', ')), X(b.nCargas, 'int'), X(Math.round(b.km), 'int'), X(r2(b.diasViagem), 'dec'),
@@ -2429,7 +2491,7 @@ function folhaCamioes(titulo, r){
   return criarFolha(L, [14, 26, 8, 10, 10, 10, 14, 14, 14, 14, 14, 14, 9, 11, 11, 11, 14, 14, 14]);
 }
 function folhaPessoal(titulo, lista){
-  const cab = ['Motorista','Camião','Dias de contrato','Dias de trabalho','Dias fora','Viagens','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguro AT, medicina, formação','Outros encargos','Custo total'];
+  const cab = ['Motorista','Camião','Dias de contrato','Dias de trabalho','Dias fora','Cargas','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguro AT, medicina, formação','Outros encargos','Custo total'];
   const L = cabecalhoFolha(titulo); L.push(cab.map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
   lista.forEach(cm => { const c = cm.comp; L.push([X(cm.m.nome), X(Object.keys(cm.porCam).map(nomeCamiao).join(', ')), X(cm.diasEmp, 'int'), X(cm.diasTrab, 'int'), X(cm.diasDesl, 'int'), X(cm.nViag, 'int'),
@@ -2464,10 +2526,10 @@ function exportarMes(){
   Lf.push(['Camião','Dias na frota','Seguro, IUC, inspeção e tacógrafo','Leasing e amortização','Outros custos fixos','Total'].map(c => X(c, null, 'cab')));
   camioesOrdenados().forEach(c => { const fx = custosFixosCamiao(c, ym); if (fx) Lf.push([X(c.matricula), X(fx.dias, 'int'), X(fx.segcam / 100, 'eur'), X(fx.leasing / 100, 'eur'), X(fx.outfix / 100, 'eur'), X((fx.segcam + fx.leasing + fx.outfix) / 100, 'eur', 'sub')]); });
   XLSX.utils.book_append_sheet(wb, criarFolha(Lf, [14, 11, 20, 18, 16, 14]), 'Custos fixos');
-  // Viagens e serviços do mês
+  // Cargas e serviços do mês
   const lv = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida)).map(g => ({g, r:resultadoViagem(g)}));
-  XLSX.utils.book_append_sheet(wb, folhaViagensXls(`Viagens com saída em ${nm}`, lv), 'Viagens');
-  XLSX.utils.book_append_sheet(wb, folhaServicosXls(`Serviços das viagens com saída em ${nm}`, lv), 'Serviços');
+  XLSX.utils.book_append_sheet(wb, folhaViagensXls(`Cargas com saída em ${nm}`, lv), 'Cargas');
+  XLSX.utils.book_append_sheet(wb, folhaServicosXls(`Serviços das cargas com saída em ${nm}`, lv), 'Serviços');
   // Despesas lançadas no mês
   const Ld = cabecalhoFolha(`Despesas lançadas em ${nm} (pela data do documento)`);
   Ld.push(['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação'].map(c => X(c, null, 'cab')));
@@ -2523,9 +2585,9 @@ function exportarTudo(){
       X((m.clausulas || []).map(c => `${c.descricao}: ${fmtEur(c.valor)} / ${(BASES.find(b => b[0] === c.base) || ['', ''])[1]}`).join('; ')), X(+m.seguroATAnual || '', 'eur'), X(+m.medicinaAnual || '', 'eur'), X(+m.formacaoAnual || '', 'eur'), X(+m.outrosEncargosMensais || '', 'eur'),
       X((m.atribuicoes || []).map(a => `${fmtData(a.desde)} ${nomeCamiao(a.camiaoId)}`).join('; ')), X(fmtData(m.validadeCarta)), X(fmtData(m.validadeCAM)), X(fmtData(m.validadeCartaoTacografo))])], [24, 11, 12, 12, 11, 11, 20, 11, 10, 9, 50, 11, 11, 11, 10, 30, 11, 11, 11]), 'Motoristas');
   const todas = [...store.cargas].sort((a, b) => (a.dataSaida || '').localeCompare(b.dataSaida || '')).map(g => ({g, r:resultadoViagem(g)}));
-  XLSX.utils.book_append_sheet(wb, folhaViagensXls('Todas as viagens', todas), 'Viagens');
+  XLSX.utils.book_append_sheet(wb, folhaViagensXls('Todas as cargas', todas), 'Cargas');
   XLSX.utils.book_append_sheet(wb, folhaServicosXls('Todos os serviços', todas), 'Serviços');
-  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data','Camião','Tipo','Categoria','Valor','Litros','Repartida 12 meses','Fornecedor','Documento','Viagem','Observações']),
+  XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Data','Camião','Tipo','Categoria','Valor','Litros','Repartida 12 meses','Fornecedor','Documento','Carga','Observações']),
     ...[...store.despesas].sort((a, b) => (a.data || '').localeCompare(b.data || '')).map(d => { const t = tipoPorId(d.tipo), g = d.cargaId ? store.cargas.find(x => x.id === d.cargaId) : null;
       return [X(fmtData(d.data)), X(nomeCamiao(d.camiaoId || GERAL)), X(t.nome), X(catNome(t.cat)), X(+d.valor || 0, 'eur'), X(d.litros ?? '', 'dec'), X(d.diluir ? 'Sim' : 'Não'), X(nomeFornecedor(d)), X(d.documento), X(g ? fmtData(g.dataSaida) + ' ' + percursoTxt(g, 3) : ''), X(d.obs)]; })], [11, 16, 28, 26, 12, 9, 10, 20, 14, 24, 30]), 'Despesas');
   XLSX.utils.book_append_sheet(wb, criarFolha([cabs(['Mês','Motorista','Dias de trabalho','Dias fora','Ajudas de custo sem SS','Prémios e extras','Extras sem TSU','Faltas']),
@@ -2557,10 +2619,10 @@ $('#bk-import').addEventListener('change', async ev => {
   } catch (e) { toast('Não foi possível repor: ' + e.message, 'erro'); }
 });
 
-// ---- Folhas de viagens e serviços (Excel), usadas no mês, na folha e no «exportar tudo»
+// ---- Folhas de cargas e serviços (Excel), usadas no mês, na folha e no «exportar tudo»
 function folhaViagensXls(titulo, linhas){
   const L = cabecalhoFolha(titulo);
-  L.push(['Saída','Período','Regresso','Período','Dias','Camião','Motorista','Percurso','Clientes','Nº serviços','Km estimados','Ajuste km','Km da viagem','Km em vazio','Proveitos','Despesas da viagem','Custo motorista','Custo camião','Resultado','Margem','€/km','CMR','Faturas','Observações'].map(c => X(c, null, 'cab')));
+  L.push(['Saída','Período','Regresso','Período','Dias','Camião','Motorista','Percurso','Clientes','Nº serviços','Km estimados','Ajuste km','Km da carga','Km em vazio','Proveitos','Despesas da carga','Custo motorista','Custo camião','Resultado','Margem','€/km','CMR','Faturas','Observações'].map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
   linhas.forEach(({g, r}) => { const an = r.an;
     L.push([X(fmtData(g.dataSaida)), X(NOME_PERIODO[g.periodoSaida] || ''), X(fmtData(g.dataRegresso)), X(g.dataRegresso ? NOME_PERIODO[g.periodoRegresso] || '' : ''), X(r2(an.diasTot), 'dec'),
@@ -2579,7 +2641,7 @@ function folhaViagensXls(titulo, linhas){
 }
 function folhaServicosXls(titulo, linhas){
   const L = cabecalhoFolha(titulo);
-  L.push(['Saída da viagem','Camião','Sentido','Cliente','NIF do cliente','Carrega em','Descarrega em','País de descarga','Mercadoria','Peso (kg)','Km atribuídos','Valor','€/km','Custo atribuído','Resultado','Margem','CMR','Fatura','Outros documentos'].map(c => X(c, null, 'cab')));
+  L.push(['Saída da carga','Camião','Sentido','Cliente','NIF do cliente','Carrega em','Descarrega em','País de descarga','Mercadoria','Peso (kg)','Km atribuídos','Valor','€/km','Custo atribuído','Resultado','Margem','CMR','Fatura','Outros documentos'].map(c => X(c, null, 'cab')));
   const ini = L.length + 1;
   linhas.forEach(({g, r}) => r.servicos.forEach(x => { const s = x.s, c = s.clienteId && clientePorId(s.clienteId);
     L.push([X(fmtData(g.dataSaida)), X(nomeCamiao(g.camiaoId)), X(s.sentido === 'regresso' ? 'Regresso' : 'Ida'), X(nomeClienteServ(s)), X(c ? c.nif : ''), X(nomePonto(g, s.de)), X(nomePonto(g, s.ate)), X(paisPonto(g, s.ate)),
@@ -2595,9 +2657,9 @@ function folhaServicosXls(titulo, linhas){
 function exportarFolha(){
   if (!xlsxDisponivel()) return;
   const linhas = dadosFolha(), t = $('#f-print-tit').textContent, wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, folhaViagensXls(`Folha de viagens: ${t}`, linhas), 'Viagens');
+  XLSX.utils.book_append_sheet(wb, folhaViagensXls(`Folha de cargas: ${t}`, linhas), 'Cargas');
   XLSX.utils.book_append_sheet(wb, folhaServicosXls(`Serviços por cliente: ${t}`, linhas), 'Serviços');
-  XLSX.writeFile(wb, `folha-viagens-${$('#f-de').value || 'inicio'}-a-${$('#f-ate').value || hoje()}.xlsx`);
+  XLSX.writeFile(wb, `folha-cargas-${$('#f-de').value || 'inicio'}-a-${$('#f-ate').value || hoje()}.xlsx`);
 }
 function folhaAgregados(titulo, filtro){
   const L = cabecalhoFolha(titulo);
@@ -2633,7 +2695,7 @@ function pdfCargasTabela(R, titulo, lista){
       pS(percursoTxt(g, 8)), pS(clientesTxt(g)), pN(an.km, 'int'), pN(an.km ? an.kmVazio / an.km : null, 'pct'), pN(an.prov / 100, 'eur'), pN(r.custo / 100, 'eur'), pN(r.res / 100, 'eur', {fontStyle:'bold'}), pN(an.km ? an.prov / 100 / an.km : null, 'eur')]; });
   pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7) * 1.5);
   pdfTabela(R, {head:['Saída','Regresso','Dias','Camião','Motorista','Percurso','Clientes','Km','Vazio','Proveitos','Custos','Resultado','€/km'], body,
-    foot:[pS(`${linhas.length} viage${linhas.length === 1 ? 'm' : 'ns'}`), pS(''), pN(T.d, 'dec'), pS(''), pS(''), pS(''), pS(''), pN(T.km, 'int'), pN(T.km ? T.v / T.km : null, 'pct'), pN(T.p / 100, 'eur'), pN(T.c / 100, 'eur'), pN(T.r / 100, 'eur'), pN(T.km ? T.p / 100 / T.km : null, 'eur')],
+    foot:[pS(`${linhas.length} carga${linhas.length === 1 ? '' : 's'}`), pS(''), pN(T.d, 'dec'), pS(''), pS(''), pS(''), pS(''), pN(T.km, 'int'), pN(T.km ? T.v / T.km : null, 'pct'), pN(T.p / 100, 'eur'), pN(T.c / 100, 'eur'), pN(T.r / 100, 'eur'), pN(T.km ? T.p / 100 / T.km : null, 'eur')],
     cols:[{w:16},{w:16},{n:1,w:10},{w:17},{w:24},{},{w:40},{n:1,w:14},{n:1,w:12},{n:1,w:20},{n:1,w:20},{n:1,w:20},{n:1,w:12}], fs:7});
 }
 function pdfServicosTabela(R, titulo, linhas){
@@ -2649,35 +2711,35 @@ function pdfFolhaCargas(){
   if (!pdfDisponivel()) return;
   const linhas = dadosFolha(), de = $('#f-de').value, ate = $('#f-ate').value;
   const extra = [$('#f-cam').value ? 'Camião ' + nomeCamiao($('#f-cam').value) : '', $('#f-pais').value ? 'Destino ' + $('#f-pais').value : ''].filter(Boolean).join(', ');
-  const R = novoPDF('Folha de viagens' + (extra ? ` (${extra})` : ''), `${de ? fmtData(de) : 'Início'} a ${ate ? fmtData(ate) : fmtData(hoje())}`);
-  if (!linhas.length){ pdfNota(R, 'Não há viagens com estes filtros.'); pdfFinalizar(R, 'folha-viagens.pdf'); return; }
-  pdfCargasTabela(R, `Viagens (${linhas.length})`, linhas.map(l => l.g));
+  const R = novoPDF('Folha de cargas' + (extra ? ` (${extra})` : ''), `${de ? fmtData(de) : 'Início'} a ${ate ? fmtData(ate) : fmtData(hoje())}`);
+  if (!linhas.length){ pdfNota(R, 'Não há cargas com estes filtros.'); pdfFinalizar(R, 'folha-cargas.pdf'); return; }
+  pdfCargasTabela(R, `Cargas (${linhas.length})`, linhas.map(l => l.g));
   pdfServicosTabela(R, 'Serviços por cliente', linhas);
-  pdfNota(R, 'Dias com frações conforme o período da saída e do regresso. Custos da viagem: despesas associadas + custo diário do motorista e do camião × dias da viagem. Km de cada serviço: troços em que a mercadoria vai no camião, repartidos pelo valor quando há vários clientes no mesmo troço.');
+  pdfNota(R, 'Dias com frações conforme o período da saída e do regresso. Custos da carga: despesas associadas + custo diário do motorista e do camião × dias da carga. Km de cada serviço: troços em que a mercadoria vai no camião, repartidos pelo valor quando há vários clientes no mesmo troço.');
   const T = linhas.reduce((a, l) => ({km:a.km + l.r.an.km, p:a.p + l.r.an.prov, r:a.r + l.r.res}), {km:0, p:0, r:0});
-  pdfFecho(R, [['Viagens', String(linhas.length)], ['Km', fmtInt.format(T.km)], ['Proveitos', fmtC(T.p)], ['Resultado das viagens', fmtC(T.r)]]);
-  pdfFinalizar(R, `folha-viagens-${de || 'inicio'}-a-${ate || hoje()}.pdf`);
+  pdfFecho(R, [['Cargas', String(linhas.length)], ['Km', fmtInt.format(T.km)], ['Proveitos', fmtC(T.p)], ['Resultado das cargas', fmtC(T.r)]]);
+  pdfFinalizar(R, `folha-cargas-${de || 'inicio'}-a-${ate || hoje()}.pdf`);
 }
 function pdfListaCargas(){
   if (!pdfDisponivel()) return;
   const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value;
   const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam)).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida));
-  const R = novoPDF('Lista de viagens' + (cam ? ` (camião ${nomeCamiao(cam)})` : ''), mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`);
-  if (!lista.length) pdfNota(R, 'Não há viagens neste período.');
-  else { pdfCargasTabela(R, 'Viagens por data de saída', lista); pdfServicosTabela(R, 'Serviços por cliente', lista.map(g => ({g, r:resultadoViagem(g)}))); }
-  pdfFinalizar(R, `viagens-${ano}${mes ? '-' + mes : ''}.pdf`);
+  const R = novoPDF('Lista de cargas' + (cam ? ` (camião ${nomeCamiao(cam)})` : ''), mes ? nomeMesAno(`${ano}-${mes}`) : `Ano de ${ano}`);
+  if (!lista.length) pdfNota(R, 'Não há cargas neste período.');
+  else { pdfCargasTabela(R, 'Cargas por data de saída', lista); pdfServicosTabela(R, 'Serviços por cliente', lista.map(g => ({g, r:resultadoViagem(g)}))); }
+  pdfFinalizar(R, `cargas-${ano}${mes ? '-' + mes : ''}.pdf`);
 }
-// Dossier de uma viagem (A4 vertical)
+// Dossier de uma carga (A4 vertical)
 function pdfViagem(id){
   if (!pdfDisponivel()) return;
   const g = store.cargas.find(x => x.id === id); if (!g) return;
   const r = resultadoViagem(g), an = r.an;
-  const R = novoPDF('Dossier de viagem', `${nomeCamiao(g.camiaoId)} · ${fmtData(g.dataSaida)}`, 'portrait');
-  pdfKV(R, 'Viagem', [['Camião', nomeCamiao(g.camiaoId)], ['Motorista', nomeMotoristaCarga(g)], ['Saída', `${fmtData(g.dataSaida)} (${NOME_PERIODO[g.periodoSaida] || 'dia inteiro'})`], ['Regresso', g.dataRegresso ? `${fmtData(g.dataRegresso)} (${NOME_PERIODO[g.periodoRegresso] || 'dia inteiro'})` : 'Por indicar'],
-    ['Partida de', g.origem || params().sedeLocal], ['Duração', `${fmtDec.format(an.diasTot)} dias`], ['Km estimados', fmtInt.format(an.kmEst)], ['Ajuste de km', fmtInt.format(num0(an.P.ajuste))], ['Km da viagem', fmtInt.format(an.km)], ['Km em vazio', `${fmtInt.format(an.kmVazio)}${an.km ? ' (' + fmtPct.format(an.kmVazio / an.km) + ')' : ''}`]]);
+  const R = novoPDF('Dossier de carga', `${nomeCamiao(g.camiaoId)} · ${fmtData(g.dataSaida)}`, 'portrait');
+  pdfKV(R, 'Carga', [['Camião', nomeCamiao(g.camiaoId)], ['Motorista', nomeMotoristaCarga(g)], ['Saída', `${fmtData(g.dataSaida)} (${NOME_PERIODO[g.periodoSaida] || 'dia inteiro'})`], ['Regresso', g.dataRegresso ? `${fmtData(g.dataRegresso)} (${NOME_PERIODO[g.periodoRegresso] || 'dia inteiro'})` : 'Por indicar'],
+    ['Partida de', g.origem || params().sedeLocal], ['Duração', `${fmtDec.format(an.diasTot)} dias`], ['Km estimados', fmtInt.format(an.kmEst)], ['Ajuste de km', fmtInt.format(num0(an.P.ajuste))], ['Km da carga', fmtInt.format(an.km)], ['Km em vazio', `${fmtInt.format(an.kmVazio)}${an.km ? ' (' + fmtPct.format(an.kmVazio / an.km) + ')' : ''}`]]);
   const pts = an.P.paragens;
   pdfSecao(R, 'Percurso', (pts.length + 3) * alturaLinha(8));
-  pdfTabela(R, {head:['#', 'Local', 'País', 'Operação', 'Km do troço'], body:[[pS('0'), pS(g.origem || params().sedeLocal || 'Partida'), pS(g.origemPais || params().sedePais), pS('Partida'), pN(null, 'int')], ...pts.map((p, i) => [pS(String(i + 1)), pS(p.local), pS(p.pais), pS((OPERACOES.find(o => o[0] === p.op) || ['', ''])[1]), pN(num0(p.km), 'int')]), ...(an.P.fimSede !== false ? [[pS(''), pS('Chegada à sede'), pS(''), pS('Regresso'), pN(an.P.kmRegresso, 'int')]] : [[pS(''), pS('Fim da viagem na última paragem'), pS(''), pS(''), pN(null, 'int')]])],
+  pdfTabela(R, {head:['#', 'Local', 'País', 'Operação', 'Km do troço'], body:[[pS('0'), pS(g.origem || params().sedeLocal || 'Partida'), pS(g.origemPais || params().sedePais), pS('Partida'), pN(null, 'int')], ...pts.map((p, i) => [pS(String(i + 1)), pS(p.local), pS(p.pais), pS((OPERACOES.find(o => o[0] === p.op) || ['', ''])[1]), pN(num0(p.km), 'int')]), ...(an.P.fimSede !== false ? [[pS(''), pS('Chegada à sede'), pS(''), pS('Regresso'), pN(an.P.kmRegresso, 'int')]] : [[pS(''), pS('Fim da carga na última paragem'), pS(''), pS(''), pN(null, 'int')]])],
     foot:[pS(''), pS('Total estimado'), pS(''), pS(''), pN(an.kmEst, 'int')], cols:[{w:10}, {}, {w:34}, {w:34}, {n:1, w:26}], fs:8});
   pdfSecao(R, 'Serviços', (an.S.length + 2) * alturaLinha(7.5) * 1.6);
   pdfTabela(R, {head:['Sentido', 'Cliente', 'Carga → descarga', 'Mercadoria / peso', 'Km', 'Valor', 'Resultado'], body:r.servicos.map(x => { const s = x.s; return [pS(s.sentido === 'regresso' ? 'Regresso' : 'Ida'), pS(nomeClienteServ(s)), pS(`${nomePonto(g, s.de)} → ${nomePonto(g, s.ate)}`), pS([s.mercadoria, s.pesoKg ? fmtInt.format(s.pesoKg) + ' kg' : ''].filter(Boolean).join('\n')), pN(x.km, 'int'), pN(x.prov / 100, 'eur'), pN(x.res / 100, 'eur')]; }),
@@ -2688,13 +2750,13 @@ function pdfViagem(id){
     pdfTabela(R, {head:['Cliente', 'CMR', 'Fatura', 'Outros documentos'], body:docs.map(s => [pS(nomeClienteServ(s)), pS(s.cmr), pS(s.fatura), pS(s.docs)]), cols:[{w:50}, {w:30}, {w:30}, {}], fs:8});
   }
   if (r.desp.length){
-    pdfSecao(R, 'Despesas da viagem', (r.desp.length + 2) * alturaLinha(8));
+    pdfSecao(R, 'Despesas da carga', (r.desp.length + 2) * alturaLinha(8));
     pdfTabela(R, {head:['Data', 'Tipo', 'Fornecedor', 'Documento', 'Valor'], body:r.desp.map(d => [pS(fmtData(d.data)), pS(tipoPorId(d.tipo).nome), pS(nomeFornecedor(d)), pS(d.documento), pN(+d.valor, 'eur')]), foot:[pS('Total'), pS(''), pS(''), pS(''), pN(r.dir / 100, 'eur')], cols:[{w:22}, {w:42}, {}, {w:30}, {n:1, w:26}], fs:8});
   }
-  pdfKV(R, 'Resultado da viagem', [['Proveitos', fmtC(an.prov)], ['Despesas da viagem', fmtC(r.dir)], ['Custo do motorista', fmtC(r.cMot)], ['Custos fixos do camião', fmtC(r.cCam)], ['Resultado', fmtC(r.res)], ['Margem', fmtVal(an.prov ? r.res / an.prov : null, 'pct')], ['Proveito por km', fmtVal(an.km ? an.prov / 100 / an.km : null, 'eur')], ['Custo por km', fmtVal(an.km ? r.custo / 100 / an.km : null, 'eur')]]);
+  pdfKV(R, 'Resultado da carga', [['Proveitos', fmtC(an.prov)], ['Despesas da carga', fmtC(r.dir)], ['Custo do motorista', fmtC(r.cMot)], ['Custos fixos do camião', fmtC(r.cCam)], ['Resultado', fmtC(r.res)], ['Margem', fmtVal(an.prov ? r.res / an.prov : null, 'pct')], ['Proveito por km', fmtVal(an.km ? an.prov / 100 / an.km : null, 'eur')], ['Custo por km', fmtVal(an.km ? r.custo / 100 / an.km : null, 'eur')]]);
   if (g.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, g.obs); }
   pdfAssinaturas(R);
-  pdfFinalizar(R, `viagem-${(nomeCamiao(g.camiaoId) || '').replace(/\W+/g, '')}-${g.dataSaida}.pdf`);
+  pdfFinalizar(R, `carga-${(nomeCamiao(g.camiaoId) || '').replace(/\W+/g, '')}-${g.dataSaida}.pdf`);
 }
 
 /* ---------- PDF (jsPDF + AutoTable) ----------
@@ -2843,7 +2905,7 @@ function pdfMapa(R, titulo, r){
 function pdfPorCamiao(R, titulo, r){
   const ids = colunasDe(r); if (!ids.length) return;
   const t = somarBlocos(ids.map(id => r[id]));
-  const head = ['Camião','Motoristas','Viagens','Km','Vazio','Dias em viagem','Ocupação','Proveitos','Custos das viagens','Resultado das viagens','Dias sem viagem','Estrutura','Resultado','Margem','Proveito por km'];
+  const head = ['Camião','Motoristas','Cargas','Km','Vazio','Dias em serviço','Ocupação','Proveitos','Custos das cargas','Resultado das cargas','Dias sem carga','Estrutura','Resultado','Margem','Proveito por km'];
   const linha = (nome, mot, b, est = {}) => [pS(nome, est), pS(mot, est), pN(b.nCargas, 'int', est), pN(b.km, 'int', est), pN(b.km ? b.kmVazio / b.km : null, 'pct', est), pN(b.diasViagem, 'dec', est),
     pN(b.diasDisp ? b.diasViagem / b.diasDisp : null, 'pct', est), pN(b.prov / 100, 'eur', est), pN(b.custoViagens / 100, 'eur', est), pN(b.resViagens / 100, 'eur', est), pN(-b.custoParado / 100, 'eur', est), pN(-b.custoEstrutura / 100, 'eur', est),
     pN(b.res / 100, 'eur', {...est, fontStyle:'bold'}), pN(b.prov ? b.res / b.prov : null, 'pct', est), pN(b.km ? b.prov / 100 / b.km : null, 'eur', est)];
@@ -2873,7 +2935,7 @@ function pdfPessoalTabela(R, titulo, lista){
   const s = k => lista.reduce((a, cm) => a + cm.comp[k], 0) / 100;
   const foot = [pS('Total'), pS(''), pS(''), pS(''), pS(''), pN(s('rem'), 'eur'), pN(s('subalim'), 'eur'), pN(s('ajudas'), 'eur'), pN(s('subsidios'), 'eur'), pN(s('ss'), 'eur'), pN(s('segpes') + s('outpes'), 'eur'), pN(lista.reduce((a, cm) => a + cm.total, 0) / 100, 'eur')];
   pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7.5));
-  pdfTabela(R, {head:['Motorista','Camião','Dias trabalho','Dias fora','Viagens','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguros e outros','Custo total'], body, foot, fs:7.5,
+  pdfTabela(R, {head:['Motorista','Camião','Dias trabalho','Dias fora','Cargas','Remunerações','Sub. alimentação','Ajudas de custo','Subs. férias e Natal','Segurança Social','Seguros e outros','Custo total'], body, foot, fs:7.5,
     cols:[{w:38},{w:30},{n:1,w:15},{n:1,w:13},{n:1,w:13},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1},{n:1}]});
 }
 function pdfFixosTabela(R, titulo, ym){
@@ -2892,7 +2954,7 @@ function pdfDespesasTabela(R, titulo, lista){
     return [pS(fmtData(d.data)), pS(nomeCamiao(d.camiaoId || GERAL)), pS(t.nome), pS(catNome(t.cat)), pS(nomeFornecedor(d)), pS(d.documento), pN(+d.litros || null, 'dec'), pN(+d.valor || 0, 'eur'), pS(d.diluir ? '12 meses' : 'No mês'), pS(g ? fmtData(g.dataSaida) + ' ' + percursoTxt(g, 3) : '')]; });
   const tv = lista.reduce((s, d) => s + cent(d.valor), 0) / 100, tl = lista.reduce((s, d) => s + (+d.litros || 0), 0);
   pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7.5));
-  pdfTabela(R, {head:['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação','Viagem'], body,
+  pdfTabela(R, {head:['Data','Camião','Tipo','Categoria','Fornecedor','Documento','Litros','Valor','Imputação','Carga'], body,
     foot:[pS(`${lista.length} despesas`), pS(''), pS(''), pS(''), pS(''), pS(''), pN(tl || null, 'dec'), pN(tv, 'eur'), pS(''), pS('')],
     cols:[{w:17},{w:20},{w:36},{w:36},{},{w:24},{n:1,w:14},{n:1,w:20},{w:17},{w:38}], fs:7.5});
 }
@@ -2918,8 +2980,8 @@ function pdfMes(){
   pdfFixosTabela(R, 'Custos fixos dos camiões', ym);
   pdfAgregados(R, 'Rentabilidade por destino e por cliente', g => (g.dataSaida || '').slice(0, 7) === ym);
   const viagensMes = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym).sort((a, b) => a.dataSaida.localeCompare(b.dataSaida));
-  pdfCargasTabela(R, 'Viagens com saída no mês', viagensMes);
-  pdfServicosTabela(R, 'Serviços das viagens do mês', viagensMes.map(g => ({g, r:resultadoViagem(g)})));
+  pdfCargasTabela(R, 'Cargas com saída no mês', viagensMes);
+  pdfServicosTabela(R, 'Serviços das cargas do mês', viagensMes.map(g => ({g, r:resultadoViagem(g)})));
   pdfDespesasTabela(R, 'Despesas lançadas no mês', store.despesas.filter(d => (d.data || '').slice(0, 7) === ym).sort((a, b) => a.data.localeCompare(b.data)));
   pdfFecho(R, fechoDe(somarBlocos(Object.values(r))));
   pdfFinalizar(R, `frota-relatorio-${ym}.pdf`);
@@ -3033,7 +3095,7 @@ function pdfFichaCamiaoEm(R, c){
     const body = hist.map(({ym, b}) => [pS(nomeMesAno(ym)), pN(b.nCargas, 'int'), pN(b.km, 'int'), pN(b.prov / 100, 'eur'), pN(b.totVar / 100, 'eur'), pN(b.totPes / 100, 'eur'), pN(b.totFix / 100, 'eur'), pN(b.res / 100, 'eur', {fontStyle:'bold'}), pN(b.km ? b.totCustos / 100 / b.km : null, 'eur')]);
     const t = somarBlocos(hist.map(x => x.b));
     pdfSecao(R, 'Resultado nos últimos 12 meses', (body.length + 3) * alturaLinha(7.5));
-    pdfTabela(R, {head:['Mês', 'Viagens', 'Km', 'Proveitos', 'Custos variáveis', 'Pessoal', 'Fixos', 'Resultado', 'Custo por km'], body,
+    pdfTabela(R, {head:['Mês', 'Cargas', 'Km', 'Proveitos', 'Custos variáveis', 'Pessoal', 'Fixos', 'Resultado', 'Custo por km'], body,
       foot:[pS('Total'), pN(t.nCargas, 'int'), pN(t.km, 'int'), pN(t.prov / 100, 'eur'), pN(t.totVar / 100, 'eur'), pN(t.totPes / 100, 'eur'), pN(t.totFix / 100, 'eur'), pN(t.res / 100, 'eur'), pN(t.km ? t.totCustos / 100 / t.km : null, 'eur')],
       cols:[{w:32}, {n:1, w:14}, {n:1, w:16}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1}, {n:1, w:18}], fs:7.5});
   }
