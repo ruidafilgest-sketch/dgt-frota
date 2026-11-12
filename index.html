@@ -64,6 +64,21 @@ main{max-width:1360px;margin:0 auto;padding:20px}
 .campo-check input{width:18px;height:18px}
 .ajuda{font-size:12px;color:var(--suave);font-weight:400}
 .linha-sel{display:flex;gap:6px;align-items:stretch}
+.grelha-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:860px){.grelha-4{grid-template-columns:repeat(2,1fr)}}
+.sec-linhas{font-family:var(--fc);font-size:18px;margin:18px 0 6px;display:flex;gap:10px;align-items:baseline}
+.linhas-carga{font-size:14px;margin-bottom:6px}
+.linhas-carga th{padding:6px 6px}
+.linhas-carga td{padding:4px 4px;border-bottom:1px solid var(--linha-2);vertical-align:top}
+.linhas-carga input,.linhas-carga select{border:1px solid var(--linha);border-radius:4px;padding:6px 8px;min-height:36px;width:100%;background:#fff;font-size:14px}
+.linhas-carga td:nth-child(2){min-width:180px}.linhas-carga td:nth-child(3),.linhas-carga td:nth-child(4){min-width:170px}
+.linhas-carga .c-num{width:110px}.linhas-carga .c-cmr{width:110px}
+.linhas-carga .ord{white-space:nowrap;width:1%}
+.btn-mini{border:1px solid var(--linha);background:#fff;border-radius:4px;min-width:28px;min-height:30px;cursor:pointer;font-size:14px;margin:2px 1px}
+.btn-mini.perigo{color:var(--perda)}
+.lc-mais td{background:#F6F7F8}
+.rota-caixa{margin-top:16px;border:1px solid var(--linha);border-left:4px solid var(--azul);border-radius:6px;padding:10px 12px;background:#F8FAFC}
+.rota-caixa details{margin-top:8px}.rota-caixa summary{cursor:pointer;color:var(--azul);font-weight:600}
 .servico{border:1px solid var(--linha);border-left:4px solid var(--sinal);border-radius:6px;padding:10px 12px;margin-bottom:10px;background:#FCFCFB}
 .servico-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .v-num{font-weight:700;text-align:center;width:28px}
@@ -207,7 +222,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   <header class="topo">
     <div class="marca"><strong>DIGNIDADE GARRIDA TRANSPORTES LDA</strong><span>NIF 518242226 · Gestão de frota</span></div>
     <div class="topo-dir">
-      <span class="sync" title="Versão do programa">Versão 2026-11-11</span>
+      <span class="sync" title="Versão do programa">Versão 2026-11-12</span>
       <span id="estado-sync" class="sync"></span>
       <span id="utilizador"></span>
       <button class="btn btn-peq" id="btn-sair" type="button">Sair</button>
@@ -274,6 +289,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
           <label class="campo">Ano<select id="c-ano"></select></label>
           <label class="campo">Mês<select id="c-mes" data-meses="todos"></select></label>
           <label class="campo">Camião<select id="c-cam"></select></label>
+          <label class="campo">Estado<select id="c-estado"><option value="">Todos</option><option value="planeada">Planeadas</option><option value="curso">Em curso</option><option value="concluida">Concluídas</option><option value="aberta">Por concluir</option></select></label>
           <button class="btn" type="button" id="c-pdf">PDF da lista</button>
           <button class="btn btn-pri" type="button" id="c-nova">Nova carga</button>
         </div>
@@ -482,51 +498,56 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   </main>
 </div>
 
-<!-- Diálogo: carga -->
+<!-- Diálogo: carga (uma linha por CMR) -->
 <dialog id="dlg-carga" class="largo">
   <form id="f-carga" novalidate>
     <div class="dlg-cab"><h3 id="dlg-carga-tit">Nova carga</h3><button class="btn btn-peq" type="button" data-fechar>Fechar</button></div>
     <div class="dlg-corpo">
-      <fieldset><legend>Carga</legend>
-        <div class="grelha-3">
-          <label class="campo">Camião *<select name="camiaoId" required></select></label>
-          <label class="campo">Motorista<select name="motoristaId"></select></label>
-          <label class="campo">Partida de<span class="linha-sel"><input name="origem" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--linha);border-radius:4px;padding:8px 10px;min-height:40px"><select name="origemPais" style="max-width:130px"></select></span><span class="ajuda" id="v-origem-ajuda">Sede, ou a cidade onde terminou a carga anterior.</span></label>
-          <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
-          <label class="campo">Período da saída<select name="periodoSaida"></select></label>
-          <p class="ajuda" id="v-dias" style="align-self:end"></p>
-          <label class="campo">Data de regresso<input type="date" name="dataRegresso"></label>
-          <label class="campo">Período do regresso<select name="periodoRegresso"></select></label>
-          <p class="ajuda" style="align-self:end">Manhã, tarde e noite contam frações do dia (saída: 1 / ½ / ¼; regresso: ¼ / ½ / 1).</p>
+      <div class="grelha-4">
+        <label class="campo">Estado<select name="estado"><option value="planeada">Planeada</option><option value="curso">Em curso</option><option value="concluida">Concluída</option></select></label>
+        <label class="campo">Camião *<select name="camiaoId" required></select></label>
+        <label class="campo">Motorista<select name="motoristaId"></select></label>
+        <label class="campo">Partida de *<input name="origem" list="dl-lugares" placeholder="Cidade, País" autocomplete="off"><span class="ajuda" id="c-origem-ajuda"></span></label>
+        <label class="campo">Data de saída *<input type="date" name="dataSaida" required></label>
+        <label class="campo">Período<select name="periodoSaida"></select></label>
+        <label class="campo"><span id="c-reg-rot">Regresso previsto</span><input type="date" name="dataRegresso"></label>
+        <label class="campo">Período<select name="periodoRegresso"></select><span class="ajuda" id="c-dias"></span></label>
+      </div>
+
+      <h4 class="sec-linhas">Ida <span class="ajuda">uma linha por CMR, pela ordem das descargas</span></h4>
+      <div class="tabela-wrap"><table class="linhas-carga" id="c-ida">
+        <thead><tr><th></th><th>Cliente</th><th>Carrega em</th><th>Descarrega em</th><th class="n">Valor (€)</th><th>CMR</th><th></th></tr></thead><tbody></tbody></table></div>
+      <button class="btn btn-peq" type="button" id="c-add-ida">+ Linha de ida</button>
+
+      <h4 class="sec-linhas">Regresso <span class="ajuda">deixe vazio se o camião regressa sem carga</span></h4>
+      <div class="tabela-wrap"><table class="linhas-carga" id="c-regresso">
+        <thead><tr><th></th><th>Cliente</th><th>Carrega em</th><th>Descarrega em</th><th class="n">Valor (€)</th><th>CMR</th><th></th></tr></thead><tbody></tbody></table></div>
+      <button class="btn btn-peq" type="button" id="c-add-reg">+ Linha de regresso</button>
+
+      <div class="rota-caixa">
+        <div class="barra" style="justify-content:space-between;align-items:center">
+          <p id="c-rota" style="margin:0"></p>
+          <label class="campo" style="flex-direction:row;align-items:center;gap:8px;white-space:nowrap">No fim:<select name="fimViagem" style="min-height:34px"><option value="sede">regressa à sede</option><option value="ultima">fica na última descarga</option></select></label>
         </div>
-      </fieldset>
-      <fieldset><legend>Percurso</legend>
-        <p class="ajuda" style="margin:0 0 8px">Paragens pela ordem em que o camião passa. Em cada uma, os km desde a paragem anterior (o 1.º troço conta desde a partida). Assim cada troço conta uma só vez: 1.250 km até ao 1.º cliente, +40 até ao 2.º, +20 até ao 3.º… Pode escrever os km ou carregar em «Calcular km automaticamente» depois de escrever as localidades.</p>
-        <div class="tabela-wrap">
-          <table class="linhas-edit" id="v-paragens">
-            <thead><tr><th>#</th><th>Local</th><th>País</th><th>Km desde a anterior</th><th>Operação</th><th></th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="v-add-par">+ Paragem</button><button class="btn btn-peq btn-pri" type="button" id="v-km-auto">Calcular km automaticamente</button></div>
-        <p class="nota" id="v-km-estado" style="margin-top:6px"></p>
-        <div class="grelha-3" style="margin-top:12px">
-          <label class="campo">Fim da carga<select name="fimViagem"><option value="sede">Regressa à sede</option><option value="ultima">Termina na última paragem</option></select><span class="ajuda">Se o camião fica onde fez a última descarga (ex.: Aveiro, Lisboa), escolha «Termina na última paragem».</span></label>
-          <label class="campo" id="wrap-kmRegresso">Km da última paragem até à sede<input type="number" name="kmRegresso" min="0" step="1"></label>
-          <label class="campo">Ajuste de km (+/−)<input type="number" name="ajusteKm" step="1"><span class="ajuda">Desvios, vias alternativas, abastecimentos. É repartido por todos os troços.</span></label>
-        </div>
-        <p class="nota" id="v-km-resumo" style="margin-top:8px"></p>
-      </fieldset>
-      <fieldset><legend>Serviços (um por cliente, na ida e no regresso)</legend>
-        <div id="v-servicos"></div>
-        <div class="barra" style="margin-top:10px"><button class="btn btn-peq" type="button" id="v-add-serv">+ Serviço</button></div>
-      </fieldset>
-      <label class="campo">Observações<textarea name="obs"></textarea></label>
-      <div class="previsao" id="v-preview" style="margin-top:14px"></div>
+        <p class="nota" id="c-km-estado" style="margin:4px 0 0"></p>
+        <details id="c-ajustar">
+          <summary>Ver e ajustar percurso e km</summary>
+          <div class="tabela-wrap"><table class="linhas-edit" id="c-trocos"><thead><tr><th>De</th><th>Para</th><th>Km</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div class="barra" style="margin-top:8px">
+            <button class="btn btn-peq" type="button" id="c-recalc">Recalcular km por estrada</button>
+            <label class="campo" style="flex-direction:row;align-items:center;gap:8px">Ajuste total de km (+/−)<input type="number" name="ajusteKm" step="1" style="width:100px;min-height:34px"></label>
+          </div>
+          <p class="ajuda" style="margin:6px 0 0">Os km são calculados por estrada para cada troço. Escreva um valor à mão para o corrigir (fica marcado «à mão» e não volta a ser recalculado). O ajuste total serve para desvios e restrições de pesados.</p>
+        </details>
+      </div>
+
+      <label class="campo" style="margin-top:12px">Observações<textarea name="obs"></textarea></label>
+      <div class="previsao" id="c-preview" style="margin-top:12px"></div>
     </div>
     <div class="dlg-rod"><p class="erro" id="carga-erro" role="alert"></p><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-pri" type="submit">Guardar carga</button></div>
   </form>
 </dialog>
+<datalist id="dl-lugares"></datalist>
 
 <!-- Diálogo: despesa -->
 <dialog id="dlg-despesa">
@@ -1000,7 +1021,7 @@ function percursoDe(g){
   return {paragens:[{id:'p1', local:g.destinoCidade || '', pais:g.destinoPais || '', km:ida, op:'descarga'}], kmRegresso:km - ida, ajuste:0, legado:true, fimSede:true};
 }
 function servicosDe(g){
-  if (Array.isArray(g.servicos) && g.servicos.length) return g.servicos;
+  if (Array.isArray(g.servicos) && (g.servicos.length || Array.isArray(g.paragens))) return g.servicos.filter(s => !s.vazio);
   return [{id:'s1', sentido:'ida', clienteId:g.clienteId || null, cliente:g.cliente || '', de:'p0', ate:'p1', mercadoria:g.mercadoria || '', pesoKg:g.pesoKg ?? null, valor:num0(g.valor), cmr:g.cmr || '', fatura:g.fatura || '', docs:''}];
 }
 function nomeClienteServ(s){ const c = s.clienteId && clientePorId(s.clienteId); return c ? c.nome : (s.cliente || ''); }
@@ -1400,6 +1421,8 @@ function pontosAtencao(ym){
   if (semAt.length) out.push({n:'aviso', t:`Sem cargas registadas neste mês nem camião habitual: ${semAt.map(cm => cm.m.nome).join(', ')}. Os custos destes trabalhadores ficaram em Estrutura. Registe as cargas com o motorista ou indique um camião habitual na ficha (ou «Sem camião» se não for motorista).`});
   const cm = store.cargas.filter(g => (g.dataSaida || '').slice(0, 7) === ym);
   const semKm = cm.filter(g => !g.km).length, semReg = cm.filter(g => !g.dataRegresso).length, semMot = cm.filter(g => !g.motoristaId).length;
+  const abertas = cm.filter(g => estadoDe(g) !== 'concluida').length;
+  if (abertas) out.push({n:'aviso', t:`${abertas} carga(s) deste mês ainda não concluída(s): os resultados dessas cargas são estimados e podem mudar.`});
   if (semKm) out.push({n:'info', t:`${semKm} carga(s) sem km: não entram nos indicadores por km.`});
   if (semReg) out.push({n:'info', t:`${semReg} carga(s) sem data de regresso: os dias em serviço e os custos das cargas ficam abaixo do real.`});
   if (semMot && store.motoristas.length) out.push({n:'info', t:`${semMot} carga(s) sem motorista indicado: o custo do motorista não entra no resultado dessas cargas.`});
@@ -1560,8 +1583,8 @@ function renderAnual(){
 
 /* ---------- Render: Cargas ---------- */
 function renderCargas(){
-  const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value;
-  const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam))
+  const ano = $('#c-ano').value, mes = $('#c-mes').value, cam = $('#c-cam').value, est = $('#c-estado').value;
+  const lista = store.cargas.filter(g => noPeriodo(g.dataSaida, ano, mes) && (!cam || g.camiaoId === cam) && (!est || (est === 'aberta' ? estadoDe(g) !== 'concluida' : estadoDe(g) === est)))
     .sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || ''));
   const tb = $('#c-tabela tbody');
   if (!lista.length){ tb.innerHTML = '<tr><td colspan="10" class="vazio">Não há cargas neste período. Registe uma com «Nova carga».</td></tr>'; $('#c-tabela tfoot').innerHTML = ''; return; }
@@ -1569,7 +1592,7 @@ function renderCargas(){
   tb.innerHTML = lista.map(g => {
     const r = resultadoViagem(g), an = r.an, mt = nomeMotoristaCarga(g); tp += an.prov; tk += an.km; tr += r.res;
     return `<tr>
-    <td>${fmtData(g.dataSaida)}<span class="motorista-sub">${NOME_PERIODO[g.periodoSaida] || ''}</span></td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td>
+    <td>${fmtData(g.dataSaida)}<span class="motorista-sub">${etiqEstado(g)}</span></td><td>${placaHtml(g.camiaoId)}${mt ? `<span class="motorista-sub">${esc(mt)}</span>` : ''}</td>
     <td>${esc(percursoTxt(g))}</td><td>${esc(clientesTxt(g))}<span class="motorista-sub">${an.S.length} serviço${an.S.length === 1 ? '' : 's'}</span></td>
     <td class="n">${an.km ? fmtInt.format(an.km) : ''}${an.km ? `<span class="motorista-sub">${fmtPct.format(an.kmVazio / an.km)} vazio</span>` : ''}</td>
     <td class="n">${fmtC(an.prov)}</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td>
@@ -1666,7 +1689,7 @@ function renderFolha(){
   if (!linhas.length){ tb.innerHTML = '<tr><td colspan="16" class="vazio">Não há cargas com estes filtros.</td></tr>'; $('#f-tabela tfoot').innerHTML = ''; ts.innerHTML = '<tr><td colspan="14" class="vazio">—</td></tr>'; return; }
   const T = {prov:0, km:0, vaz:0, dir:0, mot:0, cam:0, res:0, dias:0};
   tb.innerHTML = linhas.map(({g, r}) => { const an = r.an; T.prov += an.prov; T.km += an.km; T.vaz += an.kmVazio; T.dir += r.dir; T.mot += r.cMot; T.cam += r.cCam; T.res += r.res; T.dias += an.diasTot;
-    return `<tr><td>${fmtData(g.dataSaida)}<span class="motorista-sub">${NOME_PERIODO[g.periodoSaida] || ''}</span></td><td>${fmtData(g.dataRegresso)}<span class="motorista-sub">${g.dataRegresso ? NOME_PERIODO[g.periodoRegresso] || '' : ''}</span></td><td class="n">${fmtDec.format(an.diasTot)}</td>
+    return `<tr><td>${fmtData(g.dataSaida)}<span class="motorista-sub">${etiqEstado(g)}</span></td><td>${fmtData(g.dataRegresso)}<span class="motorista-sub">${g.dataRegresso ? NOME_PERIODO[g.periodoRegresso] || '' : ''}</span></td><td class="n">${fmtDec.format(an.diasTot)}</td>
     <td>${placaHtml(g.camiaoId)}</td><td>${esc(nomeMotoristaCarga(g))}</td><td>${esc(percursoTxt(g, 8))}</td><td>${esc(clientesTxt(g))}</td>
     <td class="n">${fmtInt.format(an.km)}</td><td class="n">${an.km ? fmtPct.format(an.kmVazio / an.km) : ''}</td><td class="n">${fmtC(an.prov)}</td>
     <td class="n">${r.dir ? fmtC(r.dir) : ''}</td><td class="n">${fmtC(r.cMot)}</td><td class="n">${fmtC(r.cCam)}</td><td class="n ${clsSinal(r.res)}"><strong>${fmtC(r.res)}</strong></td>
@@ -1849,183 +1872,296 @@ function abrirDialogo(id){ const d = $(id); if (typeof d.showModal === 'function
 function fecharDialogo(d){ if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); }
 const txt = el => el.value.trim();
 
-// ---- Carga (formulário)
+// ---- Carga (formulário): uma linha por CMR; o percurso e os km são deduzidos das linhas
+const ESTADOS = {planeada:['Planeada', 'etiq'], curso:['Em curso', 'etiq prox'], concluida:['Concluída', 'etiq ativo']};
+const estadoDe = g => g.estado || 'concluida';              // registos antigos contam como concluídos
+const etiqEstado = g => { const e = ESTADOS[estadoDe(g)]; return `<span class="${e[1]}">${e[0]}</span>`; };
 const novoIdCurto = p => p + Math.random().toString(36).slice(2, 8);
 function opcoesPeriodo(v){ return PERIODOS.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join(''); }
-function linhaParagem(p, n){
-  return `<tr data-pid="${esc(p.id)}"${p.lat != null ? ` data-lat="${p.lat}" data-lon="${p.lon}"` : ''}><td class="v-num">${n}</td>
-    <td><input data-k="local" value="${esc(p.local || '')}" placeholder="Cidade / cliente" aria-label="Local"></td>
-    <td><select data-k="pais" aria-label="País">${opcoesPaises(p.pais || '', {vazio:'País…'})}</select></td>
-    <td class="c-num"><input data-k="km" type="number" min="0" step="1" value="${p.km ?? ''}" aria-label="Km desde a paragem anterior"></td>
-    <td><select data-k="op" aria-label="Operação">${OPERACOES.map(([k, t]) => `<option value="${k}"${k === (p.op || 'descarga') ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
-    <td><button class="btn btn-peq btn-perigo" type="button" data-rem-paragem>Retirar</button></td></tr>`;
+const chaveLugar = (l, p) => `${(l || '').trim().toLowerCase()}|${(p || '').trim().toLowerCase()}`;
+const lugarTxt = (l, p) => [l, p].filter(Boolean).join(', ');
+function lugaresConhecidos(){
+  const m = new Map(), add = (l, p) => { if (l && p && !m.has(l.trim().toLowerCase())) m.set(l.trim().toLowerCase(), {local:l.trim(), pais:p}); };
+  const P = params(); add(P.sedeLocal, P.sedePais);
+  store.cargas.forEach(g => { add(g.origem, g.origemPais); (g.servicos || []).forEach(s => { add(s.carregaLocal, s.carregaPais); add(s.descarregaLocal, s.descarregaPais); }); percursoDe(g).paragens.forEach(p => add(p.local, p.pais)); });
+  store.clientes.forEach(c => add(c.localidade, c.pais));
+  return m;
 }
-function pontosDoForm(){
-  const f = $('#f-carga');
-  const par = $$('#v-paragens tbody tr').map((tr, i) => ({id:tr.dataset.pid, n:i + 1, local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value}));
-  const fim = f.elements.fimViagem.value === 'ultima' ? [] : [{id:'pf', t:'Chegada à sede'}];
-  return [{id:'p0', t:`Partida: ${f.elements.origem.value.trim() || 'sede'}`}, ...par.map(p => ({id:p.id, t:`${p.n}. ${p.local || '(sem nome)'}${p.pais ? ', ' + p.pais : ''}`})), ...fim];
+function interpretarLugar(txt){
+  const t = (txt || '').trim(); if (!t) return {local:'', pais:''};
+  const i = t.lastIndexOf(',');
+  if (i > 0){ const p = t.slice(i + 1).trim().toLowerCase(), pm = [...PAISES_EUROPA, ...PAISES_MUNDO].find(x => x.toLowerCase() === p); if (pm) return {local:t.slice(0, i).trim(), pais:pm}; }
+  const k = lugaresConhecidos().get(t.toLowerCase());
+  return k ? {...k} : {local:t, pais:''};
 }
-function opcoesPontos(sel, pontos, v){ return pontos.map(p => `<option value="${esc(p.id)}"${p.id === v ? ' selected' : ''}>${esc(p.t)}</option>`).join(''); }
-function blocoServico(s, pontos){
-  const cli = `<option value="">Escolha…</option>` + entidadesOrdenadas('clientes').filter(x => x.ativo !== false || x.id === s.clienteId).map(x => `<option value="${esc(x.id)}"${x.id === s.clienteId ? ' selected' : ''}>${esc(x.nome)}</option>`).join('')
-    + (!s.clienteId && s.cliente ? `<option value="__texto__" selected>${esc(s.cliente)} (sem ficha)</option>` : '');
-  return `<div class="servico" data-sid="${esc(s.id)}" data-texto="${esc(!s.clienteId ? (s.cliente || '') : '')}">
-    <div class="servico-cab"><strong class="servico-tit"></strong><button class="btn btn-peq btn-perigo" type="button" data-rem-servico>Retirar serviço</button></div>
-    <div class="grelha-3">
-      <label class="campo">Sentido<select data-k="sentido"><option value="ida"${s.sentido !== 'regresso' ? ' selected' : ''}>Ida</option><option value="regresso"${s.sentido === 'regresso' ? ' selected' : ''}>Regresso</option></select></label>
-      <label class="campo">Cliente *<span class="linha-sel"><select data-k="clienteId">${cli}</select><button class="btn btn-peq" type="button" data-novo-cli>+ Novo</button></span></label>
-      <label class="campo">Valor do frete sem IVA (€) *<input data-k="valor" type="number" step="0.01" inputmode="decimal" value="${s.valor ?? ''}"></label>
-      <label class="campo">Carrega em<select data-k="de">${opcoesPontos(null, pontos, s.de || 'p0')}</select></label>
-      <label class="campo">Descarrega em<select data-k="ate">${opcoesPontos(null, pontos, s.ate || (pontos[1] ? pontos[1].id : 'pf'))}</select></label>
-      <label class="campo">Mercadoria<input data-k="mercadoria" value="${esc(s.mercadoria || '')}"></label>
-      <label class="campo">Peso (kg)<input data-k="pesoKg" type="number" min="0" step="1" value="${s.pesoKg ?? ''}"></label>
-      <label class="campo">Nº do CMR<input data-k="cmr" value="${esc(s.cmr || '')}"></label>
-      <label class="campo">Nº da fatura<input data-k="fatura" value="${esc(s.fatura || '')}"></label>
-      <label class="campo inteiro">Outros documentos de acompanhamento<input data-k="docs" value="${esc(s.docs || '')}" placeholder="Guias de remessa, DAU/DAE, e-CMR, certificados…"></label>
-    </div></div>`;
-}
-function atualizarPontosServicos(){
-  const pontos = pontosDoForm();
-  $$('#v-servicos .servico').forEach((b, i) => {
-    $('.servico-tit', b).textContent = `Serviço ${i + 1}`;
-    ['de', 'ate'].forEach(k => { const sel = $(`[data-k="${k}"]`, b), v = sel.value; sel.innerHTML = opcoesPontos(null, pontos, v); if (![...sel.options].some(o => o.value === v)) sel.value = k === 'de' ? 'p0' : pontos[pontos.length - 1].id; });
-  $('#wrap-kmRegresso').hidden = $('#f-carga').elements.fimViagem.value === 'ultima';
+// Percurso a partir das linhas (pela ordem): um carregamento num local já visitado não volta lá;
+// cada descarga acrescenta uma paragem (exceto se for o mesmo local da paragem anterior).
+function derivarPercurso(origem, linhas){
+  const pts = [{id:'p0', local:origem.local, pais:origem.pais}], vis = [{k:chaveLugar(origem.local, origem.pais), id:'p0'}], ops = {}, map = {};
+  const novo = l => { const u = pts[pts.length - 1]; if (chaveLugar(u.local, u.pais) === chaveLugar(l.local, l.pais)) return u.id; const id = 'q' + pts.length; pts.push({id, local:l.local, pais:l.pais}); vis.push({k:chaveLugar(l.local, l.pais), id}); return id; };
+  linhas.forEach(ln => {
+    const kc = chaveLugar(ln.carga.local, ln.carga.pais), ja = [...vis].reverse().find(v => v.k === kc);
+    const de = ja ? ja.id : novo(ln.carga), ate = novo(ln.desc);
+    map[ln.id] = {de, ate};
+    if (!ln.vazio){ ops[de] = (ops[de] || new Set()).add('carga'); ops[ate] = (ops[ate] || new Set()).add('descarga'); }
   });
-  $$('#v-paragens tbody tr').forEach((tr, i) => { $('.v-num', tr).textContent = i + 1; });
+  return {pts, map, ops};
 }
-function lerViagem(){
-  const f = $('#f-carga'), e = f.elements;
-  const paragens = $$('#v-paragens tbody tr').map(tr => ({id:tr.dataset.pid, local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value, km:numOuNull($('[data-k="km"]', tr).value), op:$('[data-k="op"]', tr).value, lat:tr.dataset.lat ? +tr.dataset.lat : null, lon:tr.dataset.lon ? +tr.dataset.lon : null}));
-  const servicos = $$('#v-servicos .servico').map(b => {
-    const v = k => $(`[data-k="${k}"]`, b).value, cid = v('clienteId');
-    return {id:b.dataset.sid, sentido:v('sentido'), clienteId: cid && cid !== '__texto__' ? cid : null,
-      cliente: cid === '__texto__' ? (b.dataset.texto || '') : ((clientePorId(cid) || {}).nome || (cid ? $('[data-k="clienteId"]', b).selectedOptions[0]?.textContent : '') || ''),
-      de:v('de'), ate:v('ate'), mercadoria:v('mercadoria').trim(), pesoKg:numOuNull(v('pesoKg')), valor:numOuNull(v('valor')), cmr:v('cmr').trim(), fatura:v('fatura').trim(), docs:v('docs').trim()};
-  });
-  const mot = motoristaPorId(e.motoristaId.value);
-  return {id:f.dataset.id || '', camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : '',
-    origem:e.origem.value.trim(), dataSaida:e.dataSaida.value, periodoSaida:e.periodoSaida.value, dataRegresso:e.dataRegresso.value, periodoRegresso:e.periodoRegresso.value,
-    origemPais:e.origemPais.value || 'Portugal', fimViagem:e.fimViagem.value,
-    paragens, kmRegresso:e.fimViagem.value === 'ultima' ? 0 : numOuNull(e.kmRegresso.value), ajusteKm:numOuNull(e.ajusteKm.value), servicos, obs:e.obs.value.trim()};
+// ---- Linhas do formulário
+function opcoesClientes(v, textoAntigo){
+  return '<option value="">— Sem cliente (deslocação em vazio) —</option>'
+    + entidadesOrdenadas('clientes').filter(x => x.ativo !== false || x.id === v).map(x => `<option value="${esc(x.id)}"${x.id === v ? ' selected' : ''}>${esc(x.nome)}</option>`).join('')
+    + (textoAntigo ? `<option value="__texto__" selected>${esc(textoAntigo)} (sem ficha)</option>` : '')
+    + '<option value="__novo__">+ Novo cliente…</option>';
 }
-function atualizarPreviewViagem(){
-  const v = lerViagem(), tmp = {...v, servicos:v.servicos.map(s => ({...s, valor:num0(s.valor)}))};
-  if (!tmp.servicos.length || !tmp.paragens.length){ $('#v-km-resumo').textContent = ''; $('#v-preview').innerHTML = ''; return; }
+function linhaCarga(s){
+  return `<tr class="lc" data-sid="${esc(s.id)}" data-texto="${esc(!s.clienteId ? (s.cliente || '') : '')}">
+    <td class="ord"><button class="btn-mini" type="button" data-sobe title="Subir">↑</button><button class="btn-mini" type="button" data-desce title="Descer">↓</button></td>
+    <td><select data-k="clienteId" aria-label="Cliente">${opcoesClientes(s.clienteId || '', !s.clienteId ? s.cliente : '')}</select></td>
+    <td><input data-k="carrega" list="dl-lugares" value="${esc(lugarTxt(s.carregaLocal, s.carregaPais))}" placeholder="Cidade, País" aria-label="Carrega em"></td>
+    <td><input data-k="descarrega" list="dl-lugares" value="${esc(lugarTxt(s.descarregaLocal, s.descarregaPais))}" placeholder="Cidade, País" aria-label="Descarrega em"></td>
+    <td class="c-num"><input data-k="valor" type="number" step="0.01" min="0" value="${s.valor ?? ''}" aria-label="Valor"></td>
+    <td class="c-cmr"><input data-k="cmr" value="${esc(s.cmr || '')}" aria-label="CMR"></td>
+    <td class="ord"><button class="btn-mini" type="button" data-mais title="Mercadoria, peso, fatura e documentos">⋯</button><button class="btn-mini perigo" type="button" data-rem title="Retirar linha">✕</button></td>
+  </tr>
+  <tr class="lc-mais" hidden><td></td><td colspan="6"><div class="grelha-3">
+    <label class="campo">Mercadoria<input data-k="mercadoria" value="${esc(s.mercadoria || '')}"></label>
+    <label class="campo">Peso (kg)<input data-k="pesoKg" type="number" min="0" step="1" value="${s.pesoKg ?? ''}"></label>
+    <label class="campo">Nº da fatura<input data-k="fatura" value="${esc(s.fatura || '')}"></label>
+    <label class="campo inteiro">Outros documentos de acompanhamento<input data-k="docs" value="${esc(s.docs || '')}" placeholder="Guias, DAU/DAE, e-CMR, certificados…"></label>
+  </div></td></tr>`;
+}
+function linhasDoForm(){
+  return ['ida', 'regresso'].flatMap(sent => $$(`#c-${sent} tbody tr.lc`).map(tr => {
+    const mais = tr.nextElementSibling, v = k => ($(`[data-k="${k}"]`, tr) || $(`[data-k="${k}"]`, mais)).value;
+    const cid = v('clienteId'), car = interpretarLugar(v('carrega')), des = interpretarLugar(v('descarrega'));
+    const vazio = !cid && !num0(v('valor'));
+    return {id:tr.dataset.sid, sentido:sent, vazio, clienteId: cid && !cid.startsWith('__') ? cid : null,
+      cliente: cid === '__texto__' ? (tr.dataset.texto || '') : ((clientePorId(cid) || {}).nome || ''),
+      carregaLocal:car.local, carregaPais:car.pais, descarregaLocal:des.local, descarregaPais:des.pais,
+      valor:numOuNull(v('valor')), cmr:v('cmr').trim(), mercadoria:v('mercadoria').trim(), pesoKg:numOuNull(v('pesoKg')), fatura:v('fatura').trim(), docs:v('docs').trim(),
+      carga:car, desc:des};
+  }));
+}
+// ---- Estado do formulário: km de cada troço (calculados ou escritos à mão)
+let kmForm = new Map();            // chave «A>B» → {km, manual}
+const chaveTroco = (a, b) => `${chaveLugar(a.local, a.pais)}>${chaveLugar(b.local, b.pais)}`;
+function rotaDoForm(){
+  const f = $('#f-carga'), P = params(), orig = interpretarLugar(f.elements.origem.value), linhas = linhasDoForm();
+  const d = derivarPercurso(orig, linhas.filter(l => l.carga.local && l.desc.local));
+  const fimSede = f.elements.fimViagem.value !== 'ultima', sede = {local:P.sedeLocal, pais:P.sedePais || 'Portugal'};
+  const seq = [...d.pts, ...(fimSede ? [{id:'pf', ...sede}] : [])];
+  const trocos = seq.slice(1).map((p, i) => { const k = chaveTroco(seq[i], p), e = kmForm.get(k); return {de:seq[i], ate:p, k, km:e ? e.km : null, manual:e ? e.manual : false}; });
+  return {orig, linhas, d, seq, trocos, fimSede};
+}
+function atualizarRota(){
+  const r = rotaDoForm(), f = $('#f-carga');
+  const falta = r.trocos.filter(t => t.km == null).length;
+  const kmEst = r.trocos.reduce((a, t) => a + num0(t.km), 0), kmTot = Math.max(0, kmEst + num0(f.elements.ajusteKm.value));
+  $('#c-rota').innerHTML = r.seq.length > 1
+    ? `<strong>Percurso:</strong> ${r.seq.map(p => esc(p.id === 'pf' ? 'Sede' : (p.local || '?'))).join(' › ')} · <strong>${fmtInt.format(kmTot)} km</strong>${falta ? ` <span class="neg">(faltam km de ${falta} troço${falta === 1 ? '' : 's'})</span>` : ''}`
+    : 'O percurso aparece aqui à medida que escreve as linhas.';
+  $('#c-trocos tbody').innerHTML = r.trocos.map(t => `<tr data-k="${esc(t.k)}"><td>${esc(t.de.id === 'p0' ? 'Partida: ' + t.de.local : t.de.local)}</td><td>${esc(t.ate.id === 'pf' ? 'Sede' : t.ate.local)}</td>
+    <td class="c-num"><input type="number" min="0" step="1" data-km value="${t.km ?? ''}"></td><td>${t.manual ? '<span class="etiq">à mão</span>' : (t.km != null ? '<span class="etiq ativo">calculado</span>' : '')}</td></tr>`).join('');
+  atualizarPreviewCarga();
+  return r;
+}
+let tmrKm = null;
+function agendarKm(){ clearTimeout(tmrKm); tmrKm = setTimeout(() => calcularKmEmFalta(false), 1200); }
+async function calcularKmEmFalta(todos){
+  const r = rotaDoForm(), est = $('#c-km-estado');
+  if (r.seq.length < 2 || r.seq.some(p => !p.local)) return;
+  const alvo = r.trocos.filter(t => todos ? !t.manual : t.km == null);
+  if (!alvo.length){ est.textContent = ''; return; }
+  const semPais = r.seq.find(p => !p.pais);
+  if (semPais){ est.textContent = `Indique o país de «${semPais.local}» (escreva «${semPais.local}, País»).`; est.className = 'nota neg'; return; }
+  est.className = 'nota'; est.textContent = 'A calcular os km…';
+  try {
+    const pts = [];
+    for (const p of r.seq){ const g = await geocodificar(p.local, p.pais); if (!g) throw new Error(`não foi encontrado «${lugarTxt(p.local, p.pais)}». Escreva a localidade de outra forma ou o km à mão em «Ver e ajustar percurso».`); pts.push(g); }
+    const legs = await distanciasPorEstrada(pts);
+    r.trocos.forEach((t, i) => { const e = kmForm.get(t.k); if (!e || (!e.manual && (todos || e.km == null))) kmForm.set(t.k, {km:Math.round(legs[i]), manual:false}); });
+    est.textContent = 'Km calculados por estrada (estimativa para ligeiros; acerte em «Ajuste de km» se for preciso).';
+  } catch (e) {
+    est.textContent = 'Não foi possível calcular os km: ' + (e.message === 'Failed to fetch' ? 'sem ligação aos serviços de mapas. Escreva os km em «Ver e ajustar percurso».' : e.message);
+    est.className = 'nota neg';
+  }
+  atualizarRota();
+}
+function objetoDoForm(){
+  const f = $('#f-carga'), e = f.elements, r = rotaDoForm(), mot = motoristaPorId(e.motoristaId.value);
+  const paragens = r.d.pts.slice(1).map((p, i) => { const o = r.d.ops[p.id]; return {id:p.id, local:p.local, pais:p.pais, km:r.trocos[i] ? r.trocos[i].km : null,
+    op: o && o.has('carga') && o.has('descarga') ? 'carga_descarga' : o && o.has('carga') ? 'carga' : o && o.has('descarga') ? 'descarga' : 'passagem'}; });
+  const servicos = r.linhas.map(l => { const m = r.d.map[l.id] || {}; const {carga, desc, ...resto} = l; return {...resto, de:m.de || 'p0', ate:m.ate || 'p0'}; });
+  return {r, obj:{camiaoId:e.camiaoId.value, motoristaId:e.motoristaId.value || null, motorista: mot ? mot.nome : '', estado:e.estado.value,
+    origem:r.orig.local, origemPais:r.orig.pais, dataSaida:e.dataSaida.value, periodoSaida:e.periodoSaida.value, dataRegresso:e.dataRegresso.value, periodoRegresso:e.periodoRegresso.value,
+    fimViagem:e.fimViagem.value, paragens, kmRegresso: r.fimSede && r.trocos.length ? r.trocos[r.trocos.length - 1].km : 0,
+    kmTrocos:r.trocos.filter(t => t.km != null).map(t => ({k:t.k, km:t.km, manual:!!t.manual})), ajusteKm:numOuNull(e.ajusteKm.value), servicos, obs:e.obs.value.trim()}};
+}
+function atualizarPreviewCarga(){
+  const {obj} = objetoDoForm();
+  if (!obj.paragens.length){ $('#c-preview').innerHTML = ''; return; }
+  const tmp = {...obj, id:$('#f-carga').dataset.id || '', servicos:obj.servicos.map(s => ({...s, valor:num0(s.valor)}))};
   const r = resultadoViagem(tmp), an = r.an;
-  $('#v-km-resumo').textContent = `Km estimados ${fmtInt.format(an.kmEst)}${num0(v.ajusteKm) ? ` · ajuste ${num0(v.ajusteKm) > 0 ? '+' : ''}${fmtInt.format(num0(v.ajusteKm))}` : ''} · km da carga ${fmtInt.format(an.km)} · em vazio ${fmtInt.format(an.kmVazio)}${an.km ? ` (${fmtPct.format(an.kmVazio / an.km)})` : ''}`;
-  $('#v-dias').textContent = v.dataSaida ? `Duração: ${fmtDec.format(an.diasTot)} dias` : '';
-  $('#v-preview').innerHTML = `<strong>Resultado estimado da carga</strong><table>
-    <tr><td>Proveitos (${an.S.length} serviço${an.S.length === 1 ? '' : 's'})</td><td class="n">${fmtC(an.prov)}</td></tr>
+  $('#c-dias').textContent = obj.dataSaida ? `Duração: ${fmtDec.format(an.diasTot)} dias` : '';
+  $('#c-preview').innerHTML = `<strong>Resultado ${estadoDe(obj) === 'concluida' ? 'da carga' : 'estimado da carga'}</strong><table>
+    <tr><td>Proveitos (${an.S.length} cliente${an.S.length === 1 ? '' : 's'})</td><td class="n">${fmtC(an.prov)}</td></tr>
     <tr><td>Despesas associadas (gasóleo, portagens…)</td><td class="n">${fmtC(r.dir)}</td></tr>
     <tr><td>Custo do motorista (${fmtDec.format(an.diasTot)} dias)</td><td class="n">${fmtC(r.cMot)}</td></tr>
-    <tr><td>Custos fixos do camião (${fmtDec.format(an.diasTot)} dias)</td><td class="n">${fmtC(r.cCam)}</td></tr>
-    <tr class="tot"><td>Resultado da carga</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td></tr>
-    <tr><td>Proveito por km</td><td class="n">${an.km ? fmtEur(an.prov / 100 / an.km) : '—'}</td></tr></table>
-    <p class="ajuda" style="margin:6px 0 0">As despesas associadas entram depois de lançadas em Despesas com esta carga. O custo diário vem das fichas do motorista e do camião.</p>`;
+    <tr><td>Custos fixos do camião</td><td class="n">${fmtC(r.cCam)}</td></tr>
+    <tr class="tot"><td>Resultado</td><td class="n ${clsSinal(r.res)}">${fmtC(r.res)}</td></tr>
+    <tr><td>Km da carga · em vazio</td><td class="n">${fmtInt.format(an.km)} · ${an.km ? fmtPct.format(an.kmVazio / an.km) : '—'}</td></tr></table>`;
 }
 function sugerirMotoristaCarga(){
   const f = $('#f-carga'), m = motoristaDoCamiaoEm(f.elements.camiaoId.value, f.elements.dataSaida.value || hoje());
   if (m) f.elements.motoristaId.value = m.id;
 }
-function abrirCarga(id){
-  if (!store.camioes.length){ toast('Adicione primeiro um camião no separador «Frota e dados».', 'erro'); abrirTab('frota'); return; }
-  const f = $('#f-carga'); f.reset(); $('#carga-erro').textContent = '';
-  const g = id ? store.cargas.find(x => x.id === id) : null;
-  f.dataset.id = g ? g.id : '';
-  $('#dlg-carga-tit').textContent = g ? `Carga de ${fmtData(g.dataSaida)}` : 'Nova carga';
-  preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, manter: g ? g.camiaoId : ($('#c-cam').value || '')});
-  preencherSelMotorista(f.elements.motoristaId, g ? (g.motoristaId || '') : '');
-  f.elements.periodoSaida.innerHTML = opcoesPeriodo(g ? (g.periodoSaida || 'manha') : 'manha');
-  f.elements.periodoRegresso.innerHTML = opcoesPeriodo(g ? (g.periodoRegresso || 'noite') : 'noite');
-  const P = g ? percursoDe(g) : {paragens:[{id:novoIdCurto('p'), local:'', pais:'', km:null, op:'descarga'}], kmRegresso:null, ajuste:0};
-  $('#v-paragens tbody').innerHTML = P.paragens.map((p, i) => linhaParagem(p, i + 1)).join('');
-  if (g){
-    f.elements.camiaoId.value = g.camiaoId; f.elements.dataSaida.value = g.dataSaida || ''; f.elements.dataRegresso.value = g.dataRegresso || '';
-    f.elements.origem.value = g.origem || params().sedeLocal || ''; f.elements.obs.value = g.obs || '';
-    f.elements.kmRegresso.value = P.kmRegresso || (g.fimViagem === 'ultima' ? '' : (P.kmRegresso ?? '')); f.elements.ajusteKm.value = P.ajuste || '';
-    f.elements.origemPais.innerHTML = opcoesPaises(g.origemPais || params().sedePais || 'Portugal', {vazio:'País…'});
-    f.elements.fimViagem.value = g.fimViagem === 'ultima' ? 'ultima' : 'sede';
-  } else {
-    f.elements.dataSaida.value = hoje(); f.elements.origem.value = params().sedeLocal || 'Santa Eulália';
-    f.elements.origemPais.innerHTML = opcoesPaises(params().sedePais || 'Portugal', {vazio:'País…'}); f.elements.fimViagem.value = 'sede';
-    sugerirMotoristaCarga(); sugerirOrigem();
-  }
-  const pontos = pontosDoForm();
-  const S = g ? servicosDe(g) : [{id:novoIdCurto('s'), sentido:'ida', de:'p0', ate:P.paragens[0].id}];
-  $('#v-servicos').innerHTML = S.map(s => blocoServico(s, pontos)).join('');
-  $('#v-km-estado').textContent = '';
-  atualizarPontosServicos(); atualizarPreviewViagem();
-  abrirDialogo('#dlg-carga');
-}
-// Nova carga: se a última carga do camião terminou fora da sede, a partida passa a ser essa cidade
+// Nova carga: se a anterior deste camião terminou fora da sede, parte de lá
 function sugerirOrigem(){
   const f = $('#f-carga'); if (f.dataset.id) return;
   const cid = f.elements.camiaoId.value, data = f.elements.dataSaida.value || hoje(), P = params();
   const ant = store.cargas.filter(g => g.camiaoId === cid && g.dataSaida && g.dataSaida <= data).sort((a, b) => b.dataSaida.localeCompare(a.dataSaida))[0];
   const ult = ant && ant.fimViagem === 'ultima' ? percursoDe(ant).paragens.slice(-1)[0] : null;
-  f.elements.origem.value = ult ? (ult.local || P.sedeLocal) : (P.sedeLocal || 'Santa Eulália');
-  f.elements.origemPais.value = ult ? (ult.pais || 'Portugal') : (P.sedePais || 'Portugal');
-  $('#v-origem-ajuda').textContent = ult ? `A carga anterior deste camião (${fmtData(ant.dataSaida)}) terminou em ${ult.local}.` : 'Sede, ou a cidade onde terminou a carga anterior.';
-  atualizarPontosServicos();
+  f.elements.origem.value = ult ? lugarTxt(ult.local, ult.pais) : lugarTxt(P.sedeLocal, P.sedePais || 'Portugal');
+  $('#c-origem-ajuda').textContent = ult ? `A carga anterior deste camião (${fmtData(ant.dataSaida)}) terminou em ${ult.local}.` : 'Sede, ou a cidade onde terminou a carga anterior.';
+  atualizarRota();
 }
-$('#f-carga').elements.camiaoId.addEventListener('change', sugerirOrigem);
-$('#f-carga').elements.camiaoId.addEventListener('change', sugerirMotoristaCarga);
+function preencherLugares(){ $('#dl-lugares').innerHTML = [...lugaresConhecidos().values()].sort((a, b) => a.local.localeCompare(b.local, 'pt')).map(l => `<option value="${esc(lugarTxt(l.local, l.pais))}">`).join(''); }
+function linhasDeRegisto(g){
+  if (Array.isArray(g.servicos) && g.servicos.some(s => s.carregaLocal || s.descarregaLocal)) return g.servicos;
+  // registos antigos: converter pontos do percurso em locais
+  const P = percursoDe(g), lugar = id => {
+    if (id === 'p0') return {local:g.origem || params().sedeLocal, pais:g.origemPais || params().sedePais || 'Portugal'};
+    if (id === 'pf') return {local:params().sedeLocal, pais:params().sedePais || 'Portugal'};
+    const p = P.paragens.find(x => x.id === id); return p ? {local:p.local, pais:p.pais} : {local:'', pais:''};
+  };
+  return servicosDe(g).map(s => { const a = lugar(s.de), b = lugar(s.ate); return {...s, carregaLocal:a.local, carregaPais:a.pais, descarregaLocal:b.local, descarregaPais:b.pais}; });
+}
+function kmDeRegisto(g){
+  const m = new Map();
+  if (Array.isArray(g.kmTrocos)) g.kmTrocos.forEach(t => m.set(t.k, {km:t.km, manual:!!t.manual}));
+  else {
+    const P = percursoDe(g), seq = [{local:g.origem || params().sedeLocal, pais:g.origemPais || params().sedePais || 'Portugal'}, ...P.paragens];
+    if (P.fimSede !== false) seq.push({local:params().sedeLocal, pais:params().sedePais || 'Portugal'});
+    seq.slice(1).forEach((p, i) => { const km = i < P.paragens.length ? num0(P.paragens[i].km) : P.kmRegresso; if (p.local && seq[i].local) m.set(chaveTroco(seq[i], p), {km, manual:true}); });
+  }
+  return m;
+}
+function novaLinha(sent){
+  const ultimas = $$(`#c-${sent} tbody tr.lc`), l = linhasDoForm(), f = $('#f-carga');
+  let carrega = '';
+  if (sent === 'ida') carrega = ultimas.length ? $('[data-k="carrega"]', ultimas[ultimas.length - 1]).value : f.elements.origem.value;
+  else { const reg = l.filter(x => x.sentido === 'regresso'), ida = l.filter(x => x.sentido === 'ida'); carrega = reg.length ? lugarTxt(reg[reg.length - 1].carregaLocal, reg[reg.length - 1].carregaPais) : (ida.length ? lugarTxt(ida[ida.length - 1].descarregaLocal, ida[ida.length - 1].descarregaPais) : ''); }
+  const i = interpretarLugar(carrega);
+  $(`#c-${sent} tbody`).insertAdjacentHTML('beforeend', linhaCarga({id:novoIdCurto('s'), sentido:sent, carregaLocal:i.local, carregaPais:i.pais}));
+  const novo = $$(`#c-${sent} tbody tr.lc`).pop(); $('[data-k="clienteId"]', novo).focus();
+  atualizarRota();
+}
+function abrirCarga(id){
+  if (!store.camioes.length){ toast('Adicione primeiro um camião no separador «Frota e dados».', 'erro'); abrirTab('frota'); return; }
+  const f = $('#f-carga'); f.reset(); $('#carga-erro').textContent = ''; $('#c-km-estado').textContent = '';
+  const g = id ? store.cargas.find(x => x.id === id) : null;
+  f.dataset.id = g ? g.id : '';
+  $('#dlg-carga-tit').textContent = g ? `Carga de ${fmtData(g.dataSaida)}` : 'Nova carga';
+  preencherLugares();
+  preencherSelCamiao(f.elements.camiaoId, {soAtivos:true, manter: g ? g.camiaoId : ($('#c-cam').value || '')});
+  preencherSelMotorista(f.elements.motoristaId, g ? (g.motoristaId || '') : '');
+  f.elements.periodoSaida.innerHTML = opcoesPeriodo(g ? (g.periodoSaida || 'manha') : 'manha');
+  f.elements.periodoRegresso.innerHTML = opcoesPeriodo(g ? (g.periodoRegresso || 'noite') : 'noite');
+  kmForm = g ? kmDeRegisto(g) : new Map();
+  const linhas = g ? linhasDeRegisto(g) : [];
+  ['ida', 'regresso'].forEach(sent => { $(`#c-${sent} tbody`).innerHTML = linhas.filter(s => (s.sentido || 'ida') === sent).map(linhaCarga).join(''); });
+  if (g){
+    f.elements.camiaoId.value = g.camiaoId; f.elements.estado.value = estadoDe(g);
+    f.elements.dataSaida.value = g.dataSaida || ''; f.elements.dataRegresso.value = g.dataRegresso || '';
+    f.elements.origem.value = lugarTxt(g.origem || params().sedeLocal, g.origemPais || params().sedePais || 'Portugal');
+    f.elements.fimViagem.value = g.fimViagem === 'ultima' ? 'ultima' : 'sede'; f.elements.ajusteKm.value = num0(g.ajusteKm) || ''; f.elements.obs.value = g.obs || '';
+    $('#c-origem-ajuda').textContent = 'Sede, ou a cidade onde terminou a carga anterior.';
+  } else {
+    f.elements.estado.value = 'planeada'; f.elements.dataSaida.value = hoje(); f.elements.fimViagem.value = 'sede';
+    sugerirMotoristaCarga(); sugerirOrigem(); novaLinha('ida');
+  }
+  $('#c-ajustar').open = false;
+  f.dataset.origemAnt = f.elements.origem.value;
+  atualizarEstadoCarga(); atualizarRota();
+  abrirDialogo('#dlg-carga');
+}
+function atualizarEstadoCarga(){ const e = $('#f-carga').elements.estado.value; $('#c-reg-rot').textContent = e === 'concluida' ? 'Data de regresso' : 'Regresso previsto'; }
+// ---- Eventos
+$('#f-carga').elements.camiaoId.addEventListener('change', () => { sugerirOrigem(); sugerirMotoristaCarga(); });
 $('#f-carga').elements.dataSaida.addEventListener('change', sugerirMotoristaCarga);
-$('#v-add-par').addEventListener('click', () => {
-  const n = $$('#v-paragens tbody tr').length + 1;
-  $('#v-paragens tbody').insertAdjacentHTML('beforeend', linhaParagem({id:novoIdCurto('p'), local:'', pais:'', km:null, op:'descarga'}, n));
-  atualizarPontosServicos(); atualizarPreviewViagem(); $('#v-paragens tbody tr:last-child [data-k="local"]').focus();
-});
-$('#v-add-serv').addEventListener('click', () => {
-  const pontos = pontosDoForm(), ult = pontos[pontos.length - 2];
-  $('#v-servicos').insertAdjacentHTML('beforeend', blocoServico({id:novoIdCurto('s'), sentido:'ida', de:'p0', ate:ult ? ult.id : 'pf'}, pontos));
-  atualizarPontosServicos(); atualizarPreviewViagem();
-});
+$('#f-carga').elements.estado.addEventListener('change', atualizarEstadoCarga);
+$('#c-add-ida').addEventListener('click', () => novaLinha('ida'));
+$('#c-add-reg').addEventListener('click', () => novaLinha('regresso'));
+$('#c-recalc').addEventListener('click', () => { calcularKmEmFalta(true); });
 $('#f-carga').addEventListener('click', ev => {
-  const rp = ev.target.closest('[data-rem-paragem]');
-  if (rp){ if ($$('#v-paragens tbody tr').length === 1){ toast('A carga precisa de pelo menos uma paragem.', 'erro'); return; } rp.closest('tr').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
-  const rs = ev.target.closest('[data-rem-servico]');
-  if (rs){ if ($$('#v-servicos .servico').length === 1){ toast('A carga precisa de pelo menos um serviço.', 'erro'); return; } rs.closest('.servico').remove(); atualizarPontosServicos(); atualizarPreviewViagem(); return; }
-  const nc = ev.target.closest('[data-novo-cli]');
-  if (nc){ const sel = $('[data-k="clienteId"]', nc.closest('.servico')); abrirEntidade('clientes', null, (id, nome) => { selecionarNovo(sel, id, nome); atualizarPreviewViagem(); }); }
+  const b = ev.target.closest('button'); if (!b) return;
+  const tr = b.closest('tr.lc'); if (!tr) return;
+  const mais = tr.nextElementSibling;
+  if (b.hasAttribute('data-mais')){ mais.hidden = !mais.hidden; return; }
+  if (b.hasAttribute('data-rem')){ tr.remove(); mais.remove(); atualizarRota(); agendarKm(); return; }
+  if (b.hasAttribute('data-sobe')){ let ant = tr.previousElementSibling; ant = ant && ant.previousElementSibling; if (ant && ant.classList.contains('lc')){ ant.before(tr); tr.after(mais); atualizarRota(); agendarKm(); } return; }
+  if (b.hasAttribute('data-desce')){ let seg = mais.nextElementSibling; if (seg && seg.classList.contains('lc')){ const segMais = seg.nextElementSibling; segMais.after(tr); tr.after(mais); atualizarRota(); agendarKm(); } return; }
 });
-$('#f-carga').addEventListener('input', ev => { if (ev.target.closest('#v-paragens') && ev.target.dataset.k === 'local'){ const tr = ev.target.closest('tr'); delete tr.dataset.lat; delete tr.dataset.lon; atualizarPontosServicos(); } atualizarPreviewViagem(); });
-$('#f-carga').addEventListener('change', ev => { if (ev.target.closest('#v-paragens') || ['origem', 'origemPais', 'fimViagem'].includes(ev.target.name)) atualizarPontosServicos(); atualizarPreviewViagem(); });
+$('#f-carga').addEventListener('change', async ev => {
+  const el = ev.target, tr = el.closest('tr.lc');
+  if (el.matches('[data-k="clienteId"]')){
+    if (el.value === '__novo__'){ el.value = ''; abrirEntidade('clientes', null, (id, nome) => { selecionarNovo(el, id, nome); }); return; }
+    const c = clientePorId(el.value), sent = tr.closest('tbody').parentElement.id === 'c-ida' ? 'ida' : 'regresso';
+    if (c && c.localidade){ const alvo = $(`[data-k="${sent === 'ida' ? 'descarrega' : 'carrega'}"]`, tr); if (!alvo.value) alvo.value = lugarTxt(c.localidade, c.pais); }
+  }
+  if (el.matches('[data-km]')){ const k = el.closest('tr').dataset.k, v = numOuNull(el.value); if (v == null) kmForm.delete(k); else kmForm.set(k, {km:v, manual:true}); atualizarRota(); return; }
+  if (el.matches('[data-k="carrega"], [data-k="descarrega"]') || el.name === 'origem'){
+    const i = interpretarLugar(el.value);
+    if (i.local && !i.pais){
+      try { const g = await geocodificar(i.local, ''); if (g && g.pais){ const pm = [...PAISES_EUROPA, ...PAISES_MUNDO].find(x => x.toLowerCase() === g.pais.toLowerCase()) || g.pais; el.value = lugarTxt(i.local, pm); } } catch (e) {}
+    } else if (i.local) el.value = lugarTxt(i.local, i.pais);
+    if (el.name === 'origem'){
+      // as linhas que carregavam na partida anterior passam a carregar na nova partida
+      const f = $('#f-carga'), ant = f.dataset.origemAnt || '';
+      $$('#c-ida tr.lc [data-k="carrega"]').forEach(inp => { if (!inp.value || inp.value === ant) inp.value = el.value; });
+      f.dataset.origemAnt = el.value;
+    }
+    atualizarRota(); agendarKm(); return;
+  }
+  if (el.name === 'fimViagem' || el.name === 'ajusteKm'){ atualizarRota(); agendarKm(); return; }
+  atualizarRota();
+});
+$('#f-carga').addEventListener('input', ev => { if (ev.target.matches('[data-k="valor"], [name="ajusteKm"], [name="dataSaida"], [name="dataRegresso"], [name="periodoSaida"], [name="periodoRegresso"]')) atualizarPreviewCarga(); });
 $('#f-carga').addEventListener('submit', ev => {
   ev.preventDefault();
-  const f = ev.target, erro = $('#carga-erro'), v = lerViagem(); erro.textContent = '';
-  if (!v.camiaoId) return erro.textContent = 'Escolha o camião.';
-  if (!v.dataSaida) return erro.textContent = 'Indique a data de saída.';
-  if (v.dataRegresso && v.dataRegresso < v.dataSaida) return erro.textContent = 'A data de regresso é anterior à data de saída.';
-  if (v.dataRegresso && diasEntre(v.dataSaida, v.dataRegresso) > 60) return erro.textContent = 'A carga tem mais de 60 dias. Confirme as datas.';
-  if (v.dataRegresso === v.dataSaida && PERIODOS.findIndex(p => p[0] === v.periodoRegresso) < PERIODOS.findIndex(p => p[0] === v.periodoSaida)) return erro.textContent = 'No mesmo dia, o regresso não pode ser antes da saída.';
-  const pi = v.paragens.findIndex(p => !p.local && !p.pais);
-  if (pi >= 0) return erro.textContent = `Indique o local ou o país da paragem ${pi + 1}.`;
-  if ([...v.paragens.map(p => p.km), v.kmRegresso].some(k => k != null && (!isFinite(k) || k < 0))) return erro.textContent = 'Os km dos troços têm de ser números positivos.';
-  if (v.ajusteKm != null && !isFinite(v.ajusteKm)) return erro.textContent = 'O ajuste de km tem de ser um número.';
-  const ordem = ['p0', ...v.paragens.map(p => p.id), 'pf'];
-  for (let i = 0; i < v.servicos.length; i++){
-    const s = v.servicos[i];
-    if (!s.clienteId && !s.cliente) return erro.textContent = `Escolha o cliente do serviço ${i + 1} (ou crie-o com «+ Novo»).`;
-    if (s.valor == null || !isFinite(s.valor)) return erro.textContent = `Indique o valor do frete do serviço ${i + 1}.`;
-    if (ordem.indexOf(s.ate) <= ordem.indexOf(s.de)) return erro.textContent = `No serviço ${i + 1}, a descarga tem de ser depois da carga no percurso.`;
-    if (s.pesoKg != null && (!isFinite(s.pesoKg) || s.pesoKg < 0)) return erro.textContent = `O peso do serviço ${i + 1} tem de ser um número positivo.`;
-    s.valor = r2(s.valor);
+  const f = ev.target, erro = $('#carga-erro'); erro.textContent = '';
+  const {r, obj} = objetoDoForm();
+  if (!obj.camiaoId) return erro.textContent = 'Escolha o camião.';
+  if (!obj.dataSaida) return erro.textContent = 'Indique a data de saída.';
+  if (!obj.origem || !obj.origemPais) return erro.textContent = 'Indique a partida no formato «Cidade, País».';
+  if (obj.dataRegresso && obj.dataRegresso < obj.dataSaida) return erro.textContent = 'A data de regresso é anterior à data de saída.';
+  if (obj.dataRegresso && diasEntre(obj.dataSaida, obj.dataRegresso) > 60) return erro.textContent = 'A carga tem mais de 60 dias. Confirme as datas.';
+  if (obj.dataRegresso === obj.dataSaida && PERIODOS.findIndex(p => p[0] === obj.periodoRegresso) < PERIODOS.findIndex(p => p[0] === obj.periodoSaida)) return erro.textContent = 'No mesmo dia, o regresso não pode ser antes da saída.';
+  if (!r.linhas.length) return erro.textContent = 'Acrescente pelo menos uma linha (um CMR, ou uma deslocação em vazio).';
+  const secs = {ida:'Ida', regresso:'Regresso'}, num = {ida:0, regresso:0};
+  for (const l of r.linhas){
+    num[l.sentido]++; const onde = `${secs[l.sentido]}, linha ${num[l.sentido]}`;
+    if (!l.carregaLocal || !l.carregaPais) return erro.textContent = `${onde}: indique onde carrega no formato «Cidade, País».`;
+    if (!l.descarregaLocal || !l.descarregaPais) return erro.textContent = `${onde}: indique onde descarrega no formato «Cidade, País».`;
+    if (chaveLugar(l.carregaLocal, l.carregaPais) === chaveLugar(l.descarregaLocal, l.descarregaPais)) return erro.textContent = `${onde}: o local de carga e de descarga são iguais.`;
+    if (!l.vazio && !l.clienteId && !l.cliente) return erro.textContent = `${onde}: escolha o cliente.`;
+    if (!l.vazio && (l.valor == null || !isFinite(l.valor) || l.valor < 0)) return erro.textContent = `${onde}: indique o valor do frete.`;
+    if (l.pesoKg != null && (!isFinite(l.pesoKg) || l.pesoKg < 0)) return erro.textContent = `${onde}: o peso tem de ser um número positivo.`;
   }
-  const an = analisarViagem({...v, servicos:v.servicos});
-  if (an.km + 0.5 < 0 || num0(v.ajusteKm) < -an.kmEst) return erro.textContent = 'O ajuste de km não pode ser maior do que os km estimados.';
-  const ult = [...v.paragens].reverse().find(p => p.op !== 'passagem') || v.paragens[v.paragens.length - 1];
-  const d = {...v};
-  delete d.id;
-  Object.assign(d, {
-    km:Math.round(an.km), valor:r2(an.prov / 100), cliente:[...new Set(v.servicos.map(nomeClienteServ).filter(Boolean))].join(', '), clienteId:v.servicos[0].clienteId || null,
-    destinoPais:(v.paragens.find(p => p.op !== 'passagem') || v.paragens[0]).pais || '', destinoCidade:(v.paragens.find(p => p.op !== 'passagem') || v.paragens[0]).local || '',
-    mercadoria:[...new Set(v.servicos.map(s => s.mercadoria).filter(Boolean))].join(', '), pesoKg:null,
-    cmr:v.servicos.map(s => s.cmr).filter(Boolean).join(', '), fatura:v.servicos.map(s => s.fatura).filter(Boolean).join(', ')
-  });
+  if (obj.ajusteKm != null && !isFinite(obj.ajusteKm)) return erro.textContent = 'O ajuste de km tem de ser um número.';
+  if (obj.estado === 'concluida'){
+    if (!obj.dataRegresso) return erro.textContent = 'Para concluir a carga, indique a data de regresso.';
+    const semCmr = r.linhas.filter(l => !l.vazio && !l.cmr).length, semKm = r.trocos.filter(t => t.km == null).length;
+    if ((semCmr || semKm) && !confirm(`Concluir a carga com ${semCmr ? semCmr + ' linha(s) sem CMR' : ''}${semCmr && semKm ? ' e ' : ''}${semKm ? semKm + ' troço(s) sem km' : ''}?`)) return;
+  }
+  obj.servicos.forEach(s => { s.valor = r2(num0(s.valor)); });
+  const an = analisarViagem(obj), reais = obj.servicos.filter(s => !s.vazio), primeira = obj.paragens.find(p => p.op !== 'passagem') || obj.paragens[0] || {};
+  Object.assign(obj, {km:Math.round(an.km), valor:r2(an.prov / 100), cliente:[...new Set(reais.map(nomeClienteServ).filter(Boolean))].join(', '), clienteId:(reais[0] || {}).clienteId || null,
+    destinoPais:primeira.pais || '', destinoCidade:primeira.local || '', mercadoria:[...new Set(reais.map(s => s.mercadoria).filter(Boolean))].join(', '), pesoKg:null,
+    cmr:reais.map(s => s.cmr).filter(Boolean).join(', '), fatura:reais.map(s => s.fatura).filter(Boolean).join(', ')});
   const id = f.dataset.id;
-  gravar(id ? DB.update('cargas', id, d) : DB.add('cargas', d), 'Carga guardada.');
+  gravar(id ? DB.update('cargas', id, obj) : DB.add('cargas', obj), obj.estado === 'concluida' ? 'Carga concluída e guardada.' : 'Carga guardada.');
   fecharDialogo($('#dlg-carga'));
 });
 
@@ -2037,10 +2173,10 @@ async function geocodificar(local, pais){
   if (cacheGeo.has(q)) return cacheGeo.get(q);
   const espera = 1100 - (Date.now() - ultimoGeo); if (espera > 0) await new Promise(r => setTimeout(r, espera));
   ultimoGeo = Date.now();
-  const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=pt-PT&q=${encodeURIComponent(q)}`, {headers:{Accept:'application/json'}});
+  const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&accept-language=pt-PT&q=${encodeURIComponent(q)}`, {headers:{Accept:'application/json'}});
   if (!resp.ok) throw new Error('o serviço de localização não respondeu (' + resp.status + ')');
   const j = await resp.json();
-  const o = j && j.length ? {lat:+j[0].lat, lon:+j[0].lon, nome:j[0].display_name} : null;
+  const o = j && j.length ? {lat:+j[0].lat, lon:+j[0].lon, nome:j[0].display_name, pais:(j[0].address || {}).country || ''} : null;
   cacheGeo.set(q, o); return o;
 }
 async function distanciasPorEstrada(pontos){
@@ -2051,41 +2187,7 @@ async function distanciasPorEstrada(pontos){
   if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error('não foi encontrada rota por estrada entre estes locais');
   return j.routes[0].legs.map(l => l.distance / 1000);
 }
-async function calcularKmAutomatico(){
-  const f = $('#f-carga'), est = $('#v-km-estado'), btn = $('#v-km-auto');
-  const linhas = $$('#v-paragens tbody tr');
-  const semLocal = linhas.findIndex(tr => !$('[data-k="local"]', tr).value.trim());
-  if (semLocal >= 0){ est.textContent = `Escreva a localidade da paragem ${semLocal + 1} (por exemplo «Lyon»).`; est.className = 'nota neg'; return; }
-  const fimSede = f.elements.fimViagem.value !== 'ultima';
-  const jaTem = linhas.some(tr => $('[data-k="km"]', tr).value) || (fimSede && f.elements.kmRegresso.value);
-  if (jaTem && !confirm('Substituir os km já escritos pelos km calculados?')) return;
-  const P = params(), partida = {local:f.elements.origem.value.trim() || P.sedeLocal, pais:f.elements.origemPais.value || P.sedePais || 'Portugal'}, sede = {local:P.sedeLocal, pais:P.sedePais || 'Portugal'};
-  const lista = [partida, ...linhas.map(tr => ({local:$('[data-k="local"]', tr).value.trim(), pais:$('[data-k="pais"]', tr).value})), ...(fimSede ? [sede] : [])];
-  btn.disabled = true; est.className = 'nota';
-  try {
-    const pts = [];
-    for (let i = 0; i < lista.length; i++){
-      const p = lista[i];
-      est.textContent = `A localizar ${i === 0 ? 'a partida' : (fimSede && i === lista.length - 1) ? 'a sede' : 'a paragem ' + i} (${p.local})…`;
-      const g = await geocodificar(p.local, p.pais);
-      if (!g) throw new Error(`não foi encontrado «${[p.local, p.pais].filter(Boolean).join(', ')}». Escreva a localidade de outra forma (por exemplo com a região ou o código postal).`);
-      pts.push(g);
-    }
-    est.textContent = 'A calcular a distância por estrada…';
-    const legs = await distanciasPorEstrada(pts);
-    linhas.forEach((tr, i) => { $('[data-k="km"]', tr).value = Math.round(legs[i]); tr.dataset.lat = pts[i + 1].lat; tr.dataset.lon = pts[i + 1].lon; });
-    if (fimSede) f.elements.kmRegresso.value = Math.round(legs[legs.length - 1]); else f.elements.kmRegresso.value = '';
-    const tot = legs.reduce((a, v) => a + v, 0);
-    est.innerHTML = `Calculado: ${fmtInt.format(Math.round(tot))} km por estrada. Partida localizada em «${esc(pts[0].nome.split(',').slice(0, 3).join(','))}». ` +
-      `Confirme cada local: ${linhas.map((tr, i) => `${i + 1}. ${esc(pts[i + 1].nome.split(',').slice(0, 2).join(','))}`).join(' · ')}. É uma estimativa para ligeiros; use o «Ajuste de km» para desvios e restrições de pesados.`;
-    est.className = 'nota';
-    atualizarPreviewViagem();
-  } catch (e) {
-    est.textContent = 'Não foi possível calcular: ' + (e.message === 'Failed to fetch' ? 'sem ligação aos serviços de mapas. Escreva os km à mão.' : e.message);
-    est.className = 'nota neg';
-  } finally { btn.disabled = false; }
-}
-$('#v-km-auto').addEventListener('click', calcularKmAutomatico);
+
 
 // ---- Despesa
 function preencherTiposSelect(sel, comTodos, incluirId){
@@ -2691,7 +2793,7 @@ function pdfCargasTabela(R, titulo, lista){
   const linhas = lista.map(g => ({g, r:resultadoViagem(g)}));
   const T = {d:0, km:0, v:0, p:0, c:0, r:0};
   const body = linhas.map(({g, r}) => { const an = r.an; T.d += an.diasTot; T.km += an.km; T.v += an.kmVazio; T.p += an.prov; T.c += r.custo; T.r += r.res;
-    return [pS(fmtData(g.dataSaida) + '\n' + (NOME_PERIODO[g.periodoSaida] || '')), pS(fmtData(g.dataRegresso) + (g.dataRegresso ? '\n' + (NOME_PERIODO[g.periodoRegresso] || '') : '')), pN(an.diasTot, 'dec'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)),
+    return [pS(fmtData(g.dataSaida) + '\n' + ESTADOS[estadoDe(g)][0]), pS(fmtData(g.dataRegresso) + (g.dataRegresso ? '\n' + (NOME_PERIODO[g.periodoRegresso] || '') : '')), pN(an.diasTot, 'dec'), pS(nomeCamiao(g.camiaoId)), pS(nomeMotoristaCarga(g)),
       pS(percursoTxt(g, 8)), pS(clientesTxt(g)), pN(an.km, 'int'), pN(an.km ? an.kmVazio / an.km : null, 'pct'), pN(an.prov / 100, 'eur'), pN(r.custo / 100, 'eur'), pN(r.res / 100, 'eur', {fontStyle:'bold'}), pN(an.km ? an.prov / 100 / an.km : null, 'eur')]; });
   pdfSecao(R, titulo, (body.length + 3) * alturaLinha(7) * 1.5);
   pdfTabela(R, {head:['Saída','Regresso','Dias','Camião','Motorista','Percurso','Clientes','Km','Vazio','Proveitos','Custos','Resultado','€/km'], body,
@@ -3295,7 +3397,7 @@ $$('.tabs button').forEach(b => b.addEventListener('click', () => abrirTab(b.dat
 $$('[data-imprimir]').forEach(b => b.addEventListener('click', () => window.print()));
 ['#r-ano','#r-mes'].forEach(s => $(s).addEventListener('change', renderResultados));
 $('#r-ind').addEventListener('change', renderAnual);
-['#c-ano','#c-mes','#c-cam'].forEach(s => $(s).addEventListener('change', renderCargas));
+['#c-ano','#c-mes','#c-cam','#c-estado'].forEach(s => $(s).addEventListener('change', renderCargas));
 ['#d-ano','#d-mes','#d-cam','#d-tipo'].forEach(s => $(s).addEventListener('change', renderDespesas));
 ['#p-ano','#p-mes'].forEach(s => $(s).addEventListener('change', renderPessoal));
 ['#f-de','#f-ate','#f-cam','#f-pais'].forEach(s => $(s).addEventListener('change', renderFolha));
