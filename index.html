@@ -222,7 +222,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   <header class="topo">
     <div class="marca"><strong>DIGNIDADE GARRIDA TRANSPORTES LDA</strong><span>NIF 518242226 · Gestão de frota</span></div>
     <div class="topo-dir">
-      <span class="sync" title="Versão do programa">Versão 2026-11-12</span>
+      <span class="sync" title="Versão do programa">Versão 2026-11-13</span>
       <span id="estado-sync" class="sync"></span>
       <span id="utilizador"></span>
       <button class="btn btn-peq" id="btn-sair" type="button">Sair</button>
@@ -389,7 +389,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <tbody></tbody><tfoot></tfoot>
           </table>
         </div>
-        <p class="nota">Cargas compradas a um fornecedor e vendidas a um cliente, sem custos de motorista, camião ou despesas. Lucro = margem sem IVA (venda − compra) − IVA a entregar (IVA da venda − IVA da compra). Estas operações não entram nos resultados da frota.</p>
+        <p class="nota">Cargas compradas a um fornecedor e vendidas a um cliente, sem custos de motorista, camião ou despesas. Lucro = margem sem IVA (venda − compra) − IVA a entregar (IVA da venda − IVA da compra). Se a compra ou a venda for isenta de IVA, o IVA não entra e o lucro é a margem sem IVA. Estas operações não entram nos resultados da frota.</p>
       </div>
     </section>
 
@@ -3224,8 +3224,12 @@ function contasCV(o){
   const tc = o.taxaCompra ?? 23, tv = o.taxaVenda ?? 23;
   const ic = Math.round(vc * tc / 100), iv = Math.round(vv * tv / 100);
   const margem = vv - vc, ivaEntregar = iv - ic;
-  // Lucro da operação, como definido pela empresa: margem sem IVA menos o IVA a entregar ao Estado
-  return {vc, vv, ic, iv, tc, tv, totC:vc + ic, totV:vv + iv, margem, ivaEntregar, lucro:margem - ivaEntregar, saldo:(vv + iv) - (vc + ic)};
+  // Lucro da operação, como definido pela empresa:
+  // com IVA na compra e na venda: margem sem IVA − IVA a entregar;
+  // com isenção (0%) na compra ou na venda: o IVA não entra nas contas e o lucro é a margem sem IVA.
+  // o IVA a recuperar nunca é somado ao lucro
+  const ivaNoLucro = tc > 0 && tv > 0 && ivaEntregar > 0;
+  return {vc, vv, ic, iv, tc, tv, totC:vc + ic, totV:vv + iv, margem, ivaEntregar, ivaNoLucro, lucro: ivaNoLucro ? margem - ivaEntregar : margem, saldo:(vv + iv) - (vc + ic)};
 }
 function filtrarCV(){
   const ano = $('#cv-ano').value, mes = $('#cv-mes').value, cli = $('#cv-cli').value;
@@ -3279,7 +3283,8 @@ function atualizarPreviewCV(){
     <tr class="tot"><td>Diferença</td><td class="n ${clsSinal(c.margem)}">${fmtC(c.margem)}</td><td class="n">${fmtC(c.ivaEntregar)}</td><td class="n">${fmtC(c.saldo)}</td></tr></table>
     <strong style="display:block;margin-top:10px">Lucro da operação</strong><table>
     <tr><td>Margem sem IVA (venda − compra)</td><td class="n">${fmtC(c.margem)}</td></tr>
-    <tr><td>IVA a entregar ao Estado (${fmtC(c.iv)} − ${fmtC(c.ic)})</td><td class="n">${c.ivaEntregar >= 0 ? '−' : '+'} ${fmtC(Math.abs(c.ivaEntregar))}</td></tr>
+    ${c.ivaNoLucro ? `<tr><td>IVA a entregar ao Estado (${fmtC(c.iv)} − ${fmtC(c.ic)})</td><td class="n">${c.ivaEntregar >= 0 ? '−' : '+'} ${fmtC(Math.abs(c.ivaEntregar))}</td></tr>`
+      : `<tr><td>${c.tv === 0 || c.tc === 0 ? `IVA (isento na ${c.tv === 0 ? 'venda' : 'compra'})` : 'IVA a recuperar'}: não entra no lucro</td><td class="n">—</td></tr>`}
     <tr class="tot"><td>Lucro</td><td class="n ${clsSinal(c.lucro)}">${fmtC(c.lucro)}${c.vv ? ` (${fmtPct.format(c.lucro / c.vv)})` : ''}</td></tr></table>`;
 }
 function abrirCV(id){
@@ -3326,7 +3331,7 @@ function folhaCV(titulo, lista){
     L.push([X(fmtData(o.data)), X(o.origemLocal), X(o.origemPais), X(o.destinoLocal), X(o.destinoPais), X(o.mercadoria), X(o.pesoKg ?? '', 'int'), X(o.cmr), X(nomeFornCV(o)), X(o.faturaCompra),
       X(c.vc / 100, 'eur'), X(c.tc / 100, 'pct'), X(c.ic / 100, 'eur'), X(c.totC / 100, 'eur'), X(nomeCliCV(o)), X(o.faturaVenda),
       X(c.vv / 100, 'eur'), X(c.tv / 100, 'pct'), X(c.iv / 100, 'eur'), X(c.totV / 100, 'eur'),
-      X(c.margem / 100, 'eur', 'sub', `Q${row}-K${row}`), X(c.vv ? c.margem / c.vv : '', 'pct', null, `IF(Q${row}=0,"",U${row}/Q${row})`), X(c.ivaEntregar / 100, 'eur', null, `S${row}-M${row}`), X(c.lucro / 100, 'eur', 'sub', `U${row}-W${row}`), X(c.vv ? c.lucro / c.vv : '', 'pct', null, `IF(Q${row}=0,"",X${row}/Q${row})`), X(o.obs)]); });
+      X(c.margem / 100, 'eur', 'sub', `Q${row}-K${row}`), X(c.vv ? c.margem / c.vv : '', 'pct', null, `IF(Q${row}=0,"",U${row}/Q${row})`), X(c.ivaEntregar / 100, 'eur', null, `S${row}-M${row}`), X(c.lucro / 100, 'eur', 'sub', `IF(OR(L${row}=0,R${row}=0,W${row}<=0),U${row},U${row}-W${row})`), X(c.vv ? c.lucro / c.vv : '', 'pct', null, `IF(Q${row}=0,"",X${row}/Q${row})`), X(o.obs)]); });
   const fim = L.length;
   if (lista.length){
     const t = totaisCV(lista), S = (col, v) => X(v, 'eur', 'tot', `SUM(${col}${ini}:${col}${fim})`), V = X('', null, 'tot');
@@ -3353,7 +3358,7 @@ function pdfCVlista(){
   pdfTabela(R, {head:['Data', 'Origem > destino', 'Fornecedor', 'Compra', 'IVA compra', 'Cliente', 'Venda', 'IVA venda', 'Margem sem IVA', 'IVA a entregar', 'Lucro', 'Lucro %'], body,
     foot:[pS('Total'), pS(''), pS(''), pN(t.vc / 100, 'eur'), pN(t.ic / 100, 'eur'), pS(''), pN(t.vv / 100, 'eur'), pN(t.iv / 100, 'eur'), pN(t.margem / 100, 'eur'), pN(t.ivaEntregar / 100, 'eur'), pN(t.lucro / 100, 'eur'), pN(t.vv ? t.lucro / t.vv : null, 'pct')],
     cols:[{w:16}, {}, {w:36}, {n:1, w:19}, {n:1, w:17}, {w:36}, {n:1, w:19}, {n:1, w:17}, {n:1, w:19}, {n:1, w:18}, {n:1, w:19}, {n:1, w:13}], fs:7.2});
-  pdfNota(R, 'Operações de compra e venda de cargas, sem custos de motorista, camião ou despesas. Não entram nos resultados da frota. IVA a entregar = IVA liquidado nas vendas − IVA dedutível nas compras. Lucro = margem sem IVA − IVA a entregar.');
+  pdfNota(R, 'Operações de compra e venda de cargas, sem custos de motorista, camião ou despesas. Não entram nos resultados da frota. IVA a entregar = IVA liquidado nas vendas − IVA dedutível nas compras. Lucro = margem sem IVA − IVA a entregar; nas operações com isenção de IVA na compra ou na venda, o IVA não entra e o lucro é a margem sem IVA.');
   pdfFecho(R, [['Margem sem IVA', fmtC(t.margem)], ['IVA a entregar', fmtC(t.ivaEntregar)], ['Lucro', fmtC(t.lucro)], ['Lucro %', fmtVal(t.vv ? t.lucro / t.vv : null, 'pct')]]);
   pdfFinalizar(R, `compra-venda-cargas-${$('#cv-ano').value}${$('#cv-mes').value ? '-' + $('#cv-mes').value : ''}.pdf`);
 }
@@ -3368,7 +3373,7 @@ function pdfCV(id){
   pdfTabela(R, {head:['', 'Sem IVA', 'IVA', 'Com IVA'], body:[[pS('Venda'), pN(c.vv / 100, 'eur'), pN(c.iv / 100, 'eur'), pN(c.totV / 100, 'eur')], [pS('Compra'), pN(c.vc / 100, 'eur'), pN(c.ic / 100, 'eur'), pN(c.totC / 100, 'eur')]],
     foot:[pS('Diferença'), pN(c.margem / 100, 'eur'), pN(c.ivaEntregar / 100, 'eur'), pN(c.saldo / 100, 'eur')], cols:[{w:50}, {n:1}, {n:1}, {n:1}], fs:9});
   pdfSecao(R, 'Lucro da operação', 5 * alturaLinha(9));
-  pdfTabela(R, {body:[[pS('Margem sem IVA (venda - compra)'), pN(c.margem / 100, 'eur')], [pS(`IVA a entregar ao Estado (${fmtC(c.iv)} - ${fmtC(c.ic)})`), pN(-c.ivaEntregar / 100, 'eur')]],
+  pdfTabela(R, {body:[[pS('Margem sem IVA (venda - compra)'), pN(c.margem / 100, 'eur')], c.ivaNoLucro ? [pS(`IVA a entregar ao Estado (${fmtC(c.iv)} - ${fmtC(c.ic)})`), pN(-c.ivaEntregar / 100, 'eur')] : [pS(c.tv === 0 || c.tc === 0 ? `IVA isento na ${c.tv === 0 ? 'venda' : 'compra'}: não entra no lucro` : 'IVA a recuperar: não entra no lucro'), pS('-', {halign:'right'})]],
     foot:[pS('Lucro'), pN(c.lucro / 100, 'eur')], cols:[{}, {n:1, w:40}], fs:9, largura:150});
   pdfKV(R, 'Resultado', [['Lucro da operação', fmtC(c.lucro)], ['Lucro sobre a venda', fmtVal(c.vv ? c.lucro / c.vv : null, 'pct')], ['Margem sem IVA', fmtC(c.margem)], ['IVA a entregar', fmtC(c.ivaEntregar)]]);
   if (o.obs){ pdfSecao(R, 'Observações', 10); pdfNota(R, o.obs); }
