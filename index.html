@@ -223,7 +223,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
   <header class="topo">
     <div class="marca"><strong>DIGNIDADE GARRIDA TRANSPORTES LDA</strong><span>NIF 518242226 · Gestão de frota</span></div>
     <div class="topo-dir">
-      <span class="sync" title="Versão do programa">Versão 2026-11-16</span>
+      <span class="sync" title="Versão do programa">Versão 2026-11-16c</span>
       <span id="estado-sync" class="sync"></span>
       <span id="utilizador"></span>
       <button class="btn btn-peq" id="btn-sair" type="button">Sair</button>
@@ -492,7 +492,7 @@ legend{font-family:var(--fc);font-weight:700;font-size:17px;padding:0 6px}
             <label class="campo">Avisar documentos a expirar com (dias)<input type="number" name="avisoValidadeDias" step="1" min="0"></label>
             <label class="campo">Local de partida habitual (sede)<input name="sedeLocal" autocomplete="off"></label>
             <label class="campo">País da sede<input name="sedePais" autocomplete="off"></label>
-            <label class="campo">Início dos registos na app<input type="date" name="inicioRegisto"><span class="ajuda">Salários e custos fixos só contam a partir desta data.</span></label>
+            <label class="campo">Início dos registos na app<input type="date" name="inicioRegisto"><span class="ajuda">Opcional. Os salários e custos fixos já só contam a partir do dia da primeira carga ou compra e venda; use esta data apenas se quiser começar ainda mais tarde.</span></label>
           </div>
           <div class="barra" style="margin-top:12px"><button class="btn btn-pri" type="submit">Guardar parâmetros</button><p class="erro" id="param-erro" role="alert"></p></div>
         </form>
@@ -964,6 +964,21 @@ const num0 = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 const numOuNull = v => (v === '' || v == null) ? null : Number(v);
 const pad2 = n => String(n).padStart(2, '0');
 function fmtVal(v, t){ if (v == null || !isFinite(v)) return '—'; switch (t){ case 'eur': return fmtEur(v); case 'pct': return fmtPct.format(v); case 'dec': return fmtDec.format(v); default: return fmtInt.format(v); } }
+// Período em que os custos do pessoal e dos camiões contam: a partir do DIA do primeiro registo de atividade
+// (carga ou compra e venda) e nunca depois do fim do mês corrente. Sem registos, nada conta (evita resultados negativos enganadores).
+let cacheInicio;
+function primeiroRegisto(){
+  if (cacheInicio !== undefined) return cacheInicio;
+  const datas = [...store.cargas.map(g => g.dataSaida), ...(store.compravenda || []).map(o => o.data)].filter(x => /^\d{4}-\d{2}-\d{2}/.test(x || '')).sort();
+  return (cacheInicio = datas[0] || null);
+}
+function inicioCustos(){
+  const pr = primeiroRegisto(); if (!pr) return null;
+  const P = params(), dia = pr.slice(0, 10);
+  return P.inicioRegisto && P.inicioRegisto > dia ? P.inicioRegisto : dia;
+}
+function fimCustos(){ const h = hoje(); return h.slice(0, 7) + '-31'; }
+function dentroPeriodo(d){ const i = inicioCustos(); return !!i && d >= i && d <= fimCustos(); }
 function hoje(){ const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 function novoId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
 function email(){ return MODO_LOCAL ? 'local' : (utilizadorAtual && utilizadorAtual.email) || ''; }
@@ -1115,8 +1130,8 @@ function resultadoViagem(g){
   let cMot = 0, cCam = 0;
   const m = g.motoristaId && motoristaPorId(g.motoristaId), c = camiaoPorId(g.camiaoId);
   Object.entries(porMes).forEach(([ym, f]) => {
-    if (m){ const cm = pessoalMes(ym).find(x => x.m.id === m.id); if (cm && cm.diasEmp) cMot += cm.total / cm.diasEmp * f; }
-    if (c){ const fx = custosFixosCamiao(c, ym); if (fx && fx.dias) cCam += (fx.segcam + fx.leasing + fx.outfix) / fx.dias * f; }
+    if (m){ const cm = pessoalMes(ym).find(x => x.m.id === m.id) || custoMotorista(m, ym, {ignorarPeriodo:true}); if (cm && cm.diasEmp) cMot += cm.total / cm.diasEmp * f; }
+    if (c){ const fx = custosFixosCamiao(c, ym) || custosFixosCamiao(c, ym, true); if (fx && fx.dias) cCam += (fx.segcam + fx.leasing + fx.outfix) / fx.dias * f; }
   });
   const desp = g.id ? store.despesas.filter(d => d.cargaId === g.id) : [];
   const dir = desp.reduce((a, d) => a + cent(d.valor), 0);
@@ -1248,7 +1263,7 @@ function alocar(d){
 // Custo de um motorista num mês, por componente (cêntimos) e dias por camião.
 function custoMotorista(m, ym, opts = {}){
   const P = params(), dias = diasDoMes(ym);
-  const diasEmp = dias.filter(d => empregadoEm(m, d) && (!P.inicioRegisto || d >= P.inicioRegisto));
+  const diasEmp = dias.filter(d => empregadoEm(m, d) && (opts.ignorarPeriodo ? (!P.inicioRegisto || d >= P.inicioRegisto) : dentroPeriodo(d)));
   if (!diasEmp.length) return null;
   // Mês incompleto: proporcional a 30 dias, como no processamento salarial
   const frac = diasEmp.length === dias.length ? 1 : Math.min(1, diasEmp.length / 30);
@@ -1305,8 +1320,8 @@ function custoMotorista(m, ym, opts = {}){
   return {m, ym, frac, ajudasAuto, temAjMes, diasSemAtrib, criterio, pesoTotal, diasEmp:diasEmp.length, diasTrab, diasDesl, autoDesl, nViag, diasUteis, extras, faltas, baseSS, taxa, excessoSubAlim, comp, total, porCam};
 }
 
-function custosFixosCamiao(c, ym){
-  const P = params(), dias = diasDoMes(ym), n = dias.filter(d => camiaoAtivoEm(c, d) && (!P.inicioRegisto || d >= P.inicioRegisto)).length;
+function custosFixosCamiao(c, ym, ignorarPeriodo){
+  const P = params(), dias = diasDoMes(ym), n = dias.filter(d => camiaoAtivoEm(c, d) && (ignorarPeriodo ? (!P.inicioRegisto || d >= P.inicioRegisto) : dentroPeriodo(d))).length;
   if (!n) return null;
   const f = n / dias.length;
   const segcam = (num0(c.seguroAnual) + num0(c.iucAnual) + num0(c.inspecaoAnual) + num0(c.tacografoAnual)) / 12 * f;
@@ -1341,7 +1356,7 @@ function somarBlocos(lista){
   return fecharBloco(t);
 }
 const cacheMes = new Map(), cachePessoal = new Map();
-function invalidar(){ cacheMes.clear(); cachePessoal.clear(); cacheAn = new WeakMap(); mapaViagens = null; }
+function invalidar(){ cacheInicio = undefined; cacheMes.clear(); cachePessoal.clear(); cacheAn = new WeakMap(); mapaViagens = null; }
 function pessoalMes(ym){
   if (!cachePessoal.has(ym)) cachePessoal.set(ym, motoristasOrdenados().map(m => custoMotorista(m, ym)).filter(Boolean));
   return cachePessoal.get(ym);
@@ -1446,6 +1461,11 @@ const clsSinal = v => v > 0.004 ? 'pos' : (v < -0.004 ? 'neg' : '');
 /* ---------- Análise ---------- */
 function pontosAtencao(ym){
   const P = params(), r = calcularMes(ym), ids = colunasDe(r).filter(id => id !== GERAL), d = P.alertaDesvio / 100, out = [];
+  { const i = inicioCustos(), nmI = i ? fmtData(i) : '';
+    if (!i) out.push({n:'info', t:'Ainda não há cargas nem operações de compra e venda registadas: os salários e os custos fixos dos camiões só começam a contar a partir do dia do primeiro registo.'});
+    else if (ym <= i.slice(0, 7) && i.slice(8, 10) !== '01') out.push({n:'info', t:`Os salários e os custos fixos dos camiões só contam a partir de ${nmI} (dia do primeiro registo de carga ou de compra e venda)${ym === i.slice(0, 7) ? '. Neste mês entram só os dias a partir dessa data, em proporção (base de 30 dias, como no processamento salarial), incluindo duodécimos e Segurança Social' : ''}.`});
+    else if (ym < i.slice(0, 7)) out.push({n:'info', t:`Os salários e os custos fixos dos camiões só contam a partir de ${nmI}.`});
+    else if (ym > hoje().slice(0, 7)) out.push({n:'info', t:'Mês futuro: os salários e os custos fixos dos camiões só contam quando o mês chegar.'}); }
   const comKm = ids.filter(id => r[id].km > 0), comLit = comKm.filter(id => r[id].litros > 0);
   const kmT = comKm.reduce((s, id) => s + r[id].km, 0), cT = comKm.reduce((s, id) => s + r[id].totCustos, 0);
   const mCkm = kmT ? cT / 100 / kmT : null;
@@ -1709,7 +1729,7 @@ function renderMotoristas(){
   const h = hoje(), ymH = h.slice(0, 7), tb = $('#mot-tabela tbody'), lista = motoristasOrdenados();
   if (!lista.length) tb.innerHTML = '<tr><td colspan="8" class="vazio">Ainda não há motoristas. Comece por «Adicionar motorista».</td></tr>';
   else tb.innerHTML = lista.map(m => {
-    const cid = ultimoCamiaoDoMotorista(m), cm = custoMotorista(m, ymH), ativo = !m.dataSaida || m.dataSaida >= h;
+    const cid = ultimoCamiaoDoMotorista(m), cm = custoMotorista(m, ymH, {ignorarPeriodo:true}), ativo = !m.dataSaida || m.dataSaida >= h;
     return `<tr><td><strong>${esc(m.nome)}</strong>${m.categoria ? `<span class="motorista-sub">${esc(m.categoria)}</span>` : ''}</td>
       <td>${cid ? placaHtml(cid) : '<span class="etiq">—</span>'}</td><td>${esc(CONTRATOS[m.tipoContrato] || '')}</td><td>${m.dataAdmissao ? fmtData(m.dataAdmissao) : '<span class="etiq prox">Por indicar</span>'}</td>
       <td class="n">${fmtEur(m.salarioBase)}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
@@ -2388,7 +2408,7 @@ function lerMotorista(f){
 function atualizarPreviewMotorista(){
   const f = $('#f-motorista'), m = {...lerMotorista(f), id:'_previsao', dataAdmissao:'', dataSaida:''};
   const desl = Math.min(31, num0($('#m-sim-desl').value));
-  const cm = custoMotorista(m, hoje().slice(0, 7), {semProc:true, diasDesl:desl, nViag:2});
+  const cm = custoMotorista(m, hoje().slice(0, 7), {semProc:true, ignorarPeriodo:true, diasDesl:desl, nViag:2});
   if (!cm){ $('#m-preview').innerHTML = ''; return; }
   const c = cm.comp;
   $('#m-preview').innerHTML = `<table>
@@ -2453,7 +2473,7 @@ $('#m-guardar-modelo').addEventListener('click', () => {
 function renderModelos(){
   const ms = modelosRemun(), el = $('#mod-lista');
   el.innerHTML = ms.length ? '<thead><tr><th>Modelo</th><th class="n">Salário base</th><th class="n">Cláusulas</th><th class="n">Custo mensal estimado</th><th class="no-print"></th></tr></thead><tbody>' + ms.map(x => {
-    const cm = custoMotorista({...x, id:'_modelo', dataAdmissao:'', dataSaida:'', atribuicoes:[]}, hoje().slice(0, 7), {semProc:true, diasDesl:20, nViag:2});
+    const cm = custoMotorista({...x, id:'_modelo', dataAdmissao:'', dataSaida:'', atribuicoes:[]}, hoje().slice(0, 7), {semProc:true, ignorarPeriodo:true, diasDesl:20, nViag:2});
     return `<tr><td><strong>${esc(x.nome)}</strong>${x.categoria ? `<span class="motorista-sub">${esc(x.categoria)}</span>` : ''}</td><td class="n">${fmtEur(x.salarioBase)}</td><td class="n">${(x.clausulas || []).length}</td><td class="n">${cm ? fmtC(cm.total) : '—'}</td>
       <td class="acoes no-print"><button class="btn btn-peq" type="button" data-acao="novo-de-modelo" data-id="${esc(x.id)}">Novo trabalhador com este modelo</button><button class="btn btn-peq btn-perigo" type="button" data-acao="apagar-modelo" data-id="${esc(x.id)}">Apagar</button></td></tr>`;
   }).join('') + '</tbody>' : '<tbody><tr><td class="vazio">Ainda não há modelos. Abra a ficha de um motorista (por exemplo o Angelo) e carregue em «Guardar como modelo».</td></tr></tbody>';
